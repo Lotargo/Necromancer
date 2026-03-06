@@ -249,7 +249,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                         rooms.forEach(room => {
                             const li = document.createElement('li');
                             li.className = 'chat-item' + (room === currentRoom ? ' active' : '');
-                            li.innerHTML = `<span class="chat-item-name" onclick="selectRoom('${room}')" title="${room}">${room}</span> 
+                            li.onclick = () => selectRoom(room);
+                            li.innerHTML = `<span class="chat-item-name" title="${room}">${room}</span> 
                                           <div class="action-btns">
                                               <button class="ren-btn" onclick="renameRoom('${room}', event)" title="Renominare">[R]</button>
                                               <button class="del-btn" onclick="deleteRoom('${room}', event)" title="Delere">[X]</button>
@@ -266,16 +267,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         function selectRoom(room) {
+            if (currentRoom === room) return; // Ignore clicks if already selected
             currentRoom = room;
             roomLabel.textContent = `[${room}]`;
             nuntiusInput.disabled = false;
             sendBtn.disabled = false;
+            
+            // Visual Update Without Full Fetch Before Load
+            Array.from(chatListEl.children).forEach(li => {
+                li.classList.remove('active');
+                if (li.querySelector('.chat-item-name').textContent === room) {
+                    li.classList.add('active');
+                }
+            });
+
             fetch('api.php?action=load&room=' + room)
                 .then(r => r.text())
                 .then(text => {
                     chatEl.textContent = text || 'Nihil scriptum est...';
                     chatEl.scrollTop = chatEl.scrollHeight;
-                    loadChats(); // refresh active state in sidebar
+                    // loadChats(); // We no longer need to fully reload the sidebar just for selecting a room
                 })
                 .catch(err => console.error("Error loading chat:", err));
         }
