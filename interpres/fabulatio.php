@@ -21,8 +21,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
+        :root {
+            --main-color: #00FF00;
+            --bg-color: #050505;
+            --container-bg: #000;
+            --dim-color: #008800;
+            --dark-color: #003300;
+            --hover-color: #002200;
+            --danger-color: #ff3333;
+            --danger-bg: #330000;
+            --danger-hover: #ff0000;
+            --warn-color: #ffff00;
+        }
+
         body { 
-            background-color: #050505; color: #00FF00; 
+            background-color: var(--bg-color); color: var(--main-color);
             font-family: 'VT323', "Courier New", Courier, monospace; 
             margin: 0; padding: 20px;
             display: flex; justify-content: center; align-items: center;
@@ -42,66 +55,66 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         /* Bookshelf Sidebar */
         .sidebar {
-            width: 250px; border: 2px solid #00FF00; padding: 15px;
-            box-shadow: 0 0 20px #00FF00, inset 0 0 10px #00FF00; background-color: #000;
+            width: 250px; border: 2px solid var(--main-color); padding: 15px;
+            box-shadow: 0 0 20px var(--main-color), inset 0 0 10px var(--main-color); background-color: var(--container-bg);
             display: flex; flex-direction: column; height: 100%; box-sizing: border-box;
         }
         
-        .sidebar h2 { margin-top: 0; text-shadow: 0 0 5px #00FF00; border-bottom: 1px dotted #00FF00; padding-bottom: 10px; }
+        .sidebar h2 { margin-top: 0; text-shadow: 0 0 5px var(--main-color); border-bottom: 1px dotted var(--main-color); padding-bottom: 10px; }
 
         .chat-list { list-style: none; padding: 0; flex-grow: 1; overflow-y: auto; margin-top: 0; }
         
         .chat-item {
-            padding: 10px; border: 1px dashed #007700; margin-bottom: 10px; cursor: pointer;
+            padding: 10px; border: 1px dashed var(--dim-color); margin-bottom: 10px; cursor: pointer;
             display: flex; justify-content: space-between; align-items: center; font-size: 20px;
         }
         
-        .chat-item:hover, .chat-item.active { background-color: #002200; border-style: solid; border-color: #00FF00; }
+        .chat-item:hover, .chat-item.active { background-color: var(--hover-color); border-style: solid; border-color: var(--main-color); }
         
         .chat-item-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
         
         .action-btns { display: flex; gap: 5px; }
         .ren-btn { color: #ffff33; cursor: pointer; border: none; background: none; font-family: inherit; font-size: 20px; text-shadow: 0 0 2px yellow;}
         .ren-btn:hover { color: #ffff00; font-weight: bold; background: #333300;}
-        .del-btn { color: #ff3333; cursor: pointer; border: none; background: none; font-family: inherit; font-size: 20px; text-shadow: 0 0 2px red;}
-        .del-btn:hover { color: #ff0000; font-weight: bold; background: #330000;}
+        .del-btn { color: var(--danger-color); cursor: pointer; border: none; background: none; font-family: inherit; font-size: 20px; text-shadow: 0 0 2px red;}
+        .del-btn:hover { color: var(--danger-hover); font-weight: bold; background: var(--danger-bg);}
 
         /* Main Chat Window */
         .main-chat {
-            flex-grow: 1; border: 2px solid #00FF00; padding: 30px; 
-            box-shadow: 0 0 20px #00FF00, inset 0 0 10px #00FF00; background-color: #000;
+            flex-grow: 1; border: 2px solid var(--main-color); padding: 30px;
+            box-shadow: 0 0 20px var(--main-color), inset 0 0 10px var(--main-color); background-color: var(--container-bg);
             display: flex; flex-direction: column; overflow: hidden; height: 100%; box-sizing: border-box;
         }
 
-        h1 { font-size: 36px; text-shadow: 0 0 5px #00FF00; margin-top: 0;}
+        h1 { font-size: 36px; text-shadow: 0 0 5px var(--main-color); margin-top: 0;}
         
         input[type="text"], input[type="submit"], button { 
-            background-color: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px; 
+            background-color: var(--container-bg); color: var(--main-color); border: 1px solid var(--main-color); padding: 10px;
             font-family: 'VT323', "Courier New", Courier, monospace; font-size: 24px;
         }
-        input[type="submit"]:hover, button:hover { background-color: #00FF00; color: #000; cursor: pointer; }
+        input[type="submit"]:hover, button:hover { background-color: var(--main-color); color: var(--container-bg); cursor: pointer; }
         input[type="submit"]:disabled, input[type="text"]:disabled { opacity: 0.5; cursor: not-allowed; }
         
         #chat { 
-            width: 100%; flex-grow: 1; border: 1px solid #00FF00; overflow-y: auto; 
+            width: 100%; flex-grow: 1; border: 1px solid var(--main-color); overflow-y: auto;
             padding: 15px; white-space: pre-wrap; margin-bottom: 20px;
             box-sizing: border-box; font-size: 22px;
-            box-shadow: inset 0 0 10px #00FF00; scroll-behavior: smooth;
+            box-shadow: inset 0 0 10px var(--main-color); scroll-behavior: smooth;
         }
 
         .toggles-bar {
             display: flex; gap: 15px; margin-bottom: 10px; align-items: center;
-            border-top: 1px dotted #008800; padding-top: 10px;
+            border-top: 1px dotted var(--dim-color); padding-top: 10px;
         }
         .toggle-btn {
             font-size: 18px; padding: 5px 12px; min-width: 140px; text-align: center;
         }
         .toggle-active {
-            background-color: #00FF00 !important; color: #000 !important;
-            box-shadow: 0 0 10px #00FF00;
+            background-color: var(--main-color) !important; color: var(--container-bg) !important;
+            box-shadow: 0 0 10px var(--main-color);
         }
         .toggle-inactive {
-            color: #008800; border-color: #008800;
+            color: var(--dim-color); border-color: var(--dim-color);
         }
         
         .blink { animation: blink-animation 1s steps(5, start) infinite; -webkit-animation: blink-animation 1s steps(5, start) infinite; }
@@ -111,14 +124,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         /* Welcome Modal Styles */
         #welcome-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #000; z-index: 9999;
+            background-color: var(--container-bg); z-index: 9999;
             display: flex; justify-content: center; align-items: center;
             opacity: 1; transition: opacity 0.5s ease;
         }
-        .welcome-content { text-align: center; color: #00FF00; }
+        .welcome-content { text-align: center; color: var(--main-color); }
         .welcome-text {
             font-size: 36px; font-weight: bold; overflow: hidden; white-space: pre-wrap; margin: 0 auto;
-            border-right: .15em solid #00FF00; animation: blink-caret .75s step-end infinite;
+            border-right: .15em solid var(--main-color); animation: blink-caret .75s step-end infinite;
         }
 
         /* New Chat Modal Styles */
@@ -128,12 +141,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             display: none; justify-content: center; align-items: center;
         }
         .new-chat-content {
-            border: 2px solid #00FF00; padding: 30px; text-align: center;
-            background-color: #000; box-shadow: 0 0 20px #00FF00;
+            border: 2px solid var(--main-color); padding: 30px; text-align: center;
+            background-color: var(--container-bg); box-shadow: 0 0 20px var(--main-color);
         }
         #new-chat-input, #rename-chat-input { width: 80%; margin-bottom: 20px; text-align: center; }
-        .cancel-btn { background-color: #330000; color: #ff3333; border-color: #ff3333; }
-        .cancel-btn:hover { background-color: #ff3333; color: #fff; }
+        .cancel-btn { background-color: var(--danger-bg); color: var(--danger-color); border-color: var(--danger-color); }
+        .cancel-btn:hover { background-color: var(--danger-color); color: #fff; }
 
         /* Rename Chat Modal Styles */
         #rename-chat-modal {
@@ -142,8 +155,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             display: none; justify-content: center; align-items: center;
         }
         .rename-chat-content {
-            border: 2px solid #00FF00; padding: 30px; text-align: center;
-            background-color: #000; box-shadow: 0 0 20px #00FF00;
+            border: 2px solid var(--main-color); padding: 30px; text-align: center;
+            background-color: var(--container-bg); box-shadow: 0 0 20px var(--main-color);
         }
 
         /* Delete Chat Modal Styles */
@@ -164,24 +177,64 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             display: none; justify-content: center; align-items: center;
         }
         .config-content {
-            border: 2px solid #00FF00; padding: 30px; text-align: left;
-            background-color: #000; box-shadow: 0 0 20px #00FF00;
+            border: 2px solid var(--main-color); padding: 30px; text-align: left;
+            background-color: var(--container-bg); box-shadow: 0 0 20px var(--main-color);
             width: 80%; max-width: 600px;
+            max-height: 90vh; overflow-y: auto;
         }
         .config-section {
-            margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dotted #00FF00;
+            margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dotted var(--main-color);
         }
         .config-section:last-child {
             border-bottom: none; margin-bottom: 0; padding-bottom: 0;
         }
-        .config-input {
+        .config-input, .config-select {
             width: 100%; margin-bottom: 10px; margin-top: 5px; box-sizing: border-box;
-            background-color: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px;
+            background-color: var(--container-bg); color: var(--main-color); border: 1px solid var(--main-color); padding: 10px;
             font-family: inherit; font-size: 20px;
         }
         .config-btn { margin-top: 10px; }
-        .danger-btn { background-color: #330000; color: #ff3333; border-color: #ff3333; }
-        .danger-btn:hover { background-color: #ff0000; color: #fff; }
+        .danger-btn { background-color: var(--danger-bg); color: var(--danger-color); border-color: var(--danger-color); }
+        .danger-btn:hover { background-color: var(--danger-hover); color: #fff; }
+
+        /* Glitches - Applied conditionally */
+        body.glitch-shake .layout-wrapper {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both infinite;
+            transform: translate3d(0, 0, 0);
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        body.glitch-chromatic * {
+            text-shadow: 2px 0px #f00, -2px 0px #0ff;
+        }
+
+        body.glitch-borders .sidebar, body.glitch-borders .main-chat, body.glitch-borders .config-content {
+            animation: border-glitch 2s linear infinite;
+        }
+        @keyframes border-glitch {
+            0% { border-style: solid; border-width: 2px; }
+            25% { border-style: dashed; border-width: 4px; }
+            50% { border-style: dotted; border-width: 1px; }
+            75% { border-style: double; border-width: 5px; }
+            100% { border-style: solid; border-width: 2px; }
+        }
+
+        body.glitch-noise::before {
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+            background: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.15"/%3E%3C/svg%3E');
+            z-index: 100; pointer-events: none; opacity: 0.15;
+            animation: noise 0.2s infinite alternate;
+        }
+        @keyframes noise {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-5px, 5px); }
+        }
+
     </style>
 </head>
 <body>
@@ -235,6 +288,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             <h2 style="margin-top: 0; text-shadow: 0 0 5px #00FF00; text-align: center;">Configuratio Rationis (Account Settings)</h2>
             <div id="config-alert" style="color: #ffff00; text-align: center; margin-bottom: 15px; font-weight: bold;"></div>
 
+            <div class="config-section" id="level-display" style="color: var(--warn-color); font-size: 24px;">
+                Gradus (Level): <span id="user-level">1</span> | Nuntii (Messages): <span id="user-messages">0</span>
+            </div>
+
+            <div class="config-section">
+                <h3>Thema et Effectus (Theme & Effects)</h3>
+                <select id="config-theme" class="config-select" onchange="previewTheme()">
+                    <option value="0">0. Viridis (Classic Green)</option>
+                    <!-- More options populated via JS -->
+                </select>
+
+                <div id="glitches-container" style="margin-top: 15px;">
+                    <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-10" onchange="previewGlitches()"> L10: Terraemotus (Shake)</label>
+                    <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-11" onchange="previewGlitches()"> L11: Aberratio (Chromatic)</label>
+                    <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-12" onchange="previewGlitches()"> L12: Fines fracti (Broken Borders)</label>
+                    <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-13" onchange="previewGlitches()"> L13: Caligo (CRT Noise)</label>
+                </div>
+                <button class="config-btn" onclick="saveVisualOptions()" style="margin-top: 15px;">Servare (Save)</button>
+            </div>
+
             <div class="config-section">
                 <h3>Renominare Usorem (Rename User)</h3>
                 <input type="text" id="config-new-name" class="config-input" placeholder="Novum Nomen...">
@@ -270,15 +343,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 <!-- Chats will load here via JS -->
             </ul>
             <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="openConfigModal()" style="width: 100%; background: #000; color: #00FF00; border: 1px dashed #00FF00; text-align: left; padding: 10px;">⚙ Configuratio (Settings)</button>
+                <button onclick="openConfigModal()" style="width: 100%; background: var(--container-bg); color: var(--main-color); border: 1px dashed var(--main-color); text-align: left; padding: 10px;">⚙ Configuratio (Settings)</button>
                 <form method="POST" action="fabulatio.php" style="margin: 0;">
-                    <input type="submit" name="exire" value="Exire (Logout)" style="width:100%; background: #330000; color: #ff3333; border-color: #ff3333;">
+                    <input type="submit" name="exire" value="Exire (Logout)" style="width:100%; background: var(--danger-bg); color: var(--danger-color); border-color: var(--danger-color);">
                 </form>
             </div>
         </div>
 
         <div class="main-chat">
-            <h1>Forum: <?php echo htmlspecialchars($usor); ?> <span class="blink">_</span> <span id="current-room-label" style="font-size: 24px; color: #008800; float: right;"></span></h1>
+            <h1>Forum: <?php echo htmlspecialchars($usor); ?> <span class="blink">_</span> <span id="current-room-label" style="font-size: 24px; color: var(--dim-color); float: right;"></span></h1>
             <div id="chat">Eligere fabulationem e pluteo...</div>
 
             <div class="toggles-bar">
@@ -550,6 +623,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         function closeConfigModal() {
             document.getElementById('config-modal').style.display = 'none';
+            applyOptionsToDOM(); // Revert preview if not saved
         }
 
         function configAlert(msg, isError = false) {
@@ -633,8 +707,129 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             }
         }
 
+        // --- Levels & Visual Options System ---
+
+        const THEMES = [
+            { name: "Viridis (Green)", colors: { main: '#00FF00', bg: '#050505', cont: '#000', dim: '#008800', dark: '#003300', hov: '#002200' } },
+            { name: "Electinum (Amber)", colors: { main: '#FFB000', bg: '#100800', cont: '#000', dim: '#885500', dark: '#331100', hov: '#221100' } },
+            { name: "Cyanus (Cyan)", colors: { main: '#00FFFF', bg: '#000810', cont: '#000', dim: '#008888', dark: '#003333', hov: '#002222' } },
+            { name: "Cruor (Blood Red)", colors: { main: '#FF0000', bg: '#100000', cont: '#000', dim: '#880000', dark: '#330000', hov: '#220000' } },
+            { name: "Matrix", colors: { main: '#00FF41', bg: '#000000', cont: '#001100', dim: '#008F11', dark: '#003B00', hov: '#002200' } },
+            { name: "Purpura (Purple)", colors: { main: '#FF00FF', bg: '#080010', cont: '#000', dim: '#880088', dark: '#330033', hov: '#220022' } },
+            { name: "Aureus (Gold)", colors: { main: '#FFD700', bg: '#101000', cont: '#000', dim: '#886600', dark: '#332200', hov: '#221100' } },
+            { name: "Nix (White/Ice)", colors: { main: '#E0E0FF', bg: '#050510', cont: '#000', dim: '#8888AA', dark: '#222233', hov: '#111122' } },
+            { name: "Neon (Vaporwave)", colors: { main: '#00FFFF', bg: '#2B00FF', cont: '#000000', dim: '#FF00FF', dark: '#880088', hov: '#110033' } },
+            { name: "Cinereus (Ash)", colors: { main: '#AAAAAA', bg: '#111111', cont: '#000', dim: '#555555', dark: '#222222', hov: '#111111' } },
+            { name: "Infernus (Inferno)", colors: { main: '#FF4500', bg: '#1A0000', cont: '#000', dim: '#AA2200', dark: '#440000', hov: '#220000' } },
+            { name: "Abyssus (Deep Blue)", colors: { main: '#4169E1', bg: '#00001A', cont: '#000', dim: '#2233AA', dark: '#000044', hov: '#000022' } },
+            { name: "Tenebrae (Pitch Black)", colors: { main: '#333333', bg: '#000', cont: '#000', dim: '#111111', dark: '#050505', hov: '#050505' } }
+        ];
+
+        let userState = { level: 1, messages: 0, options: { theme: 0, glitches: [] } };
+
+        function loadUserState() {
+            fetch('api.php?action=get_user_state')
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        userState.level = data.level || 1;
+                        userState.messages = data.messages || 0;
+                        if (data.options && typeof data.options.theme !== 'undefined') {
+                            userState.options = data.options;
+                        }
+                        updateOptionsUI();
+                        applyOptionsToDOM();
+                    }
+                });
+        }
+
+        function updateOptionsUI() {
+            document.getElementById('user-level').textContent = userState.level;
+            document.getElementById('user-messages').textContent = userState.messages;
+
+            const themeSelect = document.getElementById('config-theme');
+            themeSelect.innerHTML = '';
+            THEMES.forEach((t, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `L${i+1}: ${t.name}`;
+                if (i + 1 > userState.level) opt.disabled = true;
+                themeSelect.appendChild(opt);
+            });
+            themeSelect.value = userState.options.theme || 0;
+
+            document.getElementById('glitch-10').parentElement.style.display = userState.level >= 10 ? 'block' : 'none';
+            document.getElementById('glitch-11').parentElement.style.display = userState.level >= 11 ? 'block' : 'none';
+            document.getElementById('glitch-12').parentElement.style.display = userState.level >= 12 ? 'block' : 'none';
+            document.getElementById('glitch-13').parentElement.style.display = userState.level >= 13 ? 'block' : 'none';
+
+            const g = userState.options.glitches || [];
+            document.getElementById('glitch-10').checked = g.includes(10);
+            document.getElementById('glitch-11').checked = g.includes(11);
+            document.getElementById('glitch-12').checked = g.includes(12);
+            document.getElementById('glitch-13').checked = g.includes(13);
+        }
+
+        function applyTheme(themeIndex) {
+            const t = THEMES[themeIndex] || THEMES[0];
+            const root = document.documentElement;
+            root.style.setProperty('--main-color', t.colors.main);
+            root.style.setProperty('--bg-color', t.colors.bg);
+            root.style.setProperty('--container-bg', t.colors.cont);
+            root.style.setProperty('--dim-color', t.colors.dim);
+            root.style.setProperty('--dark-color', t.colors.dark);
+            root.style.setProperty('--hover-color', t.colors.hov);
+        }
+
+        function previewTheme() {
+            applyTheme(parseInt(document.getElementById('config-theme').value));
+        }
+
+        function previewGlitches() {
+            document.body.classList.toggle('glitch-shake', document.getElementById('glitch-10').checked);
+            document.body.classList.toggle('glitch-chromatic', document.getElementById('glitch-11').checked);
+            document.body.classList.toggle('glitch-borders', document.getElementById('glitch-12').checked);
+            document.body.classList.toggle('glitch-noise', document.getElementById('glitch-13').checked);
+        }
+
+        function applyOptionsToDOM() {
+            applyTheme(userState.options.theme || 0);
+            const g = userState.options.glitches || [];
+            document.body.classList.toggle('glitch-shake', g.includes(10));
+            document.body.classList.toggle('glitch-chromatic', g.includes(11));
+            document.body.classList.toggle('glitch-borders', g.includes(12));
+            document.body.classList.toggle('glitch-noise', g.includes(13));
+        }
+
+        function saveVisualOptions() {
+            const theme = parseInt(document.getElementById('config-theme').value);
+            const glitches = [];
+            if (document.getElementById('glitch-10').checked) glitches.push(10);
+            if (document.getElementById('glitch-11').checked) glitches.push(11);
+            if (document.getElementById('glitch-12').checked) glitches.push(12);
+            if (document.getElementById('glitch-13').checked) glitches.push(13);
+
+            userState.options = { theme, glitches };
+
+            const formData = new URLSearchParams();
+            formData.append('action', 'save_options');
+            formData.append('options', JSON.stringify(userState.options));
+
+            fetch('api.php', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        configAlert("Optiones servatae sunt. (Options saved)");
+                        applyOptionsToDOM();
+                    } else {
+                        configAlert(data.message, true);
+                    }
+                });
+        }
+
         // Initial UI Update
         updateToggleUI();
+        loadUserState();
 
         chatForm.onsubmit = function(e) {
             e.preventDefault();
@@ -677,7 +872,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                         for (let line of lines) {
                             if (line.startsWith('data: ')) {
                                 const dataStr = line.substring(6).trim();
-                                if (dataStr === '[DONE]') continue;
+                                if (dataStr === '[DONE]') {
+                                    loadUserState(); // Update level after chat completes
+                                    continue;
+                                }
                                 try {
                                     const dataNode = JSON.parse(dataStr);
                                     if (dataNode.event === 'renamed') {
