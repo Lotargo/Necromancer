@@ -150,6 +150,19 @@ if ($action === 'send') {
     while (ob_get_level() > 0)
         ob_end_flush();
 
+    $lingua_mode = $_POST['lingua'] ?? 'latin';
+    $search_mode = $_POST['search'] ?? 'off';
+
+    // Debug event for the client
+    echo "data: " . json_encode([
+        "event" => "debug",
+        "lingua" => $lingua_mode,
+        "search" => $search_mode,
+        "search_len" => strlen($tela_contextus),
+        "post_keys" => array_keys($_POST)
+    ]) . "\n\n";
+    flush();
+
     // If we renamed the room, tell the client before streaming the message
     if ($renamed_to) {
         echo "data: " . json_encode(["event" => "renamed", "new_room" => $renamed_to]) . "\n\n";
@@ -164,16 +177,20 @@ if ($action === 'send') {
         exit();
     }
 
-    $promptus = "Contextus Localis: " . $contextus . "\n";
+    $promptus = "Contextus Localis (Tabularium): " . $contextus . "\n";
     if ($tela_contextus) {
         $promptus .= "Contextus ex Tela (DuckDuckGo): " . $tela_contextus . "\n";
     }
-    $promptus .= "Interrogatio: " . $nuntius . "\nResponde.";
+    $promptus .= "Interrogatio: " . $nuntius . "\n";
 
-    $lingua_mode = $_POST['lingua'] ?? 'latin';
     $system_role = "Tu es philosophus Romanus. Responde semper Latine.";
     if ($lingua_mode === 'auto') {
-        $system_role = "Tu es philosophus expertus. Responde in eadem lingua qua usor te adloquitur. Si usor te adloquitur Russice, responde Russice. Si Anglice, Anglice. Semper conserva personam philosophi antiqui.";
+        $system_role = "Tu es philosophus expertus. Responde in eadem lingua qua usor te adloquitur. 
+        - Если пользователь пишет на русском, отвечай на РУССКОМ языке.
+        - If the user writes in English, respond in ENGLISH.
+        - Semper conserva personam philosophi antiqui. 
+        - CRITICAL RULE: Do NOT respond in Latin unless the user speaks Latin. Respond exactly in the language of the user's message.
+        - ALWAYS start your response with greeting or acknowledgment in the same language as user.";
     }
 
     $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
