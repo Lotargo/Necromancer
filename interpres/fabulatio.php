@@ -255,18 +255,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         </div>
     </div>
 
-    <!-- New Chat Modal -->
-    <div id="new-chat-modal">
-        <div class="new-chat-content">
-            <h2 style="margin-top: 0; text-shadow: 0 0 5px #00FF00;">Nova Fabulatio</h2>
-            <p style="font-size: 24px;">Quod est nomen novae fabulationis? (Name of new chat?)</p>
-            <input type="text" id="new-chat-input" autocomplete="off" onkeydown="if(event.key === 'Enter') submitNewChat()">
-            <div style="margin-top: 20px;">
-                <button onclick="submitNewChat()" style="margin-right: 15px;">Creare (Create)</button>
-                <button onclick="closeNewChatModal()" class="cancel-btn">Inducere (Cancel)</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Rename Chat Modal -->
     <div id="rename-chat-modal">
@@ -485,27 +473,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         function createNewChat() {
-            document.getElementById('new-chat-modal').style.display = 'flex';
-            document.getElementById('new-chat-input').value = '';
-            document.getElementById('new-chat-input').focus();
-        }
-
-        function closeNewChatModal() {
-            document.getElementById('new-chat-modal').style.display = 'none';
-        }
-
-        function submitNewChat() {
-            const name = document.getElementById('new-chat-input').value.trim();
-            if (name) {
-                const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '');
-                if (safeName) {
-                    if (!virtualRooms.includes(safeName)) {
-                        virtualRooms.push(safeName);
-                    }
-                    selectRoom(safeName);
-                    closeNewChatModal();
-                }
+            const tempName = "Nova_Fabulatio";
+            if (!virtualRooms.includes(tempName)) {
+                virtualRooms.push(tempName);
             }
+            selectRoom(tempName);
         }
 
         let roomToRename = '';

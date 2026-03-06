@@ -112,10 +112,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             display: flex; justify-content: center; align-items: center;
             opacity: 1; transition: opacity 0.5s ease;
         }
+        @keyframes modal-twitch {
+            0% { transform: translate(0); box-shadow: 0 0 25px #00FF00 inset; }
+            2% { transform: translate(-2px, 1px); box-shadow: -2px 0 10px #f00, 2px 0 10px #00f, 0 0 25px #00FF00 inset; }
+            4% { transform: translate(2px, -1px); box-shadow: 2px 0 10px #f00, -2px 0 10px #00f, 0 0 25px #00FF00 inset; }
+            6% { transform: translate(0); box-shadow: 0 0 25px #00FF00 inset; }
+            100% { transform: translate(0); box-shadow: 0 0 25px #00FF00 inset; }
+        }
+
         .modal-content {
             border: 4px double #00FF00; padding: 40px; text-align: center;
             background-color: #050505; max-width: 800px;
             box-shadow: 0 0 25px #00FF00 inset;
+            animation: modal-twitch 3s infinite linear;
         }
         .retro-text {
             font-size: 32px; font-weight: bold; text-transform: uppercase;
@@ -151,9 +160,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             background-color: rgba(0,0,0,0.9); z-index: 10000;
             display: none; justify-content: center; align-items: center;
         }
+        @keyframes small-modal-twitch {
+            0% { transform: translate(0); box-shadow: 0 0 20px #00FF00; }
+            1% { transform: translate(-3px, 2px); box-shadow: -3px 0 15px #f00, 3px 0 15px #00f, 0 0 20px #00FF00; }
+            2% { transform: translate(3px, -2px); box-shadow: 3px 0 15px #f00, -3px 0 15px #00f, 0 0 20px #00FF00; }
+            3% { transform: translate(0); box-shadow: 0 0 20px #00FF00; }
+            100% { transform: translate(0); box-shadow: 0 0 20px #00FF00; }
+        }
         .small-modal-content {
             border: 2px solid #00FF00; padding: 30px; background-color: #000;
             width: 400px; text-align: center; box-shadow: 0 0 20px #00FF00;
+            animation: small-modal-twitch 4s infinite linear;
         }
     </style>
 </head>
