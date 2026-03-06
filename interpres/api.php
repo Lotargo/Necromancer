@@ -14,6 +14,18 @@ function loqui_cum_daemonio($mandatum)
     return trim($responsum);
 }
 
+function loqui_cum_aequilibrio($id_sessionis)
+{
+    $aequilibrium_host = getenv("AEQUILIBRIUM_HOST") ?: "127.0.0.1";
+    $fp = @fsockopen($aequilibrium_host, 8081, $errno, $errstr, 2);
+    if (!$fp)
+        return false;
+    fwrite($fp, "PETERE_CLAVEM|" . $id_sessionis . "\n");
+    $responsum = fgets($fp, 8192);
+    fclose($fp);
+    return trim($responsum);
+}
+
 // Public Actions (No Session Required)
 if ($action === 'login_anima' || $action === 'register_anima' || $action === 'forgot_anima') {
     $fp_client = $_POST['fp'] ?? '';
@@ -313,17 +325,33 @@ if ($action === 'send') {
         $is_first = true;
     }
 
+    // Aequilibrium: Petere Clavem et Provisorem
+    $aequilibrium_resp = loqui_cum_aequilibrio($cubiculum);
+    $apikey = getenv("OPENAI_API_KEY"); // Fallback
+    $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
+    $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
+    $provisor_nomen = "Ignotus";
+
+    if ($aequilibrium_resp) {
+        $partes_aeq = explode("|", $aequilibrium_resp);
+        if ($partes_aeq[0] === "200") {
+            $provisor_nomen = $partes_aeq[2];
+            $apikey = $partes_aeq[3];
+            $api_url = $partes_aeq[4];
+            $model = $partes_aeq[5];
+        }
+    }
+
     // 0.5 Auto-name if first message
     $renamed_to = "";
-    $apikey = getenv("OPENAI_API_KEY");
     if ($is_first && $apikey) {
         $title_prompt = "Provide a very short 1-3 word title in Latin for this message: '" . $nuntius . "'. Keep it very brief, only the Latin words.";
         $data_title = [
-            "model" => getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini",
+            "model" => $model,
             "messages" => [["role" => "user", "content" => $title_prompt]],
             "max_tokens" => 10
         ];
-        $ch_t = curl_init(getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions");
+        $ch_t = curl_init($api_url);
         curl_setopt($ch_t, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch_t, CURLOPT_POST, true);
         curl_setopt($ch_t, CURLOPT_POSTFIELDS, json_encode($data_title));
@@ -362,12 +390,17 @@ if ($action === 'send') {
         flush();
     }
 
-    $apikey = getenv("OPENAI_API_KEY");
     if (!$apikey) {
-        $msg = "Clavis API deest. Dicent mihi Oraculum non respondere.";
+        $msg = "Clavis API deest. Aequilibrium non respondet, et nulla clavis in .env exstat.";
         echo "data: " . json_encode(["choices" => [["delta" => ["content" => $msg]]]]) . "\n\n";
         loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $msg);
         exit();
+    }
+
+    // Nuntiare provisorem ad clientem (Optional info)
+    if ($provisor_nomen !== "Ignotus") {
+        echo "data: " . json_encode(["event" => "provisor", "nomen" => $provisor_nomen, "model" => $model]) . "\n\n";
+        flush();
     }
 
     $system_role = "Tu es philosophus Romanus. Responde semper Latine.";
@@ -438,8 +471,6 @@ if ($action === 'send') {
         ]
     ];
 
-    $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
-    $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
     $max_loops = 5;
     $loop_count = 0;
     $final_response_content = "";
