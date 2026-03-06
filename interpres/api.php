@@ -14,6 +14,18 @@ function loqui_cum_daemonio($mandatum)
     return trim($responsum);
 }
 
+function purgare_sessionem_aequilibrio($id_sessionis)
+{
+    $aequilibrium_host = getenv("AEQUILIBRIUM_HOST") ?: "127.0.0.1";
+    $fp = @fsockopen($aequilibrium_host, 8081, $errno, $errstr, 2);
+    if (!$fp)
+        return false;
+    fwrite($fp, "PURGARE_SESSIONEM|" . $id_sessionis . "\n");
+    $responsum = fgets($fp, 8192);
+    fclose($fp);
+    return trim($responsum);
+}
+
 function loqui_cum_aequilibrio($id_sessionis)
 {
     $aequilibrium_host = getenv("AEQUILIBRIUM_HOST") ?: "127.0.0.1";
@@ -501,10 +513,17 @@ if ($action === 'send') {
 
         $tool_calls_buffer = [];
         $current_content = "";
+        $error_buffer = "";
 
-        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$tool_calls_buffer, &$current_content, &$final_response_content) {
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$tool_calls_buffer, &$current_content, &$final_response_content, &$error_buffer) {
             $lines = explode("\n", $chunk);
             foreach ($lines as $line) {
+                // If the API returns a JSON error, it usually doesn't start with "data: "
+                if (!empty(trim($line)) && strpos($line, 'data: ') !== 0 && strpos(trim($line), '{') === 0 && empty($current_content) && empty($tool_calls_buffer)) {
+                     $error_buffer .= $chunk;
+                     return strlen($chunk);
+                }
+
                 if (strpos($line, 'data: ') === 0) {
                     $jsonStr = substr($line, 6);
                     if (trim($jsonStr) == '[DONE]') {
@@ -563,13 +582,35 @@ if ($action === 'send') {
         });
 
         curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $err = curl_error($ch);
         curl_close($ch);
 
-        if ($err) {
-            $err_msg = "Error Oraculi: " . $err;
-            echo "data: " . json_encode(["choices" => [["delta" => ["content" => $err_msg]]]]) . "\n\n";
-            $final_response_content .= $err_msg;
+        if ($err || $http_code >= 400 || !empty($error_buffer)) {
+            // Check if error_buffer contains actual JSON error content
+            $error_json = json_decode($error_buffer, true);
+            $parsed_msg = "";
+            if ($error_json) {
+                if (isset($error_json['error']['message'])) {
+                    $parsed_msg = $error_json['error']['message'];
+                } else if (isset($error_json['message'])) {
+                    $parsed_msg = $error_json['message'];
+                }
+            }
+
+            $err_str = $err ?: ($parsed_msg ?: trim($error_buffer));
+            $err_msg = "Error Oraculi (HTTP $http_code): " . $err_str;
+
+            // Unpin the provider from the load balancer if it fails
+            purgare_sessionem_aequilibrio($cubiculum);
+
+            // Wait, we could retry if loop_count == 1, but for now we just show the error
+            if ($loop_count == 1) {
+                echo "data: " . json_encode(["choices" => [["delta" => ["content" => $err_msg]]]]) . "\n\n";
+                $final_response_content .= $err_msg;
+            } else {
+                $final_response_content .= "\n" . $err_msg;
+            }
             break;
         }
 
