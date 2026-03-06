@@ -20,6 +20,8 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_API_URL=${OPENAI_API_URL:-}
       - OPENAI_API_MODEL=${OPENAI_API_MODEL:-}
+    volumes:
+      - ./interpres:/app/interpres
     depends_on:
       - daemonium
     restart: always

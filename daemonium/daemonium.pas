@@ -175,6 +175,27 @@ begin
     Result := FormareResponsum(404, 'Error', 'Non inventum');
 end;
 
+function RenominareFabulationem(Nomen, VetusCubiculum, NovumCubiculum: String): String;
+var
+  VetusNomen, NovumNomen: String;
+begin
+  if VetusCubiculum = '' then VetusCubiculum := 'default';
+  if NovumCubiculum = '' then Exit(FormareResponsum(400, 'Error', 'Novum nomen vacuum est'));
+  
+  VetusNomen := PREFIXUS_FABULATIO + Nomen + '_' + VetusCubiculum + '.txt';
+  NovumNomen := PREFIXUS_FABULATIO + Nomen + '_' + NovumCubiculum + '.txt';
+  
+  if FileExists(VetusNomen) then
+  begin
+    if RenameFile(VetusNomen, NovumNomen) then
+      Result := FormareResponsum(200, 'Successus', 'Renominatum')
+    else
+      Result := FormareResponsum(500, 'Error', 'Non potest renominare');
+  end
+  else
+    Result := FormareResponsum(404, 'Error', 'Non inventum');
+end;
+
 { RAG: Investigare in Scientia }
 function Investigare(VerbaQuery: String): String;
 var
@@ -276,6 +297,8 @@ begin
       Responsum := IndexFabulationum(Parametrum1)
     else if Mandatum = 'DELE_FABULATIONEM' then
       Responsum := DeleFabulationem(Parametrum1, Parametrum2)
+    else if Mandatum = 'RENOMINARE_FABULATIONEM' then
+      Responsum := RenominareFabulationem(Parametrum1, Parametrum2, Parametrum3)
     else
       Responsum := FormareResponsum(400, 'Error', 'Mandatum incognitum');
 
