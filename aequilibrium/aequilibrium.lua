@@ -3,7 +3,7 @@
 
 local ffi = require("ffi")
 
--- Definitiones C pro socketis (raw TCP)
+-- Definitiones C pro socketis (raw TCP) et fasciculis
 ffi.cdef[[
     typedef int socklen_t;
     typedef unsigned short sa_family_t;
@@ -46,79 +46,138 @@ local SO_REUSEADDR = 2
 local INADDR_ANY = 0
 local PORTUS = 8081
 
--- Tabularium (Database) ubi claves habitant
-local TABULARIUM_CLAVES = "../tabularium/claves.txt"
+-- Tabularium (Database) ubi provisores habitant
+local VIA_PROVISORUM = "../tabularium/provisores/"
+local NOMINA_PROVISORUM = {"gemini", "groq", "cerebras", "sambanova"}
 
 -- Structurae Datorum (Data Structures)
-local Provisores = {}
-local NumerusProvisorum = 0
-local IndexHodiernus = 1
+-- Indices pro Round-Robin (Servantur in memoria perenniter)
+local IndexProvisor = 1
+local IndicesClavium = {}
+local IndicesModelorum = {}
+
+for _, nomen in ipairs(NOMINA_PROVISORUM) do
+    IndicesClavium[nomen] = 1
+    IndicesModelorum[nomen] = 1
+end
 
 -- Sessiones (Sessions) pro ReAct / CoT statera
 local Sessiones = {}
 
 -- Functio: Legere lineas ex fasciculo (Read lines from file)
-local function LegereClaves()
-    Provisores = {}
-    NumerusProvisorum = 0
-
-    local fasciculus = io.open(TABULARIUM_CLAVES, "r")
+local function LegereFasciculum(via)
+    local lineae = {}
+    local fasciculus = io.open(via, "r")
     if not fasciculus then
-        print("[!] Error: Non possum aperire fasciculum " .. TABULARIUM_CLAVES)
-        return
+        return lineae
     end
-
     for linea in fasciculus:lines() do
-        -- Format: PROVISOR|CLAVIS|URL|MODEL
-        local provisor, clavis, url, model = linea:match("([^|]+)|([^|]+)|([^|]+)|([^|]+)")
-        if provisor and clavis and url and model then
-            NumerusProvisorum = NumerusProvisorum + 1
-            Provisores[NumerusProvisorum] = {
-                provisor = provisor,
-                clavis = clavis,
-                url = url,
-                model = model
-            }
-            print("[+] Provisor inventus: " .. provisor .. " (" .. model .. ")")
+        -- Remove spaces/newlines
+        linea = linea:gsub("^%s*(.-)%s*$", "%1")
+        if linea ~= "" then
+            table.insert(lineae, linea)
         end
     end
     fasciculus:close()
+    return lineae
+end
 
-    if NumerusProvisorum == 0 then
-        print("[-] Nulli provisores inventi in " .. TABULARIUM_CLAVES)
-    else
-        print("[*] Summa provisorum: " .. NumerusProvisorum)
+-- Functio: Legere unam lineam ex fasciculo
+local function LegereUnamLineam(via)
+    local lineae = LegereFasciculum(via)
+    if #lineae > 0 then
+        return lineae[1]
     end
+    return nil
+end
+
+-- Functio: Colligere omnia data provisoris (Hot Reload / On the fly)
+local function ColligereDataProvisorum()
+    local provisores_parati = {}
+
+    for _, nomen in ipairs(NOMINA_PROVISORUM) do
+        local via = VIA_PROVISORUM .. nomen .. "/"
+
+        local claves = LegereFasciculum(via .. "claves.txt")
+        local modela = LegereFasciculum(via .. "modela.txt")
+        local url = LegereUnamLineam(via .. "url.txt")
+
+        if #claves > 0 and #modela > 0 and url then
+            table.insert(provisores_parati, {
+                nomen = nomen,
+                claves = claves,
+                modela = modela,
+                url = url
+            })
+        end
+    end
+
+    return provisores_parati
+end
+
+-- Functio: Eligere proximam clavem et modelum pro provisore (Round-Robin internum)
+local function EligereInterna(provisor_data)
+    local nomen = provisor_data.nomen
+
+    -- Eligere clavem
+    local idx_clavis = IndicesClavium[nomen]
+    if idx_clavis > #provisor_data.claves then
+        idx_clavis = 1
+    end
+    local electa_clavis = provisor_data.claves[idx_clavis]
+    IndicesClavium[nomen] = idx_clavis + 1
+
+    -- Eligere modelum
+    local idx_modelum = IndicesModelorum[nomen]
+    if idx_modelum > #provisor_data.modela then
+        idx_modelum = 1
+    end
+    local electum_modelum = provisor_data.modela[idx_modelum]
+    IndicesModelorum[nomen] = idx_modelum + 1
+
+    return electa_clavis, electum_modelum
 end
 
 -- Functio: Eligere provisorem pro sessione (Select provider for session)
 local function EligereProvisorem(id_sessionis)
-    if NumerusProvisorum == 0 then
-        return nil, "Nullus provisor paratus est"
+    local provisores_parati = ColligereDataProvisorum()
+    local numerus = #provisores_parati
+
+    if numerus == 0 then
+        return nil, nil, nil, nil, "Nullus provisor cum clavibus et modelis paratus est"
     end
 
     -- Si sessio iam habet provisorem, retine eum (pro ReAct / CoT contextu)
     if id_sessionis and id_sessionis ~= "" and id_sessionis ~= "default" then
         if Sessiones[id_sessionis] then
-            return Sessiones[id_sessionis], nil
+            local s = Sessiones[id_sessionis]
+            -- In sessione retinemus eundem provisorem, eandem clavem et idem modelum
+            return s.nomen, s.clavis, s.url, s.modelum, nil
         end
     end
 
-    -- Si non habet provisorem vel id_sessionis deest, elige proximum (Round-Robin)
-    local electus = Provisores[IndexHodiernus]
-
-    -- Incrementum et statera (Round-Robin)
-    IndexHodiernus = IndexHodiernus + 1
-    if IndexHodiernus > NumerusProvisorum then
-        IndexHodiernus = 1
+    -- Si non habet provisorem vel id_sessionis deest, elige proximum (Round-Robin inter provisores)
+    if IndexProvisor > numerus then
+        IndexProvisor = 1
     end
+
+    local provisor_electus = provisores_parati[IndexProvisor]
+    IndexProvisor = IndexProvisor + 1
+
+    -- Eligere clavem et modelum internum pro hoc provisore
+    local electa_clavis, electum_modelum = EligereInterna(provisor_electus)
 
     -- Serva electionem pro hac sessione
     if id_sessionis and id_sessionis ~= "" and id_sessionis ~= "default" then
-        Sessiones[id_sessionis] = electus
+        Sessiones[id_sessionis] = {
+            nomen = provisor_electus.nomen,
+            clavis = electa_clavis,
+            url = provisor_electus.url,
+            modelum = electum_modelum
+        }
     end
 
-    return electus, nil
+    return provisor_electus.nomen, electa_clavis, provisor_electus.url, electum_modelum, nil
 end
 
 -- Functio: Formare responsum
@@ -145,13 +204,12 @@ local function TractareClientem(cliens_sock)
 
         local responsum = ""
         if mandatum == "PETERE_CLAVEM" then
-            -- Reload claves on every request to support hot-swapping
-            LegereClaves()
 
-            local provisor_electus, error_msg = EligereProvisorem(parametrum1)
-            if provisor_electus then
-                responsum = FormareResponsum(200, "Successus", provisor_electus.provisor, provisor_electus.clavis, provisor_electus.url, provisor_electus.model)
-                print("[>] Sessio: " .. (parametrum1 or "ignota") .. " -> Electus: " .. provisor_electus.provisor)
+            local nomen, clavis, url, modelum, error_msg = EligereProvisorem(parametrum1)
+
+            if nomen then
+                responsum = FormareResponsum(200, "Successus", nomen, clavis, url, modelum)
+                print("[>] Sessio: " .. (parametrum1 or "ignota") .. " -> Electus: " .. nomen .. " [" .. modelum .. "] (Clavis rotata)")
             else
                 responsum = FormareResponsum(500, error_msg, "", "", "", "")
                 print("[!] Error: " .. error_msg)
@@ -170,9 +228,8 @@ end
 print("------------------------------------------------")
 print(" [!] AEQUILIBRIUM PROBUTUS EST / BALANCE AWAKENED")
 print(" [!] Machina scripta in LuaJIT, omnia Latine.")
+print(" [!] Legere claves et modela 'in the fly' (Vividus).")
 print("------------------------------------------------")
-
-LegereClaves()
 
 local servus_sock = ffi.C.socket(AF_INET, SOCK_STREAM, 0)
 if servus_sock < 0 then
