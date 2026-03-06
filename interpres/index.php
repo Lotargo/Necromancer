@@ -222,11 +222,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div id="forgot-modal">
         <div class="small-modal-content">
             <h2 style="margin-top: 0;">Recuperatio</h2>
-            <p>Scribe email pro recuperatione (check logs for 6-digit code):</p>
-            <input type="text" id="forgot-email" style="width: 100%; font-size: 20px; margin-bottom: 20px; background: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px;">
+            <p style="font-size: 20px; margin-bottom: 20px; text-transform: uppercase;">Haec functio in fabricatione est<br>(Feature in development)</p>
             <div style="display: flex; gap: 10px; justify-content: center;">
-                <button type="button" onclick="submitForgot()" style="background: #000; color: #00FF00; border: 1px solid #00FF00; padding: 5px 15px; cursor: pointer;">Mittere</button>
-                <button type="button" onclick="closeForgotModal()" style="background: #000; color: #ff3333; border: 1px solid #ff3333; padding: 5px 15px; cursor: pointer;">Inducere</button>
+                <button type="button" onclick="closeForgotModal()" style="font-size: 20px; background: #000; color: #ff3333; border: 1px solid #ff3333; padding: 10px 20px; cursor: pointer;">Inducere (Close)</button>
             </div>
         </div>
     </div>
@@ -329,20 +327,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         function openForgotModal() { document.getElementById('forgot-modal').style.display = 'flex'; }
         function closeForgotModal() { document.getElementById('forgot-modal').style.display = 'none'; }
-        
-        function submitForgot() {
-            const email = document.getElementById('forgot-email').value.trim();
-            if (!email) return;
-            const formData = new URLSearchParams();
-            formData.append('action', 'forgot_anima');
-            formData.append('email', email);
-            fetch('api.php', { method: 'POST', body: formData })
-                .then(r => r.json())
-                .then(data => {
-                    alert(data.message);
-                    closeForgotModal();
-                });
-        }
     </script>
 </body>
 </html>
