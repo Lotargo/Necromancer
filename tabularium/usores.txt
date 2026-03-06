@@ -3,3 +3,6 @@ JuliusCaesar
 demon
 test
 Necro
+Legatus_X
+AnimaUser
+RealUser
