@@ -2,3 +2,4 @@ daemonium/*.o
 daemonium/daemonium
 tabularium/fabulatio_*.txt
 tabularium/usores.txt
+*.log
