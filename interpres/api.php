@@ -341,37 +341,14 @@ if ($action === 'send') {
     // 1. Save user message
     loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Tute: " . $nuntius);
 
-    // 2. Query Knowledge Base (RAG) & Web Search
-    $rag_resp = loqui_cum_daemonio("INVESTIGARE|" . $nuntius);
-    $partes_rag = explode("|", $rag_resp);
-    $contextus = ($partes_rag[0] == "200") ? $partes_rag[2] : "";
-
-    $search_mode = $_POST['search'] ?? 'off';
-    $tela_contextus = "";
-    if ($search_mode === 'on') {
-        $tela_contextus = investigare_in_tela($nuntius);
-    }
-
-    // 3. Prepare LLM Stream
+    // 2. Prepare LLM Stream Context
     header('Content-Type: text/event-stream');
     header('Cache-Control: no-cache');
     header('Connection: keep-alive');
-    while (ob_get_level() > 0)
-        ob_end_flush();
+    while (ob_get_level() > 0) ob_end_flush();
 
     $lingua_mode = $_POST['lingua'] ?? 'latin';
     $search_mode = $_POST['search'] ?? 'off';
-
-    // Debug event for the client
-    echo "data: " . json_encode([
-        "event" => "debug",
-        "lingua" => $lingua_mode,
-        "search" => $search_mode,
-        "search_res" => $tela_contextus,
-        "search_len" => strlen($tela_contextus),
-        "post_keys" => array_keys($_POST)
-    ]) . "\n\n";
-    flush();
 
     // If we renamed the room, tell the client before streaming the message
     if ($renamed_to) {
@@ -387,12 +364,6 @@ if ($action === 'send') {
         exit();
     }
 
-    $promptus = "Contextus Localis (Tabularium): " . $contextus . "\n";
-    if ($tela_contextus) {
-        $promptus .= "Contextus Realis-Temporis (Web Search): " . $tela_contextus . "\n";
-    }
-    $promptus .= "Interrogatio: " . $nuntius . "\n";
-
     $system_role = "Tu es philosophus Romanus. Responde semper Latine.";
     if ($lingua_mode === 'auto') {
         $system_role = "Tu es philosophus expertus. Responde in eadem lingua qua usor te adloquitur. 
@@ -401,60 +372,215 @@ if ($action === 'send') {
         - Semper conserva personam philosophi antiqui. 
         - CRITICAL RULE: Do NOT respond in Latin unless the user speaks Latin. Respond exactly in the language of the user's message.
         - ALWAYS start your response with greeting or acknowledgment in the same language as user.
-        - If 'Web Search' context is provided, prioritize it for current events. Mention that you consulted the digital oracle.";
+        - Use the provided tools (search_web, search_knowledge_base) to find facts if needed.";
     }
 
-    $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
-
-    $data = [
-        "model" => $model,
-        "messages" => [
-            ["role" => "system", "content" => $system_role],
-            ["role" => "user", "content" => $promptus]
-        ],
-        "max_tokens" => 300,
-        "stream" => true
-    ];
-
-    $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
-    $ch = curl_init($api_url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Content-Type: application/json",
-        "Authorization: Bearer " . $apikey
-    ]);
-
-    $full_response = "";
-    curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$full_response) {
-        echo $chunk;
-        flush();
-        $lines = explode("\n", $chunk);
+    // Reconstruct history to give LLM context (up to last 10 messages)
+    $chat_history = [];
+    $resp_hist2 = loqui_cum_daemonio("LEGENDE_NUNTIOS|" . $usor . "|" . $cubiculum . "|" . $user_fp);
+    $partes_hist2 = explode("|", $resp_hist2, 3);
+    if ($partes_hist2[0] === "200" && trim($partes_hist2[2]) !== "") {
+        $lines = explode('\n', $partes_hist2[2]);
+        $lines = array_slice($lines, -20); // Last 20 lines
         foreach ($lines as $line) {
-            if (strpos($line, 'data: ') === 0) {
-                $jsonStr = substr($line, 6);
-                if (trim($jsonStr) == '[DONE]')
-                    continue;
-                $json = json_decode($jsonStr, true);
-                if (isset($json['choices'][0]['delta']['content'])) {
-                    $full_response .= $json['choices'][0]['delta']['content'];
-                }
+            if (strpos($line, 'Tute: ') === 0) {
+                $chat_history[] = ["role" => "user", "content" => substr($line, 6)];
+            } elseif (strpos($line, 'Oraculum: ') === 0) {
+                $chat_history[] = ["role" => "assistant", "content" => substr($line, 10)];
             }
         }
-        return strlen($chunk);
-    });
-
-    curl_exec($ch);
-    if (curl_errno($ch)) {
-        $err = "Error Oraculi: " . curl_error($ch);
-        echo "data: " . json_encode(["choices" => [["delta" => ["content" => $err]]]]) . "\n\n";
-        $full_response .= $err;
     }
-    curl_close($ch);
+
+    $messages = [["role" => "system", "content" => $system_role]];
+    $messages = array_merge($messages, $chat_history);
+
+    // If they just said something, but it's not in the history fetch due to sync, add it
+    if (empty($chat_history) || end($chat_history)['content'] !== $nuntius) {
+        $messages[] = ["role" => "user", "content" => $nuntius];
+    }
+
+    $tools = [
+        [
+            "type" => "function",
+            "function" => [
+                "name" => "search_web",
+                "description" => "Searches the internet for up-to-date real world information and news.",
+                "parameters" => [
+                    "type" => "object",
+                    "properties" => [
+                        "query" => ["type" => "string", "description" => "The search query"]
+                    ],
+                    "required" => ["query"]
+                ]
+            ]
+        ],
+        [
+            "type" => "function",
+            "function" => [
+                "name" => "search_knowledge_base",
+                "description" => "Searches the local Necronomicon daemonium database for esoteric, local, or platform specific knowledge.",
+                "parameters" => [
+                    "type" => "object",
+                    "properties" => [
+                        "query" => ["type" => "string", "description" => "The exact Latin or English keywords to search"]
+                    ],
+                    "required" => ["query"]
+                ]
+            ]
+        ]
+    ];
+
+    $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
+    $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
+    $max_loops = 5;
+    $loop_count = 0;
+    $final_response_content = "";
+
+    while ($loop_count < $max_loops) {
+        $loop_count++;
+
+        $data = [
+            "model" => $model,
+            "messages" => $messages,
+            "max_tokens" => 800,
+            "stream" => true
+        ];
+
+        // Only include tools if search mode is ON
+        if ($search_mode === 'on') {
+            $data["tools"] = $tools;
+        }
+
+        $ch = curl_init($api_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: application/json",
+            "Authorization: Bearer " . $apikey
+        ]);
+
+        $tool_calls_buffer = [];
+        $current_content = "";
+
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$tool_calls_buffer, &$current_content, &$final_response_content) {
+            $lines = explode("\n", $chunk);
+            foreach ($lines as $line) {
+                if (strpos($line, 'data: ') === 0) {
+                    $jsonStr = substr($line, 6);
+                    if (trim($jsonStr) == '[DONE]') {
+                        // Forward DONE only if we aren't handling tools right now
+                        continue;
+                    }
+                    $json = json_decode($jsonStr, true);
+                    if ($json && isset($json['choices'][0]['delta'])) {
+                        $delta = $json['choices'][0]['delta'];
+
+                        // Pass along regular content and reasoning to the client
+                        if (isset($delta['content']) && $delta['content'] !== null) {
+                            $current_content .= $delta['content'];
+                            $final_response_content .= $delta['content'];
+                            // Stream this chunk directly to client
+                            echo "data: " . json_encode(["choices" => [["delta" => ["content" => $delta['content']]]]]) . "\n\n";
+                            flush();
+                        }
+
+                        if (isset($delta['reasoning_content']) && $delta['reasoning_content'] !== null) {
+                            echo "data: " . json_encode(["choices" => [["delta" => ["reasoning_content" => $delta['reasoning_content']]]]]) . "\n\n";
+                            flush();
+                        }
+
+                        // Collect tool calls
+                        if (isset($delta['tool_calls'])) {
+                            foreach ($delta['tool_calls'] as $tc) {
+                                $idx = $tc['index'];
+                                if (!isset($tool_calls_buffer[$idx])) {
+                                    $tool_calls_buffer[$idx] = [
+                                        "id" => $tc['id'] ?? "",
+                                        "type" => "function",
+                                        "function" => [
+                                            "name" => $tc['function']['name'] ?? "",
+                                            "arguments" => $tc['function']['arguments'] ?? ""
+                                        ]
+                                    ];
+
+                                    // Let the frontend know we are using a tool!
+                                    if (!empty($tc['function']['name'])) {
+                                        echo "data: " . json_encode(["event" => "tool_call", "name" => $tc['function']['name']]) . "\n\n";
+                                        flush();
+                                    }
+                                } else {
+                                    if (isset($tc['function']['arguments'])) {
+                                        $tool_calls_buffer[$idx]['function']['arguments'] .= $tc['function']['arguments'];
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return strlen($chunk);
+        });
+
+        curl_exec($ch);
+        $err = curl_error($ch);
+        curl_close($ch);
+
+        if ($err) {
+            $err_msg = "Error Oraculi: " . $err;
+            echo "data: " . json_encode(["choices" => [["delta" => ["content" => $err_msg]]]]) . "\n\n";
+            $final_response_content .= $err_msg;
+            break;
+        }
+
+        // Add the assistant's message to history
+        $assistant_message = ["role" => "assistant"];
+        if (!empty($current_content)) {
+            $assistant_message["content"] = $current_content;
+        }
+
+        // Prepare tool calls for history
+        if (!empty($tool_calls_buffer)) {
+            $assistant_message["tool_calls"] = array_values($tool_calls_buffer);
+            $messages[] = $assistant_message;
+
+            // Execute the tools
+            foreach ($tool_calls_buffer as $tc) {
+                $tool_name = $tc['function']['name'];
+                $args = json_decode($tc['function']['arguments'], true) ?: [];
+                $query = $args['query'] ?? '';
+
+                $tool_result = "";
+                if ($tool_name === 'search_web') {
+                    $tool_result = investigare_in_tela($query);
+                } elseif ($tool_name === 'search_knowledge_base') {
+                    $rag_resp = loqui_cum_daemonio("INVESTIGARE|" . $query);
+                    $partes_rag = explode("|", $rag_resp);
+                    $tool_result = ($partes_rag[0] == "200") ? $partes_rag[2] : "Nihil inventum.";
+                } else {
+                    $tool_result = "Instrumentum ignotum.";
+                }
+
+                $messages[] = [
+                    "tool_call_id" => $tc['id'],
+                    "role" => "tool",
+                    "name" => $tool_name,
+                    "content" => $tool_result
+                ];
+            }
+            // Loop continues because we appended tool results
+        } else {
+            // No tool calls, we are done
+            break;
+        }
+    }
+
+    // Send final DONE
+    echo "data: [DONE]\n\n";
+    flush();
 
     // Save bot response
-    $clean_resp = str_replace(["\r", "\n"], " ", trim($full_response));
+    $clean_resp = str_replace(["\r", "\n"], " ", trim($final_response_content));
     if (empty($clean_resp))
         $clean_resp = "Oraculum mutum est.";
     loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
