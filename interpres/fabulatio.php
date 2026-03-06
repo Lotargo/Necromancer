@@ -281,16 +281,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                             chatListEl.appendChild(li);
                         });
                     }
-                    if (selectDefault && rooms.length > 0) {
-                        selectRoom(rooms[0]);
-                    } else if (selectDefault && rooms.length === 0) {
-                        selectRoom('default'); 
+                    if (selectDefault) {
+                        const roomToSelect = rooms.length > 0 ? rooms[0] : 'default';
+                        selectRoom(roomToSelect, false); // Don't refresh sidebar again during selection
                     }
                 });
         }
 
-        function selectRoom(room) {
-            if (currentRoom === room) return; // Ignore clicks if already selected
+        function selectRoom(room, refreshSidebar = true) {
+            if (currentRoom === room && !refreshSidebar) return; 
             currentRoom = room;
             roomLabel.textContent = `[${room}]`;
             nuntiusInput.disabled = false;
@@ -298,18 +297,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             
             // Visual Update Without Full Fetch Before Load
             Array.from(chatListEl.children).forEach(li => {
-                li.classList.remove('active');
-                if (li.querySelector('.chat-item-name').textContent === room) {
-                    li.classList.add('active');
+                const nameEl = li.querySelector('.chat-item-name');
+                if (nameEl) {
+                    li.classList.toggle('active', nameEl.textContent === room);
                 }
             });
+
+            if (refreshSidebar) {
+                // Ensure the list shows the currentRoom even if it's virtual
+                loadChats(false);
+            }
 
             fetch('api.php?action=load&room=' + room)
                 .then(r => r.text())
                 .then(text => {
                     chatEl.textContent = text || 'Nihil scriptum est...';
                     chatEl.scrollTop = chatEl.scrollHeight;
-                    // loadChats(); // We no longer need to fully reload the sidebar just for selecting a room
                 })
                 .catch(err => console.error("Error loading chat:", err));
         }
@@ -456,8 +459,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                 try {
                                     const dataNode = JSON.parse(dataStr);
                                     if (dataNode.event === 'renamed') {
+                                        const oldRoom = currentRoom;
                                         currentRoom = dataNode.new_room;
                                         roomLabel.textContent = `[${currentRoom}]`;
+                                        // Clean up virtualRooms
+                                        virtualRooms = virtualRooms.filter(r => r !== oldRoom);
+                                        loadChats();
                                     } else if (dataNode.choices && dataNode.choices[0].delta.content) {
                                         chatEl.textContent += dataNode.choices[0].delta.content;
                                         chatEl.scrollTop = chatEl.scrollHeight;
