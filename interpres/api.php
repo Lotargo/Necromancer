@@ -167,6 +167,74 @@ if ($action === 'delete') {
     exit();
 }
 
+if ($action === 'renominare_usorem') {
+    $novum_nomen = trim($_POST['novum_nomen'] ?? '');
+    if (empty($novum_nomen)) {
+        echo json_encode(["status" => "error", "message" => "Nomen vacuum est"]);
+        exit();
+    }
+
+    $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '', $novum_nomen);
+    if ($safeName) {
+        $resp = loqui_cum_daemonio("RENOMINARE_USOREM|" . $usor . "|" . $safeName . "|" . $user_fp);
+        $partes = explode("|", $resp);
+        if ($partes[0] == "200") {
+            $_SESSION["usor"] = $safeName;
+            echo json_encode(["status" => "ok", "novum_nomen" => $safeName]);
+        } else {
+            echo json_encode(["status" => "error", "message" => $partes[2] ?? 'Error']);
+        }
+    } else {
+        echo json_encode(["status" => "error", "message" => "Nomen non validum"]);
+    }
+    exit();
+}
+
+if ($action === 'mutare_tessaram') {
+    $vetus_pass = $_POST['vetus_pass'] ?? '';
+    $nova_pass = $_POST['nova_pass'] ?? '';
+
+    if (empty($vetus_pass) || empty($nova_pass)) {
+        echo json_encode(["status" => "error", "message" => "Tessera vacua est"]);
+        exit();
+    }
+
+    $resp = loqui_cum_daemonio("MUTARE_TESSARAM|" . $usor . "|" . $vetus_pass . "|" . $nova_pass . "|" . $user_fp);
+    $partes = explode("|", $resp);
+
+    if ($partes[0] == "200") {
+        echo json_encode(["status" => "ok"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => $partes[2] ?? 'Error']);
+    }
+    exit();
+}
+
+if ($action === 'delere_rationem') {
+    $resp = loqui_cum_daemonio("DELERE_RATIONEM|" . $usor . "|" . $user_fp);
+    $partes = explode("|", $resp);
+
+    if ($partes[0] == "200") {
+        session_destroy();
+        echo json_encode(["status" => "ok"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => $partes[2] ?? 'Error']);
+    }
+    exit();
+}
+
+if ($action === 'delere_omnes_fabulationes') {
+    $resp = loqui_cum_daemonio("DELERE_OMNES_FABULATIONES|" . $usor . "|" . $user_fp);
+    $partes = explode("|", $resp);
+
+    if ($partes[0] == "200") {
+        echo json_encode(["status" => "ok"]);
+    } else {
+        echo json_encode(["status" => "error", "message" => $partes[2] ?? 'Error']);
+    }
+    exit();
+}
+
 if ($action === 'rename') {
     $new_room = trim($_POST['new_room'] ?? '');
     if (!empty($new_room)) {
