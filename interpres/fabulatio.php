@@ -8,107 +8,16 @@ if (!isset($_SESSION["usor"])) {
 
 $usor = $_SESSION["usor"];
 
-function loqui_cum_daemonio($mandatum)
-{
-    $daemonium_host = getenv("DAEMONIUM_HOST") ?: "127.0.0.1";
-    $fp = fsockopen($daemonium_host, 8080, $errno, $errstr, 10);
-    if (!$fp) {
-        return "500|Error|Daemonium non respondet";
-    }
-    fwrite($fp, $mandatum . "\n");
-    $responsum = fgets($fp, 4096);
-    fclose($fp);
-    return trim($responsum);
-}
-
-function invocare_oraculum($contextus, $interrogatio)
-{
-    $apikey = getenv("OPENAI_API_KEY");
-    if (!$apikey) {
-        return "Clavis API deest. Dicent mihi Oraculum non respondere.";
-    }
-
-    $promptus = "Contextus: " . $contextus . "\nInterrogatio: " . $interrogatio . "\nResponde Latine.";
-
-    $model = getenv("OPENAI_API_MODEL") ?: "gpt-3.5-turbo";
-    $data = [
-        "model" => $model,
-        "messages" => [
-            ["role" => "system", "content" => "Tu es philosophus Romanus. Responde semper Latine."],
-            ["role" => "user", "content" => $promptus]
-        ],
-        "max_tokens" => 300
-    ];
-
-    $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
-    $ch = curl_init($api_url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Content-Type: application/json",
-        "Authorization: Bearer " . $apikey
-    ]);
-
-    $result = curl_exec($ch);
-    if (curl_errno($ch)) {
-        return "Error Oraculi: " . curl_error($ch);
-    }
-    curl_close($ch);
-
-    $json = json_decode($result, true);
-    if (isset($json["choices"][0]["message"]["content"])) {
-        return $json["choices"][0]["message"]["content"];
-    }
-    else {
-        return "Oraculum mutum est. (Codex: " . htmlspecialchars($result) . ")";
-    }
-}
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    if (isset($_POST["exire"])) {
-        session_destroy();
-        header("Location: index.php");
-        exit();
-    }
-
-    if (!empty(trim($_POST["nuntius"]))) {
-        $nuntius = trim($_POST["nuntius"]);
-
-        // Add User Message
-        loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|Tute: " . $nuntius);
-
-        // RAG: Query Knowledge Base
-        $rag_resp = loqui_cum_daemonio("INVESTIGARE|" . $nuntius);
-        $partes_rag = explode("|", $rag_resp);
-        $contextus = "";
-        if ($partes_rag[0] == "200") {
-            $contextus = $partes_rag[2];
-        }
-
-        // LLM Call
-        $responsum_oraculi = invocare_oraculum($contextus, $nuntius);
-
-        // Add LLM Message
-        $responsum_oraculi = str_replace(array("\r", "\n"), " ", $responsum_oraculi);
-        loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|Oraculum: " . $responsum_oraculi);
-
-        header("Location: fabulatio.php");
-        exit();
-    }
-}
-
-$resp_historia = loqui_cum_daemonio("LEGENDE_NUNTIOS|" . $usor);
-$partes_hist = explode("|", $resp_historia, 3);
-$historia = "";
-if ($partes_hist[0] == "200") {
-    $historia = $partes_hist[2];
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
+    session_destroy();
+    header("Location: index.php");
+    exit();
 }
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Fabulatio</title>
+    <title>Fabulatio - Necronomicon</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
@@ -126,26 +35,55 @@ if ($partes_hist[0] == "200") {
             z-index: 99; background-size: 100% 2px, 3px 100%; pointer-events: none;
         }
 
-        .container {
-            width: 90%; max-width: 1000px;
-            border: 2px solid #00FF00; padding: 30px; 
-            box-shadow: 0 0 20px #00FF00, inset 0 0 10px #00FF00;
-            background-color: #000; position: relative; z-index: 10;
+        .layout-wrapper {
+            display: flex; gap: 20px; width: 95%; max-width: 1400px; height: 80vh;
+            position: relative; z-index: 10;
+        }
+
+        /* Bookshelf Sidebar */
+        .sidebar {
+            width: 250px; border: 2px solid #00FF00; padding: 15px;
+            box-shadow: 0 0 20px #00FF00, inset 0 0 10px #00FF00; background-color: #000;
+            display: flex; flex-direction: column;
+        }
+        
+        .sidebar h2 { margin-top: 0; text-shadow: 0 0 5px #00FF00; border-bottom: 1px dotted #00FF00; padding-bottom: 10px; }
+
+        .chat-list { list-style: none; padding: 0; flex-grow: 1; overflow-y: auto; margin-top: 0; }
+        
+        .chat-item {
+            padding: 10px; border: 1px dashed #007700; margin-bottom: 10px; cursor: pointer;
+            display: flex; justify-content: space-between; align-items: center; font-size: 20px;
+        }
+        
+        .chat-item:hover, .chat-item.active { background-color: #002200; border-style: solid; border-color: #00FF00; }
+        
+        .chat-item-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; }
+        
+        .del-btn { color: #ff3333; cursor: pointer; border: none; background: none; font-family: inherit; font-size: 20px; text-shadow: 0 0 2px red;}
+        .del-btn:hover { color: #ff0000; font-weight: bold; background: #330000;}
+
+        /* Main Chat Window */
+        .main-chat {
+            flex-grow: 1; border: 2px solid #00FF00; padding: 30px; 
+            box-shadow: 0 0 20px #00FF00, inset 0 0 10px #00FF00; background-color: #000;
+            display: flex; flex-direction: column;
         }
 
         h1 { font-size: 36px; text-shadow: 0 0 5px #00FF00; margin-top: 0;}
         
-        input[type="text"], input[type="submit"] { 
+        input[type="text"], input[type="submit"], button { 
             background-color: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px; 
             font-family: 'VT323', "Courier New", Courier, monospace; font-size: 24px;
         }
-        input[type="submit"]:hover { background-color: #00FF00; color: #000; cursor: pointer; }
+        input[type="submit"]:hover, button:hover { background-color: #00FF00; color: #000; cursor: pointer; }
+        input[type="submit"]:disabled, input[type="text"]:disabled { opacity: 0.5; cursor: not-allowed; }
         
         #chat { 
-            width: 100%; height: 50vh; border: 1px solid #00FF00; overflow-y: auto; 
+            width: 100%; flex-grow: 1; border: 1px solid #00FF00; overflow-y: auto; 
             padding: 15px; white-space: pre-wrap; margin-bottom: 20px;
             box-sizing: border-box; font-size: 22px;
-            box-shadow: inset 0 0 10px #00FF00;
+            box-shadow: inset 0 0 10px #00FF00; scroll-behavior: smooth;
         }
         
         .blink { animation: blink-animation 1s steps(5, start) infinite; -webkit-animation: blink-animation 1s steps(5, start) infinite; }
@@ -159,15 +97,12 @@ if ($partes_hist[0] == "200") {
             display: flex; justify-content: center; align-items: center;
             opacity: 1; transition: opacity 0.5s ease;
         }
-        .welcome-content {
-            text-align: center; color: #00FF00;
-        }
+        .welcome-content { text-align: center; color: #00FF00; }
         .welcome-text {
             font-size: 36px; font-weight: bold; overflow: hidden; white-space: pre-wrap; margin: 0 auto;
             border-right: .15em solid #00FF00; animation: blink-caret .75s step-end infinite;
         }
     </style>
-    <meta http-equiv="refresh" content="10"> <!-- Auto refresh every 10 seconds -->
 </head>
 <body>
     <div id="welcome-modal">
@@ -176,41 +111,48 @@ if ($partes_hist[0] == "200") {
         </div>
     </div>
 
-    <div class="container">
-        <h1>Forum: <?php echo htmlspecialchars($usor); ?> <span class="blink">_</span></h1>
-        <div id="chat"><?php
-if ($historia) {
-    echo htmlspecialchars(str_replace('\n', "\n", $historia));
-}
-else {
-    echo "Nihil scriptum est...";
-}
-?></div>
+    <div class="layout-wrapper">
+        <div class="sidebar">
+            <h2>Pluteus (Chats)</h2>
+            <button onclick="createNewChat()" style="margin-bottom: 15px; background-color: #003300;">+ Nova Fabulatio</button>
+            <ul class="chat-list" id="chat-list">
+                <!-- Chats will load here via JS -->
+            </ul>
+            <form method="POST" action="fabulatio.php" style="margin-top:auto;">
+                <input type="submit" name="exire" value="Exire (Logout)" style="width:100%; background: #330000; color: #ff3333; border-color: #ff3333;">
+            </form>
+        </div>
 
-        <form method="POST" action="fabulatio.php" style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <input type="text" name="nuntius" style="flex-grow: 1;" autofocus autocomplete="off" placeholder="Dicent...">
-            <input type="submit" value="Mittere (Send)">
-        </form>
-        
-        <form method="POST" action="fabulatio.php" style="text-align: right;">
-            <input type="submit" name="exire" value="Exire (Logout)">
-        </form>
+        <div class="main-chat">
+            <h1>Forum: <?php echo htmlspecialchars($usor); ?> <span class="blink">_</span> <span id="current-room-label" style="font-size: 24px; color: #008800; float: right;"></span></h1>
+            <div id="chat">Eligere fabulationem e pluteo...</div>
+
+            <form id="chat-form" style="display: flex; gap: 10px;">
+                <input type="text" id="nuntius" name="nuntius" style="flex-grow: 1;" autocomplete="off" placeholder="Dicent..." disabled>
+                <input type="submit" id="send-btn" value="Mittere (Send)" disabled>
+            </form>
+        </div>
     </div>
 
     <script>
+        let currentRoom = '';
         const chatEl = document.getElementById("chat");
-        chatEl.scrollTop = chatEl.scrollHeight; // Auto-scroll to bottom
+        const chatListEl = document.getElementById("chat-list");
+        const chatForm = document.getElementById("chat-form");
+        const nuntiusInput = document.getElementById("nuntius");
+        const sendBtn = document.getElementById("send-btn");
+        const roomLabel = document.getElementById("current-room-label");
 
         // Welcome Animation Logic
         const welcomeText = "CONEXIO STABILITA...\nSALVE, <?php echo htmlspecialchars($usor); ?>.\nORACULUM TE EXSPECTAT.";
         const typeEl = document.getElementById("welcome-typewriter");
         const modalEl = document.getElementById("welcome-modal");
-        let i = 0;
+        let typeI = 0;
 
         function typeWriterWelcome() {
-            if (i < welcomeText.length) {
-                typeEl.innerHTML += welcomeText.charAt(i) === '\n' ? '<br/>' : welcomeText.charAt(i);
-                i++;
+            if (typeI < welcomeText.length) {
+                typeEl.innerHTML += welcomeText.charAt(typeI) === '\n' ? '<br/>' : welcomeText.charAt(typeI);
+                typeI++;
                 setTimeout(typeWriterWelcome, 40);
             } else {
                 setTimeout(closeWelcomeModal, 800);
@@ -223,6 +165,7 @@ else {
         }
 
         window.onload = () => {
+            loadChats(true);
             const sessionKey = 'welcomeShown_<?php echo htmlspecialchars($usor); ?>';
             if (!sessionStorage.getItem(sessionKey)) {
                 typeWriterWelcome();
@@ -233,6 +176,133 @@ else {
         };
 
         modalEl.addEventListener('click', closeWelcomeModal);
+
+        // AJAX Chat Logic
+        function loadChats(selectDefault = false) {
+            fetch('api.php?action=list')
+                .then(r => r.json())
+                .then(data => {
+                    chatListEl.innerHTML = '';
+                    let hasRooms = false;
+                    if (data.rooms && data.rooms.length > 0 && data.rooms[0] !== "") {
+                        hasRooms = true;
+                        data.rooms.forEach(room => {
+                            const li = document.createElement('li');
+                            li.className = 'chat-item' + (room === currentRoom ? ' active' : '');
+                            li.innerHTML = `<span class="chat-item-name" onclick="selectRoom('${room}')">${room}</span> 
+                                          <button class="del-btn" onclick="deleteRoom('${room}', event)">[X]</button>`;
+                            chatListEl.appendChild(li);
+                        });
+                    }
+                    if (selectDefault && hasRooms) {
+                        selectRoom(data.rooms[0]);
+                    } else if (selectDefault && !hasRooms) {
+                        selectRoom('default'); 
+                    }
+                });
+        }
+
+        function selectRoom(room) {
+            currentRoom = room;
+            roomLabel.textContent = `[${room}]`;
+            nuntiusInput.disabled = false;
+            sendBtn.disabled = false;
+            fetch('api.php?action=load&room=' + room)
+                .then(r => r.text())
+                .then(text => {
+                    chatEl.textContent = text || 'Nihil scriptum est...';
+                    chatEl.scrollTop = chatEl.scrollHeight;
+                    loadChats(); // refresh active state in sidebar
+                })
+                .catch(err => console.error("Error loading chat:", err));
+        }
+
+        function createNewChat() {
+            const name = prompt("Quod est nomen novae fabulationis? (Name of new chat?)");
+            if (name) {
+                const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '');
+                if (safeName) {
+                    selectRoom(safeName);
+                }
+            }
+        }
+
+        function deleteRoom(room, event) {
+            event.stopPropagation();
+            if (confirm("Visne delere fabulationem: " + room + "?")) {
+                fetch('api.php?action=delete&room=' + room)
+                    .then(() => {
+                        if (currentRoom === room) {
+                            chatEl.textContent = "Eligere fabulationem e pluteo...";
+                            currentRoom = '';
+                            nuntiusInput.disabled = true;
+                            sendBtn.disabled = true;
+                            roomLabel.textContent = '';
+                        }
+                        loadChats();
+                    });
+            }
+        }
+
+        chatForm.onsubmit = function(e) {
+            e.preventDefault();
+            const msg = nuntiusInput.value.trim();
+            if (!msg || !currentRoom) return;
+
+            nuntiusInput.value = '';
+            nuntiusInput.disabled = true;
+            sendBtn.disabled = true;
+
+            const divider = chatEl.textContent === 'Nihil scriptum est...' ? '' : '\n';
+            chatEl.textContent += divider + "Tute: " + msg + "\nOraculum: ";
+            chatEl.scrollTop = chatEl.scrollHeight;
+
+            const formData = new URLSearchParams();
+            formData.append('action', 'send');
+            formData.append('room', currentRoom);
+            formData.append('nuntius', msg);
+
+            fetch('api.php', {
+                method: 'POST',
+                body: formData,
+            }).then(response => {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+
+                function read() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            nuntiusInput.disabled = false;
+                            sendBtn.disabled = false;
+                            nuntiusInput.focus();
+                            loadChats(); // refresh list in case it was a new chat
+                            return;
+                        }
+                        const chunk = decoder.decode(value, {stream: true});
+                        const lines = chunk.split('\n');
+                        for (let line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const dataStr = line.substring(6).trim();
+                                if (dataStr === '[DONE]') continue;
+                                try {
+                                    const dataNode = JSON.parse(dataStr);
+                                    if (dataNode.choices && dataNode.choices[0].delta.content) {
+                                        chatEl.textContent += dataNode.choices[0].delta.content;
+                                        chatEl.scrollTop = chatEl.scrollHeight;
+                                    }
+                                } catch(e) {}
+                            }
+                        }
+                        read();
+                    });
+                }
+                read();
+            }).catch(err => {
+                chatEl.textContent += "\nError: " + err;
+                nuntiusInput.disabled = false;
+                sendBtn.disabled = false;
+            });
+        };
     </script>
 </body>
 </html>
