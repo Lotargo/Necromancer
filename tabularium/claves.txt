@@ -1,4 +1,0 @@
-gemini|sk-gemini-fake-key|https://generativelanguage.googleapis.com/v1beta/openai/chat/completions|gemini-1.5-flash
-groq|sk-groq-fake-key|https://api.groq.com/openai/v1/chat/completions|llama3-8b-8192
-cerebras|sk-cerebras-fake-key|https://api.cerebras.ai/v1/chat/completions|llama3.1-8b
-sambanova|sk-sambanova-fake-key|https://api.sambanova.ai/v1/chat/completions|Meta-Llama-3.1-8B-Instruct

@@ -1,0 +1,2 @@
+sk-groq-fake-key-1
+sk-groq-fake-key-2

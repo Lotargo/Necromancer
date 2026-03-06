@@ -1,0 +1,2 @@
+sk-gemini-fake-key-1
+sk-gemini-fake-key-2
