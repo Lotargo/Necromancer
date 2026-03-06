@@ -7,9 +7,9 @@ uses
 
 const
   PORTUS = 8080;
-  TABULARIUM_USORES = 'tabularium/usores.txt';
-  TABULARIUM_SCIENTIA = 'tabularium/scientia/scientia.txt';
-  PREFIXUS_FABULATIO = 'tabularium/fabulatio_';
+  TABULARIUM_USORES = '../tabularium/usores.txt';
+  TABULARIUM_SCIENTIA = '../tabularium/scientia/scientia.txt';
+  PREFIXUS_FABULATIO = '../tabularium/fabulatio_';
 
 type
   TResponsum = record
