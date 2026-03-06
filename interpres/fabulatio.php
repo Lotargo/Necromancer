@@ -44,7 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         .sidebar {
             width: 250px; border: 2px solid #00FF00; padding: 15px;
             box-shadow: 0 0 20px #00FF00, inset 0 0 10px #00FF00; background-color: #000;
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; height: 100%; box-sizing: border-box;
         }
         
         .sidebar h2 { margin-top: 0; text-shadow: 0 0 5px #00FF00; border-bottom: 1px dotted #00FF00; padding-bottom: 10px; }
@@ -70,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         .main-chat {
             flex-grow: 1; border: 2px solid #00FF00; padding: 30px; 
             box-shadow: 0 0 20px #00FF00, inset 0 0 10px #00FF00; background-color: #000;
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; overflow: hidden; height: 100%; box-sizing: border-box;
         }
 
         h1 { font-size: 36px; text-shadow: 0 0 5px #00FF00; margin-top: 0;}
@@ -531,6 +531,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                         // Clean up virtualRooms
                                         virtualRooms = virtualRooms.filter(r => r !== oldRoom);
                                         loadChats();
+                                    } else if (dataNode.event === 'debug') {
+                                        console.log("SSE Debug:", dataNode);
                                     } else if (dataNode.choices && dataNode.choices[0].delta.content) {
                                         chatEl.textContent += dataNode.choices[0].delta.content;
                                         chatEl.scrollTop = chatEl.scrollHeight;
