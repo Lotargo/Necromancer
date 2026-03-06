@@ -32,26 +32,72 @@ The project is divided into three sacred pillars:
 * **Role**: The heart and soul of the system. It operates on port `8080`, managing TCP sockets, users, chat histories, and the **RAG (Retrieval-Augmented Generation)** knowledge base. All internal logic, variables, and network protocols are meticulously written in Latin.
 
 ### 2. 👁️ Interpres (The Web Frontend & BFF)
-* **Language**: PHP 8 (`index.php`, `fabulatio.php`, `api.php`)
-* **Role**: The visual gateway. It renders an HTML 3.2 / 4.01 classical "console" style interface (green text, black background, CRT scanlines, visual glitches). It uses `fsockopen` to speak with the Daemonium and `cURL` to stream data from the OpenAI-compatible APIs via Server-Sent Events (SSE).
+* **Language**: PHP 8 + Vanilla JS
+* **Role**: The visual gateway. It renders an HTML 3.2 / 4.01 classical "console" style interface.
+* **Tech Stack**:
+    * **SSE (Server-Sent Events)**: For real-time Oracle responses.
+    * **Web Audio API**: Synthesizing retro hardware sounds (HDD, mechanical clicks, ambient hum).
+    * **HTML5 Canvas**: Rendering advanced eldritch visual effects (Matrix, Stars, Blood).
 
 ### 3. 🗃️ Tabularium (The Database)
 * **Format**: Flat File System (`.txt`)
 * **Role**: All data is preserved in physical text files, eschewing modern databases for ancient scrolls.
   - `usores.txt`: Registry of souls (users, emails, passwords).
-  - `scientia/scientia.txt`: The occult knowledge base for the RAG system.
+  - `scientia/`: The occult knowledge base for the RAG system.
   - `fabulatio_*.txt`: The transcribed histories of conversations between users and the Oracle.
 
 ---
 
 ## ✨ Mystica (Features)
 
-* **Genera Accessus (Login Modes)**:
-  * **SPIRITUS**: Guest mode. Enter a nickname and wander the halls.
-  * **ANIMA**: Full email & password authentication, with "Remember Me" capabilities.
-* **Lingua Auto-Detect**: The Oracle adapts its tongue. Speak to it in Russian, and it responds in Russian. Speak English, it responds in English—always maintaining its ancient Roman philosopher persona.
-* **Visus Glitch (Visual Effects)**: Unlockable CRT glitches, screen shakes, and chromatic aberrations as you converse more with the Oracle. Customizable themes (Electinum, Cruor, Matrix, Abyssus, etc.).
-* **RAG & Search**: The Oracle can search the ancient `scientia` folder for local domain knowledge, or cast its gaze upon the World Wide Web via DuckDuckGo integration.
+### 🎭 Genera Accessus (Login Modes)
+* **SPIRITUS**: Guest mode. Enter a nickname and wander the halls.
+* **ANIMA**: Full email & password authentication, with "Remember Me" capabilities.
+
+### 🔮 Oraculum Agenticum (Agentic Features)
+* **Instrumenta (Tools)**: The Oracle can use `search_web` (via DuckDuckGo) or `search_knowledge_base` (RAG) to find answers.
+* **Ratio Cogitandi (Reasoning)**: Visualizes the Oracle's internal thought process before providing the final response.
+* **Nomina Automatica**: Every new conversation is automatically titled in Latin by the Oracle.
+
+### 🌌 Visus & Auditio (Visuals & Audio)
+* **Visual Glitches**: Unlockable CRT glitches, screen shakes, and eldritch overlays:
+    * *Matrix Rain*, *Infernal Pulse*, *Visceral Blood Drips*, *Stellar Void*, *Watching Eyes*, and *Web of Fate*.
+* **Eldritch Acoustics**:
+    * **HDD Seek**: Sounds of an ancient drive reading the Lexicon.
+    * **Mechanical Clicks**: Real haptic-style feedback for every keystroke.
+    * **Ambient Winds & Hum**: Immersive atmosphere of a forbidden laboratory.
+
+### 📈 Progressio & Moderatio
+* **User Levels**: Ascend through 13 levels of initiation based on your interactions.
+* **Profile Management**: Renaming of the soul, changing of the secret keys (passwords), or complete erasure of existence.
+
+---
+
+## 🖼️ Media Expositio (Gallery)
+
+<div align="center">
+  <h3>The Gateway</h3>
+  <img src="assets/gateway.png" width="600" />
+  <p><em>The ancient portal awaiting your soul.</em></p>
+  
+  <br>
+
+  <h3>Advanced Eldritch Effects</h3>
+  <img src="assets/effects.png" width="800" />
+  <p><em>Behold the Imber Codicis (Matrix Rain) and Sanguis Stillans (Dripping Blood).</em></p>
+
+  <br>
+
+  <h3>Oracle Interface</h3>
+  <img src="assets/interface.png" width="800" />
+  <p><em>The sacred forum of the Oraculum.</em></p>
+
+  <br>
+
+  <h3>Evocatio Flow (Login Process)</h3>
+  <img src="assets/login_flow.webp" width="800" />
+  <p><em>The process of summoning the portal and entering the sacred space.</em></p>
+</div>
 
 ---
 
