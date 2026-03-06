@@ -13,6 +13,7 @@ const
   PREFIXUS_FP = '../tabularium/fp_';
   TABULARIUM_REGISTRUM = '../tabularium/registrum.txt';
   SPIRITUS_MAIL_LOG = '../tabularium/spiritus_mail.log';
+  PREFIXUS_OPTIONES = '../tabularium/optiones_';
 
 type
   TResponsum = record
@@ -416,6 +417,10 @@ begin
   if FileExists(PREFIXUS_FP + VetusNomen + '.txt') then
     RenameFile(PREFIXUS_FP + VetusNomen + '.txt', PREFIXUS_FP + NovumNomen + '.txt');
 
+  // 4b. Rename optiones file
+  if FileExists(PREFIXUS_OPTIONES + VetusNomen + '.txt') then
+    RenameFile(PREFIXUS_OPTIONES + VetusNomen + '.txt', PREFIXUS_OPTIONES + NovumNomen + '.txt');
+
   // 5. Rename all fabulatio files
   if FindFirst(PREFIXUS_FABULATIO + VetusNomen + '_*.txt', faAnyFile, SR) = 0 then
   begin
@@ -531,6 +536,10 @@ begin
   if FileExists(PREFIXUS_FP + Nomen + '.txt') then
     DeleteFile(PREFIXUS_FP + Nomen + '.txt');
 
+  // 3b. Delete optiones file
+  if FileExists(PREFIXUS_OPTIONES + Nomen + '.txt') then
+    DeleteFile(PREFIXUS_OPTIONES + Nomen + '.txt');
+
   // 4. Delete all fabulatio files
   if FindFirst(PREFIXUS_FABULATIO + Nomen + '_*.txt', faAnyFile, SR) = 0 then
   begin
@@ -558,6 +567,58 @@ begin
   end;
 
   Result := FormareResponsum(200, 'Successus', IntToStr(Comes) + ' fabulationes deletae sunt');
+end;
+
+function NumerareNuntiosUsoris(Nomen: String): String;
+var
+  SR: TSearchRec;
+  F: TextFile;
+  Comes: Integer;
+begin
+  Comes := 0;
+  if FindFirst(PREFIXUS_FABULATIO + Nomen + '_*.txt', faAnyFile, SR) = 0 then
+  begin
+    repeat
+      AssignFile(F, '../tabularium/' + SR.Name);
+      Reset(F);
+      while not EOF(F) do
+      begin
+        ReadLn(F);
+        Inc(Comes);
+      end;
+      CloseFile(F);
+    until FindNext(SR) <> 0;
+    FindClose(SR);
+  end;
+  Result := FormareResponsum(200, 'Successus', IntToStr(Comes));
+end;
+
+function ServareOptiones(Nomen, Optiones: String): String;
+var
+  F: TextFile;
+begin
+  AssignFile(F, PREFIXUS_OPTIONES + Nomen + '.txt');
+  Rewrite(F);
+  WriteLn(F, Optiones);
+  CloseFile(F);
+  Result := FormareResponsum(200, 'Successus', 'Optiones servatae sunt');
+end;
+
+function LegereOptiones(Nomen: String): String;
+var
+  F: TextFile;
+  Optiones: String;
+begin
+  if FileExists(PREFIXUS_OPTIONES + Nomen + '.txt') then
+  begin
+    AssignFile(F, PREFIXUS_OPTIONES + Nomen + '.txt');
+    Reset(F);
+    ReadLn(F, Optiones);
+    CloseFile(F);
+    Result := FormareResponsum(200, 'Successus', Optiones);
+  end
+  else
+    Result := FormareResponsum(404, 'Error', 'Nullae optiones inventae');
 end;
 
 { RAG: Investigare in Scientia }
@@ -749,6 +810,36 @@ begin
       begin
         if VerificareFingerprint(Parametrum1, Parametrum2) then
           Responsum := DelereOmnesFabulationes(Parametrum1)
+        else
+          Responsum := FormareResponsum(403, 'Error', 'FP mismatch');
+      end;
+    end
+    else if Mandatum = 'NUMERARE_NUNTIOS' then
+    begin
+      if DataInput.Count > 2 then
+      begin
+        if VerificareFingerprint(Parametrum1, Parametrum2) then
+          Responsum := NumerareNuntiosUsoris(Parametrum1)
+        else
+          Responsum := FormareResponsum(403, 'Error', 'FP mismatch');
+      end;
+    end
+    else if Mandatum = 'SERVARE_OPTIONES' then
+    begin
+      if DataInput.Count > 3 then
+      begin
+        if VerificareFingerprint(Parametrum1, DataInput[3]) then
+          Responsum := ServareOptiones(Parametrum1, Parametrum2)
+        else
+          Responsum := FormareResponsum(403, 'Error', 'FP mismatch');
+      end;
+    end
+    else if Mandatum = 'LEGERE_OPTIONES' then
+    begin
+      if DataInput.Count > 2 then
+      begin
+        if VerificareFingerprint(Parametrum1, Parametrum2) then
+          Responsum := LegereOptiones(Parametrum1)
         else
           Responsum := FormareResponsum(403, 'Error', 'FP mismatch');
       end;
