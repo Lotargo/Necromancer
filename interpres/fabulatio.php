@@ -116,9 +116,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             border: 2px solid #00FF00; padding: 30px; text-align: center;
             background-color: #000; box-shadow: 0 0 20px #00FF00;
         }
-        #new-chat-input { width: 80%; margin-bottom: 20px; text-align: center; }
+        #new-chat-input, #rename-chat-input { width: 80%; margin-bottom: 20px; text-align: center; }
         .cancel-btn { background-color: #330000; color: #ff3333; border-color: #ff3333; }
         .cancel-btn:hover { background-color: #ff3333; color: #fff; }
+
+        /* Rename Chat Modal Styles */
+        #rename-chat-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85); z-index: 9998;
+            display: none; justify-content: center; align-items: center;
+        }
+        .rename-chat-content {
+            border: 2px solid #00FF00; padding: 30px; text-align: center;
+            background-color: #000; box-shadow: 0 0 20px #00FF00;
+        }
     </style>
 </head>
 <body>
@@ -137,6 +148,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             <div style="margin-top: 20px;">
                 <button onclick="submitNewChat()" style="margin-right: 15px;">Creare (Create)</button>
                 <button onclick="closeNewChatModal()" class="cancel-btn">Inducere (Cancel)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Chat Modal -->
+    <div id="rename-chat-modal">
+        <div class="rename-chat-content">
+            <h2 style="margin-top: 0; text-shadow: 0 0 5px #00FF00;">Renominare Fabulationem</h2>
+            <p style="font-size: 24px;">Novum nomen pro: <span id="rename-room-name" style="color:#ffff00;"></span>?</p>
+            <input type="text" id="rename-chat-input" autocomplete="off" onkeydown="if(event.key === 'Enter') submitRenameChat()">
+            <div style="margin-top: 20px;">
+                <button onclick="submitRenameChat()" style="margin-right: 15px;">Renominare (Rename)</button>
+                <button onclick="closeRenameModal()" class="cancel-btn">Inducere (Cancel)</button>
             </div>
         </div>
     </div>
@@ -270,23 +294,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             }
         }
 
+        let roomToRename = '';
+
         function renameRoom(room, event) {
             event.stopPropagation();
-            const newName = prompt("Novum nomen pro: " + room + "? (New name?)", room);
-            if (newName && newName !== room) {
+            roomToRename = room;
+            document.getElementById('rename-room-name').textContent = room;
+            document.getElementById('rename-chat-modal').style.display = 'flex';
+            document.getElementById('rename-chat-input').value = room;
+            document.getElementById('rename-chat-input').select();
+        }
+
+        function closeRenameModal() {
+            document.getElementById('rename-chat-modal').style.display = 'none';
+        }
+
+        function submitRenameChat() {
+            const newName = document.getElementById('rename-chat-input').value.trim();
+            if (newName && newName !== roomToRename) {
                 const safeName = newName.replace(/[^a-zA-Z0-9_-]/g, '');
                 if (safeName) {
                     const formData = new URLSearchParams();
                     formData.append('action', 'rename');
-                    formData.append('room', room);
+                    formData.append('room', roomToRename);
                     formData.append('new_room', safeName);
                     
                     fetch('api.php', { method: 'POST', body: formData })
                         .then(() => {
-                            if (currentRoom === room) currentRoom = safeName;
+                            if (currentRoom === roomToRename) {
+                                currentRoom = safeName;
+                                roomLabel.textContent = `[${currentRoom}]`;
+                            }
                             loadChats();
+                            closeRenameModal();
                         });
                 }
+            } else {
+                closeRenameModal();
             }
         }
 
