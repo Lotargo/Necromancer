@@ -861,7 +861,13 @@ var
   Len: longint;
   OptVal: longint;
 begin
-  WriteLn('Daemonium surgit in portu ', PORTUS, '...');
+  WriteLn('------------------------------------------------');
+  WriteLn(' [!] ДЕМОН ПРОБУДИЛСЯ / DAEMON AWAKENED (Process #', fpgetpid, ')');
+  WriteLn(' [!] ВНИМАНИЕ: Если ты это читаешь, значит ты полез в логи докера. Зачем?');
+  WriteLn(' [!] WARNING: 640KB RAM IS ENOUGH FOR EVERYONE (Currently using: ', GetFPCHeapStatus.CurrHeapUsed div 1024, 'KB)');
+  WriteLn(' [!] ГОД ОТ РОЖДЕСТВА ХРИСТОВА / YEAR: ', FormatDateTime('yyyy', Now));
+  WriteLn('------------------------------------------------');
+  WriteLn('Daemonium audit in portu / Listening on port ', PORTUS, '...');
 
   ServusSock := fpSocket(AF_INET, SOCK_STREAM, 0);
   if ServusSock = -1 then
@@ -889,15 +895,12 @@ begin
     Halt(1);
   end;
 
-  WriteLn('Daemonium audit...');
-
   while True do
   begin
     Len := SizeOf(Adres);
     CliensSock := fpAccept(ServusSock, @Adres, @Len);
     if CliensSock <> -1 then
     begin
-      WriteLn('Cliens novus advenit.');
       TractareClientem(CliensSock);
     end;
   end;
