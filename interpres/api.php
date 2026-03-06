@@ -49,10 +49,61 @@ if ($action === 'delete') {
     exit();
 }
 
+if ($action === 'rename') {
+    $new_room = trim($_POST['new_room'] ?? '');
+    if (!empty($new_room)) {
+        $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '', $new_room);
+        if ($safeName) {
+            loqui_cum_daemonio("RENOMINARE_FABULATIONEM|" . $usor . "|" . $cubiculum . "|" . $safeName);
+        }
+    }
+    header('Content-Type: application/json');
+    echo json_encode(["status" => "ok"]);
+    exit();
+}
+
 if ($action === 'send') {
     $nuntius = trim($_POST['nuntius'] ?? '');
     if (empty($nuntius))
         exit();
+
+    // 0. Check if it's the first message in this room
+    $is_first = false;
+    $resp_hist = loqui_cum_daemonio("LEGENDE_NUNTIOS|" . $usor . "|" . $cubiculum);
+    $partes_hist = explode("|", $resp_hist, 3);
+    if ($partes_hist[0] !== "200" || trim($partes_hist[2]) === "") {
+        $is_first = true;
+    }
+
+    // 0.5 Auto-name if first message
+    $renamed_to = "";
+    $apikey = getenv("OPENAI_API_KEY");
+    if ($is_first && $apikey) {
+        $title_prompt = "Provide a very short 1-3 word title in Latin for this message: '" . $nuntius . "'. Keep it very brief, only the Latin words.";
+        $data_title = [
+            "model" => getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini",
+            "messages" => [["role" => "user", "content" => $title_prompt]],
+            "max_tokens" => 10
+        ];
+        $ch_t = curl_init(getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions");
+        curl_setopt($ch_t, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch_t, CURLOPT_POST, true);
+        curl_setopt($ch_t, CURLOPT_POSTFIELDS, json_encode($data_title));
+        curl_setopt($ch_t, CURLOPT_HTTPHEADER, ["Content-Type: application/json", "Authorization: Bearer " . $apikey]);
+        $res_t = curl_exec($ch_t);
+        curl_close($ch_t);
+
+        $json_t = json_decode($res_t, true);
+        if (isset($json_t['choices'][0]['message']['content'])) {
+            $new_title = trim($json_t['choices'][0]['message']['content']);
+            $new_title = preg_replace('/[^a-zA-Z0-9]/', '', ucwords($new_title));
+            if (!empty($new_title)) {
+                $renamed_to = substr($new_title, 0, 30);
+                loqui_cum_daemonio("RENOMINARE_FABULATIONEM|" . $usor . "|" . $cubiculum . "|" . $renamed_to);
+                $cubiculum = $renamed_to;
+            }
+        }
+    }
 
     // 1. Save user message
     loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|Tute: " . $nuntius);
@@ -68,6 +119,12 @@ if ($action === 'send') {
     header('Connection: keep-alive');
     while (ob_get_level() > 0)
         ob_end_flush();
+
+    // If we renamed the room, tell the client before streaming the message
+    if ($renamed_to) {
+        echo "data: " . json_encode(["event" => "renamed", "new_room" => $renamed_to]) . "\n\n";
+        flush();
+    }
 
     $apikey = getenv("OPENAI_API_KEY");
     if (!$apikey) {

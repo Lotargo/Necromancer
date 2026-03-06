@@ -58,8 +58,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         
         .chat-item:hover, .chat-item.active { background-color: #002200; border-style: solid; border-color: #00FF00; }
         
-        .chat-item-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; }
+        .chat-item-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
         
+        .action-btns { display: flex; gap: 5px; }
+        .ren-btn { color: #ffff33; cursor: pointer; border: none; background: none; font-family: inherit; font-size: 20px; text-shadow: 0 0 2px yellow;}
+        .ren-btn:hover { color: #ffff00; font-weight: bold; background: #333300;}
         .del-btn { color: #ff3333; cursor: pointer; border: none; background: none; font-family: inherit; font-size: 20px; text-shadow: 0 0 2px red;}
         .del-btn:hover { color: #ff0000; font-weight: bold; background: #330000;}
 
@@ -204,20 +207,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 .then(r => r.json())
                 .then(data => {
                     chatListEl.innerHTML = '';
-                    let hasRooms = false;
-                    if (data.rooms && data.rooms.length > 0 && data.rooms[0] !== "") {
-                        hasRooms = true;
-                        data.rooms.forEach(room => {
+                    let rooms = data.rooms || [];
+                    if (rooms.length === 1 && rooms[0] === "") rooms = [];
+                    
+                    if (currentRoom && currentRoom !== '' && !rooms.includes(currentRoom)) {
+                        rooms.unshift(currentRoom); // Add newly created virtual chat to the list
+                    }
+
+                    if (rooms.length > 0) {
+                        rooms.forEach(room => {
                             const li = document.createElement('li');
                             li.className = 'chat-item' + (room === currentRoom ? ' active' : '');
-                            li.innerHTML = `<span class="chat-item-name" onclick="selectRoom('${room}')">${room}</span> 
-                                          <button class="del-btn" onclick="deleteRoom('${room}', event)">[X]</button>`;
+                            li.innerHTML = `<span class="chat-item-name" onclick="selectRoom('${room}')" title="${room}">${room}</span> 
+                                          <div class="action-btns">
+                                              <button class="ren-btn" onclick="renameRoom('${room}', event)" title="Renominare">[R]</button>
+                                              <button class="del-btn" onclick="deleteRoom('${room}', event)" title="Delere">[X]</button>
+                                          </div>`;
                             chatListEl.appendChild(li);
                         });
                     }
-                    if (selectDefault && hasRooms) {
-                        selectRoom(data.rooms[0]);
-                    } else if (selectDefault && !hasRooms) {
+                    if (selectDefault && rooms.length > 0) {
+                        selectRoom(rooms[0]);
+                    } else if (selectDefault && rooms.length === 0) {
                         selectRoom('default'); 
                     }
                 });
@@ -255,6 +266,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 if (safeName) {
                     selectRoom(safeName);
                     closeNewChatModal();
+                }
+            }
+        }
+
+        function renameRoom(room, event) {
+            event.stopPropagation();
+            const newName = prompt("Novum nomen pro: " + room + "? (New name?)", room);
+            if (newName && newName !== room) {
+                const safeName = newName.replace(/[^a-zA-Z0-9_-]/g, '');
+                if (safeName) {
+                    const formData = new URLSearchParams();
+                    formData.append('action', 'rename');
+                    formData.append('room', room);
+                    formData.append('new_room', safeName);
+                    
+                    fetch('api.php', { method: 'POST', body: formData })
+                        .then(() => {
+                            if (currentRoom === room) currentRoom = safeName;
+                            loadChats();
+                        });
                 }
             }
         }
@@ -318,7 +349,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                 if (dataStr === '[DONE]') continue;
                                 try {
                                     const dataNode = JSON.parse(dataStr);
-                                    if (dataNode.choices && dataNode.choices[0].delta.content) {
+                                    if (dataNode.event === 'renamed') {
+                                        currentRoom = dataNode.new_room;
+                                        roomLabel.textContent = `[${currentRoom}]`;
+                                    } else if (dataNode.choices && dataNode.choices[0].delta.content) {
                                         chatEl.textContent += dataNode.choices[0].delta.content;
                                         chatEl.scrollTop = chatEl.scrollHeight;
                                     }
