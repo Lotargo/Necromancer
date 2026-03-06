@@ -141,6 +141,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             border: 2px solid #ff0000; padding: 30px; text-align: center;
             background-color: #000; box-shadow: 0 0 20px #ff0000;
         }
+
+        /* CRT Effects */
+        .scanline, .artifact {
+            position: fixed; left: 0; width: 100%; height: 2px;
+            background: rgba(0, 255, 0, 0.4);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+            z-index: 10000; pointer-events: none;
+            display: none;
+        }
+
+        .artifact {
+            height: 4px;
+            background: repeating-linear-gradient(0deg, rgba(0, 255, 0, 0.3), rgba(0, 255, 0, 0.3) 1px, transparent 1px, transparent 2px);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+        }
+
+        @keyframes scanline-anim {
+            0% { top: -5%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 105%; opacity: 0; }
+        }
+
+        .crt-active {
+            display: block;
+            animation: scanline-anim 2s linear forwards;
+        }
     </style>
 </head>
 <body>
@@ -187,6 +214,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             </div>
         </div>
     </div>
+
+    <!-- CRT Visual Elements -->
+    <div id="scanline" class="scanline"></div>
+    <div id="artifact" class="artifact"></div>
 
     <div class="layout-wrapper">
         <div class="sidebar">
@@ -482,6 +513,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 sendBtn.disabled = false;
             });
         };
+
+        // CRT Effects Trigger Logic
+        function triggerScanline() {
+            const el = document.getElementById('scanline');
+            if (el) {
+                el.classList.remove('crt-active');
+                void el.offsetWidth; // Trigger reflow
+                el.classList.add('crt-active');
+            }
+            setTimeout(triggerScanline, Math.random() * (15000 - 7000) + 7000);
+        }
+
+        function triggerArtifact() {
+            const el = document.getElementById('artifact');
+            if (el) {
+                el.classList.remove('crt-active');
+                void el.offsetWidth; // Trigger reflow
+                el.classList.add('crt-active');
+            }
+            setTimeout(triggerArtifact, Math.random() * (42000 - 7000) + 7000);
+        }
+
+        // Wait for welcome animation to finish or start shortly after
+        setTimeout(triggerScanline, 8000);
+        setTimeout(triggerArtifact, 12000);
     </script>
 </body>
 </html>
