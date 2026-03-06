@@ -1,0 +1,8 @@
+Free Pascal Compiler version 3.2.0+dfsg-12 [2021/01/25] for x86_64
+Copyright (c) 1993-2020 by Florian Klaempfl and others
+Target OS: Linux for x86-64
+Compiling daemonium.pas
+daemonium.pas(309,21) Warning: range check error while evaluating constants (2068511 must be between 0 and 65535)
+Linking daemonium
+338 lines compiled, 0.3 sec
+1 warning(s) issued

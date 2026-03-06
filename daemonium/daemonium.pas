@@ -90,12 +90,13 @@ begin
     Result := FormareResponsum(404, 'Error', 'Usor non inventus');
 end;
 
-function AddereNuntium(Nomen, Nuntius: String): String;
+function AddereNuntium(Nomen, Cubiculum, Nuntius: String): String;
 var
   F: TextFile;
   NomenFasciculi: String;
 begin
-  NomenFasciculi := PREFIXUS_FABULATIO + Nomen + '.txt';
+  if Cubiculum = '' then Cubiculum := 'default';
+  NomenFasciculi := PREFIXUS_FABULATIO + Nomen + '_' + Cubiculum + '.txt';
   AssignFile(F, NomenFasciculi);
   if FileExists(NomenFasciculi) then
     Append(F)
@@ -106,7 +107,7 @@ begin
   Result := FormareResponsum(200, 'Successus', 'Nuntius additus est');
 end;
 
-function LegendeNuntios(Nomen: String): String;
+function LegendeNuntios(Nomen, Cubiculum: String): String;
 var
   F: TextFile;
   NomenFasciculi: String;
@@ -114,7 +115,8 @@ var
   Historia: String;
 begin
   Historia := '';
-  NomenFasciculi := PREFIXUS_FABULATIO + Nomen + '.txt';
+  if Cubiculum = '' then Cubiculum := 'default';
+  NomenFasciculi := PREFIXUS_FABULATIO + Nomen + '_' + Cubiculum + '.txt';
   if FileExists(NomenFasciculi) then
   begin
     AssignFile(F, NomenFasciculi);
@@ -131,6 +133,46 @@ begin
   end
   else
     Result := FormareResponsum(404, 'Error', 'Historia non inventa');
+end;
+
+function IndexFabulationum(Nomen: String): String;
+var
+  SR: TSearchRec;
+  Prefix: String;
+  Lista: String;
+  Cubiculum: String;
+begin
+  Lista := '';
+  Prefix := 'fabulatio_' + Nomen + '_';
+  if FindFirst('../tabularium/' + Prefix + '*.txt', faAnyFile, SR) = 0 then
+  begin
+    repeat
+      Cubiculum := Copy(SR.Name, Length(Prefix) + 1, Length(SR.Name) - Length(Prefix) - 4);
+      if Lista <> '' then Lista := Lista + ',';
+      Lista := Lista + Cubiculum;
+    until FindNext(SR) <> 0;
+    FindClose(SR);
+  end;
+  
+  if Lista = '' then
+    Result := FormareResponsum(404, 'Error', 'Nihil')
+  else
+    Result := FormareResponsum(200, 'Successus', Lista);
+end;
+
+function DeleFabulationem(Nomen, Cubiculum: String): String;
+var
+  NomenFasciculi: String;
+begin
+  if Cubiculum = '' then Cubiculum := 'default';
+  NomenFasciculi := PREFIXUS_FABULATIO + Nomen + '_' + Cubiculum + '.txt';
+  if FileExists(NomenFasciculi) then
+  begin
+    DeleteFile(NomenFasciculi);
+    Result := FormareResponsum(200, 'Successus', 'Deletum');
+  end
+  else
+    Result := FormareResponsum(404, 'Error', 'Non inventum');
 end;
 
 { RAG: Investigare in Scientia }
@@ -184,7 +226,7 @@ end;
 procedure TractareClientem(CliensSock: longint);
 var
   LineaData: String;
-  Mandatum, Parametrum1, Parametrum2: String;
+  Mandatum, Parametrum1, Parametrum2, Parametrum3: String;
   Responsum: String;
   DataInput: TStringList;
   Buffer: array[0..1023] of char;
@@ -213,24 +255,27 @@ begin
     Mandatum := '';
     Parametrum1 := '';
     Parametrum2 := '';
+    Parametrum3 := '';
 
-    if DataInput.Count > 0 then
-      Mandatum := DataInput[0];
-    if DataInput.Count > 1 then
-      Parametrum1 := DataInput[1];
-    if DataInput.Count > 2 then
-      Parametrum2 := DataInput[2];
+    if DataInput.Count > 0 then Mandatum := DataInput[0];
+    if DataInput.Count > 1 then Parametrum1 := DataInput[1];
+    if DataInput.Count > 2 then Parametrum2 := DataInput[2];
+    if DataInput.Count > 3 then Parametrum3 := DataInput[3];
 
     if Mandatum = 'CREARE_USOREM' then
       Responsum := CreareUsorem(Parametrum1)
     else if Mandatum = 'INTRARE' then
       Responsum := Intrare(Parametrum1)
     else if Mandatum = 'ADDERE_NUNTIUM' then
-      Responsum := AddereNuntium(Parametrum1, Parametrum2)
+      Responsum := AddereNuntium(Parametrum1, Parametrum2, Parametrum3)
     else if Mandatum = 'LEGENDE_NUNTIOS' then
-      Responsum := LegendeNuntios(Parametrum1)
+      Responsum := LegendeNuntios(Parametrum1, Parametrum2)
     else if Mandatum = 'INVESTIGARE' then
       Responsum := Investigare(Parametrum1)
+    else if Mandatum = 'INDEX_FABULATIONUM' then
+      Responsum := IndexFabulationum(Parametrum1)
+    else if Mandatum = 'DELE_FABULATIONEM' then
+      Responsum := DeleFabulationem(Parametrum1, Parametrum2)
     else
       Responsum := FormareResponsum(400, 'Error', 'Mandatum incognitum');
 
