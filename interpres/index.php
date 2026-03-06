@@ -80,9 +80,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border: 2px solid #00FF00; padding: 40px; box-shadow: 0 0 20px #00FF00, inset 0 0 20px #00FF00;
             background-color: #000; z-index: 1; text-align: center;
             width: 80%; max-width: 600px; position: relative;
+            box-sizing: border-box; word-wrap: break-word; overflow-y: auto; max-height: 90vh;
         }
 
-        h1 { font-size: 48px; text-shadow: 0 0 10px #00FF00; margin-bottom: 30px;}
+        h1 { font-size: 48px; text-shadow: 0 0 10px #00FF00; margin-bottom: 30px; margin-top: 0;}
         label { font-size: 24px; }
         
         input[type="text"], input[type="submit"] { 
@@ -90,10 +91,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-family: 'VT323', "Courier New", Courier, monospace;
             font-size: 24px; padding: 10px; margin-top: 10px;
             box-shadow: inset 0 0 5px #00FF00; transition: all 0.2s;
+            box-sizing: border-box;
+            width: 100%;
         }
         
-        input[type="submit"]:hover {
-            background-color: #00FF00; color: #000; cursor: pointer;
+        input[type="submit"] {
+            width: auto;
+        }
+
+        input[type="submit"]:hover, button:hover {
+            background-color: #00FF00 !important; color: #000 !important; cursor: pointer;
         }
 
         a { color: #00FF00; }
@@ -122,21 +129,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .glitch { font-size: 42px; font-weight: bold; text-shadow: 2px 2px #0f0, -2px -2px #f00; margin-bottom: 30px; letter-spacing: 5px;}
 
         /* Mode Selector */
-        .mode-selector { display: flex; border-bottom: 2px solid #00FF00; margin-bottom: 20px; }
+        .mode-selector { display: flex; border-bottom: 2px solid #00FF00; margin-bottom: 30px; }
         .mode-tab { flex: 1; padding: 10px; cursor: pointer; border: 1px solid transparent; transition: all 0.3s; font-size: 20px;}
         .mode-tab.active { background-color: #00FF00; color: #000; text-shadow: none; font-weight: bold;}
         .mode-tab:hover:not(.active) { background-color: #004400; }
 
         .hidden { display: none !important; }
-        .error-msg { color: #ff3333; font-size: 18px; margin-bottom: 10px; text-shadow: 0 0 5px #ff0000; }
+        .error-msg { color: #ff3333; font-size: 18px; margin-bottom: 20px; text-shadow: 0 0 5px #ff0000; }
 
-        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; margin-bottom: 5px; font-size: 20px; }
         .input-group input { width: 100%; box-sizing: border-box; }
 
-        .form-footer { margin-top: 20px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
-        .checkbox-group { display: flex; align-items: center; gap: 10px; cursor: pointer; }
-        .checkbox-group input { cursor: pointer; width: 20px; height: 20px; }
+        .form-footer { margin-top: 25px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0; }
+        .checkbox-group input { cursor: pointer; width: 20px; height: 20px; margin: 0; }
 
         /* Secondary Modal */
         #forgot-modal {
@@ -158,57 +165,59 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </div>
 
-    <h1>Gateway - Necronomicon</h1>
-    
-    <div id="error-box" class="error-msg <?php echo $error ? '' : 'hidden'; ?>">
-        <?php echo htmlspecialchars($error); ?>
-    </div>
-
-    <div class="mode-selector">
-        <div id="tab-spiritus" class="mode-tab active" onclick="setMode('spiritus')">SPIRITUS (Guest)</div>
-        <div id="tab-anima" class="mode-tab" onclick="setMode('anima')">ANIMA (Email)</div>
-    </div>
-
-    <!-- Mode: Spiritus (Legacy/Guest) -->
-    <form id="form-spiritus" method="POST" action="index.php">
-        <div class="input-group">
-            <label>Nomen tuum (Nickname):</label>
-            <input type="text" name="nomen" id="spiritus-name" placeholder="Vexillum..." autofocus>
-        </div>
-        <input type="hidden" name="fp" class="fp_input">
-        <div style="margin-top: 20px;">
-            <input type="submit" name="actio" value="intrare"> (Intrare)
-            <input type="submit" name="actio" value="creare" style="margin-left: 10px;"> (Creare)
-        </div>
-    </form>
-
-    <!-- Mode: Anima (Email/Password) -->
-    <form id="form-anima" class="hidden">
-        <div class="input-group" id="anima-nomen-group">
-            <label>Nomen tuum (Username):</label>
-            <input type="text" id="anima-nomen" placeholder="Viator...">
-        </div>
-        <div class="input-group">
-            <label>Email:</label>
-            <input type="text" id="anima-email" placeholder="email@spiritus.com">
-        </div>
-        <div class="input-group">
-            <label>Password:</label>
-            <input type="password" id="anima-pass" style="background-color: #000; color: #00FF00; border: 1px solid #00FF00; font-family: inherit; font-size: 24px; padding: 10px; width: 100%; box-sizing: border-box;">
-        </div>
+    <div class="container">
+        <h1>Gateway - Necronomicon</h1>
         
-        <div class="form-footer">
-            <label class="checkbox-group">
-                <input type="checkbox" id="anima-remember"> Memento Mei
-            </label>
-            <a href="javascript:void(0)" onclick="openForgotModal()">Oblivio (Forgot?)</a>
+        <div id="error-box" class="error-msg <?php echo $error ? '' : 'hidden'; ?>">
+            <?php echo htmlspecialchars($error); ?>
         </div>
 
-        <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center;">
-            <button type="button" onclick="handleAnimaAction('login_anima')" style="font-size: 24px; background: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px 20px; cursor: pointer;">Intrare</button>
-            <button type="button" onclick="handleAnimaAction('register_anima')" style="font-size: 24px; background: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px 20px; cursor: pointer;">Creare</button>
+        <div class="mode-selector">
+            <div id="tab-spiritus" class="mode-tab active" onclick="setMode('spiritus')">SPIRITUS (Guest)</div>
+            <div id="tab-anima" class="mode-tab" onclick="setMode('anima')">ANIMA (Email)</div>
         </div>
-    </form>
+
+        <!-- Mode: Spiritus (Legacy/Guest) -->
+        <form id="form-spiritus" method="POST" action="index.php">
+            <div class="input-group">
+                <label>Nomen tuum (Nickname):</label>
+                <input type="text" name="nomen" id="spiritus-name" placeholder="Vexillum..." autofocus>
+            </div>
+            <input type="hidden" name="fp" class="fp_input">
+            <div style="margin-top: 20px;">
+                <input type="submit" name="actio" value="intrare"> (Intrare)
+                <input type="submit" name="actio" value="creare" style="margin-left: 10px;"> (Creare)
+            </div>
+        </form>
+
+        <!-- Mode: Anima (Email/Password) -->
+        <form id="form-anima" class="hidden">
+            <div class="input-group" id="anima-nomen-group">
+                <label>Nomen tuum (Username):</label>
+                <input type="text" id="anima-nomen" placeholder="Viator...">
+            </div>
+            <div class="input-group">
+                <label>Email:</label>
+                <input type="text" id="anima-email" placeholder="email@spiritus.com">
+            </div>
+            <div class="input-group">
+                <label>Password:</label>
+                <input type="password" id="anima-pass" style="background-color: #000; color: #00FF00; border: 1px solid #00FF00; font-family: inherit; font-size: 24px; padding: 10px; width: 100%; box-sizing: border-box;">
+            </div>
+
+            <div class="form-footer">
+                <label class="checkbox-group">
+                    <input type="checkbox" id="anima-remember"> Memento Mei
+                </label>
+                <a href="javascript:void(0)" onclick="openForgotModal()">Oblivio (Forgot?)</a>
+            </div>
+
+            <div style="margin-top: 30px; display: flex; gap: 15px; justify-content: center;">
+                <button type="button" onclick="handleAnimaAction('login_anima')" style="font-size: 24px; background: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px 20px; cursor: pointer; box-shadow: inset 0 0 5px #00FF00; transition: all 0.2s;">Intrare</button>
+                <button type="button" onclick="handleAnimaAction('register_anima')" style="font-size: 24px; background: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px 20px; cursor: pointer; box-shadow: inset 0 0 5px #00FF00; transition: all 0.2s;">Creare</button>
+            </div>
+        </form>
+    </div>
 
     <div id="forgot-modal">
         <div class="small-modal-content">
