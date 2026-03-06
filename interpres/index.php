@@ -19,25 +19,28 @@ $error = "";
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $nomen = trim($_POST["nomen"]);
     $actio = $_POST["actio"];
+    $fp = $_POST["fp"] ?? "";
 
     if (!empty($nomen)) {
         if ($actio == "intrare") {
-            $resp = loqui_cum_daemonio("INTRARE|" . $nomen);
+            $resp = loqui_cum_daemonio("INTRARE|" . $nomen . "|" . $fp);
             $partes = explode("|", $resp);
             if ($partes[0] == "200") {
                 $_SESSION["usor"] = $nomen;
+                $_SESSION["fp"] = $fp;
                 header("Location: fabulatio.php");
                 exit();
             }
             else {
-                $error = "Nomen non inventum. Creare novum?";
+                $error = "Nomen vel Fingerprint mismatch! Accessus negatus.";
             }
         }
         elseif ($actio == "creare") {
-            $resp = loqui_cum_daemonio("CREARE_USOREM|" . $nomen);
+            $resp = loqui_cum_daemonio("CREARE_USOREM|" . $nomen . "|" . $fp);
             $partes = explode("|", $resp);
             if ($partes[0] == "200") {
                 $_SESSION["usor"] = $nomen;
+                $_SESSION["fp"] = $fp;
                 header("Location: fabulatio.php");
                 exit();
             }
@@ -117,6 +120,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #00FF00; } }
         /* Glitch effect on header */
         .glitch { font-size: 42px; font-weight: bold; text-shadow: 2px 2px #0f0, -2px -2px #f00; margin-bottom: 30px; letter-spacing: 5px;}
+
+        /* Mode Selector */
+        .mode-selector { display: flex; border-bottom: 2px solid #00FF00; margin-bottom: 20px; }
+        .mode-tab { flex: 1; padding: 10px; cursor: pointer; border: 1px solid transparent; transition: all 0.3s; font-size: 20px;}
+        .mode-tab.active { background-color: #00FF00; color: #000; text-shadow: none; font-weight: bold;}
+        .mode-tab:hover:not(.active) { background-color: #004400; }
+
+        .hidden { display: none !important; }
+        .error-msg { color: #ff3333; font-size: 18px; margin-bottom: 10px; text-shadow: 0 0 5px #ff0000; }
+
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; font-size: 20px; }
+        .input-group input { width: 100%; box-sizing: border-box; }
+
+        .form-footer { margin-top: 20px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .checkbox-group input { cursor: pointer; width: 20px; height: 20px; }
+
+        /* Secondary Modal */
+        #forgot-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.9); z-index: 10000;
+            display: none; justify-content: center; align-items: center;
+        }
+        .small-modal-content {
+            border: 2px solid #00FF00; padding: 30px; background-color: #000;
+            width: 400px; text-align: center; box-shadow: 0 0 20px #00FF00;
+        }
     </style>
 </head>
 <body>
@@ -127,15 +158,69 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </div>
 
-    <h1>Salve Viator!</h1>
-    <?php if ($error)
-    echo "<p style='color:red;'>$error</p>"; ?>
-    <form method="POST" action="index.php">
-        <label>Nomen tuum:</label><br>
-        <input type="text" name="nomen" autofocus><br><br>
-        <input type="submit" name="actio" value="intrare"> (Intrare)<br><br>
-        <input type="submit" name="actio" value="creare"> (Creare)
+    <h1>Gateway - Necronomicon</h1>
+    
+    <div id="error-box" class="error-msg <?php echo $error ? '' : 'hidden'; ?>">
+        <?php echo htmlspecialchars($error); ?>
+    </div>
+
+    <div class="mode-selector">
+        <div id="tab-spiritus" class="mode-tab active" onclick="setMode('spiritus')">SPIRITUS (Guest)</div>
+        <div id="tab-anima" class="mode-tab" onclick="setMode('anima')">ANIMA (Email)</div>
+    </div>
+
+    <!-- Mode: Spiritus (Legacy/Guest) -->
+    <form id="form-spiritus" method="POST" action="index.php">
+        <div class="input-group">
+            <label>Nomen tuum (Nickname):</label>
+            <input type="text" name="nomen" id="spiritus-name" placeholder="Vexillum..." autofocus>
+        </div>
+        <input type="hidden" name="fp" class="fp_input">
+        <div style="margin-top: 20px;">
+            <input type="submit" name="actio" value="intrare"> (Intrare)
+            <input type="submit" name="actio" value="creare" style="margin-left: 10px;"> (Creare)
+        </div>
     </form>
+
+    <!-- Mode: Anima (Email/Password) -->
+    <form id="form-anima" class="hidden">
+        <div class="input-group" id="anima-nomen-group">
+            <label>Nomen tuum (Username):</label>
+            <input type="text" id="anima-nomen" placeholder="Viator...">
+        </div>
+        <div class="input-group">
+            <label>Email:</label>
+            <input type="text" id="anima-email" placeholder="email@spiritus.com">
+        </div>
+        <div class="input-group">
+            <label>Password:</label>
+            <input type="password" id="anima-pass" style="background-color: #000; color: #00FF00; border: 1px solid #00FF00; font-family: inherit; font-size: 24px; padding: 10px; width: 100%; box-sizing: border-box;">
+        </div>
+        
+        <div class="form-footer">
+            <label class="checkbox-group">
+                <input type="checkbox" id="anima-remember"> Memento Mei
+            </label>
+            <a href="javascript:void(0)" onclick="openForgotModal()">Oblivio (Forgot?)</a>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center;">
+            <button type="button" onclick="handleAnimaAction('login_anima')" style="font-size: 24px; background: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px 20px; cursor: pointer;">Intrare</button>
+            <button type="button" onclick="handleAnimaAction('register_anima')" style="font-size: 24px; background: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px 20px; cursor: pointer;">Creare</button>
+        </div>
+    </form>
+
+    <div id="forgot-modal">
+        <div class="small-modal-content">
+            <h2 style="margin-top: 0;">Recuperatio</h2>
+            <p>Scribe email pro recuperatione (check logs for 6-digit code):</p>
+            <input type="text" id="forgot-email" style="width: 100%; font-size: 20px; margin-bottom: 20px; background: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px;">
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button type="button" onclick="submitForgot()" style="background: #000; color: #00FF00; border: 1px solid #00FF00; padding: 5px 15px; cursor: pointer;">Mittere</button>
+                <button type="button" onclick="closeForgotModal()" style="background: #000; color: #ff3333; border: 1px solid #ff3333; padding: 5px 15px; cursor: pointer;">Inducere</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Retro Typewriter Logic
@@ -166,8 +251,89 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             typeWriter();
         };
 
-        // click to skip
-        modalEl.addEventListener('click', closeModal);
+        function getFingerprint() {
+            return btoa(navigator.userAgent + screen.width + "x" + screen.height + navigator.language + new Date().getTimezoneOffset());
+        }
+
+        function setMode(mode) {
+            document.getElementById('tab-spiritus').classList.toggle('active', mode === 'spiritus');
+            document.getElementById('tab-anima').classList.toggle('active', mode === 'anima');
+            document.getElementById('form-spiritus').classList.toggle('hidden', mode === 'anima');
+            document.getElementById('form-anima').classList.toggle('hidden', mode === 'spiritus');
+            localStorage.setItem('login_mode', mode);
+        }
+
+        // Restore mode
+        const savedMode = localStorage.getItem('login_mode') || 'spiritus';
+        setMode(savedMode);
+
+        // Sync FP inputs
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener("submit", function() {
+                 let fpField = form.querySelector('.fp_input');
+                 if (fpField) fpField.value = getFingerprint();
+            });
+        });
+
+        // Special handling for the Spiritus form (legacy PHP submit)
+        document.getElementById("form-spiritus").onsubmit = function() {
+            document.querySelector('#form-spiritus .fp_input').value = getFingerprint();
+        };
+
+        function handleAnimaAction(action) {
+            const email = document.getElementById('anima-email').value.trim();
+            const pass = document.getElementById('anima-pass').value;
+            const nomen = document.getElementById('anima-nomen').value.trim();
+            const remember = document.getElementById('anima-remember').checked;
+            const fp = getFingerprint();
+
+            if (!email || !pass || (action === 'register_anima' && !nomen)) {
+                showError("Vade Retro! Data desunt (Incomplete data).");
+                return;
+            }
+
+            const formData = new URLSearchParams();
+            formData.append('action', action);
+            formData.append('email', email);
+            formData.append('pass', pass);
+            formData.append('nomen', nomen);
+            formData.append('fp', fp);
+            if (remember) formData.append('remember', '1');
+
+            fetch('api.php', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        location.href = 'fabulatio.php';
+                    } else {
+                        showError(data.message);
+                    }
+                })
+                .catch(err => showError("Daemonium non respondet. Try again later."));
+        }
+
+        function showError(msg) {
+            const box = document.getElementById('error-box');
+            box.textContent = msg;
+            box.classList.remove('hidden');
+        }
+
+        function openForgotModal() { document.getElementById('forgot-modal').style.display = 'flex'; }
+        function closeForgotModal() { document.getElementById('forgot-modal').style.display = 'none'; }
+        
+        function submitForgot() {
+            const email = document.getElementById('forgot-email').value.trim();
+            if (!email) return;
+            const formData = new URLSearchParams();
+            formData.append('action', 'forgot_anima');
+            formData.append('email', email);
+            fetch('api.php', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    alert(data.message);
+                    closeForgotModal();
+                });
+        }
     </script>
 </body>
 </html>
