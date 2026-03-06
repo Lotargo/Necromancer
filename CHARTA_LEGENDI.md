@@ -34,3 +34,16 @@ Hoc est repositorium in quo vivit chat antiquus et arcanus, scriptus in linguis 
 5. Aperi navigatorem ad `http://127.0.0.1:8000`.
 
 *Memento: Omnes viae Romam ducunt!*
+
+## Quomodo API configurare (How to configure API)
+
+Si vis uti OpenAI, scribe hanc in linea mandati:
+```bash
+export OPENAI_API_KEY="tua-clavis-hic"
+```
+
+Si vis uti alio provisore (e.g. ad compatibilitatem cum OpenAI protocollo, sicut LocalAI vel vLLM), potes etiam URL mutare:
+```bash
+export OPENAI_API_URL="http://localhost:8080/v1/chat/completions"
+export OPENAI_API_KEY="tua-clavis-hic"
+```
