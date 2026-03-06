@@ -1,10 +1,6 @@
 <?php
 session_start();
-if (!isset($_SESSION["usor"])) {
-    http_response_code(401);
-    exit("Unauthorized");
-}
-$usor = $_SESSION["usor"];
+$action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 function loqui_cum_daemonio($mandatum)
 {
@@ -18,26 +14,124 @@ function loqui_cum_daemonio($mandatum)
     return trim($responsum);
 }
 
+// Public Actions (No Session Required)
+if ($action === 'login_anima' || $action === 'register_anima' || $action === 'forgot_anima') {
+    $fp_client = $_POST['fp'] ?? '';
+    if ($action === 'login_anima') {
+        $email = $_POST['email'] ?? '';
+        $pass = $_POST['pass'] ?? '';
+        $resp = loqui_cum_daemonio("INTRARE_PLENUM|$email|$pass|$fp_client");
+        $partes = explode("|", $resp);
+        if ($partes[0] == "200") {
+            $_SESSION["usor"] = $partes[2];
+            $_SESSION["fp"] = $fp_client;
+            if (isset($_POST['remember'])) {
+                setcookie(session_name(), session_id(), time() + 86400 * 30, "/");
+            }
+            echo json_encode(["status" => "ok", "usor" => $partes[2]]);
+        }
+        else {
+            echo json_encode(["status" => "error", "message" => $partes[2]]);
+        }
+    }
+    else if ($action === 'register_anima') {
+        $nomen = $_POST['nomen'] ?? '';
+        $email = $_POST['email'] ?? '';
+        $pass = $_POST['pass'] ?? '';
+        $resp = loqui_cum_daemonio("CREARE_USOREM_PLENUM|$nomen|$email|$pass|$fp_client");
+        $partes = explode("|", $resp);
+        if ($partes[0] == "200") {
+            $_SESSION["usor"] = $nomen;
+            $_SESSION["fp"] = $fp_client;
+            echo json_encode(["status" => "ok"]);
+        }
+        else {
+            echo json_encode(["status" => "error", "message" => $partes[2]]);
+        }
+    }
+    else if ($action === 'forgot_anima') {
+        $email = $_POST['email'] ?? '';
+        $resp = loqui_cum_daemonio("PETERE_RECUPERATIONEM|$email");
+        $partes = explode("|", $resp);
+        echo json_encode(["status" => ($partes[0] == "200" ? "ok" : "error"), "message" => $partes[2]]);
+    }
+    exit();
+}
+
+if (!isset($_SESSION["usor"]) || !isset($_SESSION["fp"])) {
+    http_response_code(401);
+    exit("Unauthorized (No Session or FP)");
+}
+$usor = $_SESSION["usor"];
+$user_fp = $_SESSION["fp"];
+
 function investigare_in_tela($query)
 {
     $url = "https://html.duckduckgo.com/html/?q=" . urlencode($query);
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124 Safari/537.36');
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    $html = curl_exec($ch);
-    curl_close($ch);
+    $attempts = 0;
+    $max_attempts = 3;
+    $html = "";
+    $http_code = 0;
 
-    if (!$html)
-        return "Nihil inventum est in tela.";
+    while ($attempts < $max_attempts) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+        curl_setopt($ch, CURLOPT_USERAGENT, $ua);
+        curl_setopt($ch, CURLOPT_REFERER, 'https://duckduckgo.com/');
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
-    // Simple extraction of snippets using regex to avoid DOM dependency issues
-    preg_match_all('/<a class="result__snippet"[^>]*>(.*?)<\/a>/s', $html, $matches);
-    $snippets = array_slice($matches[1], 0, 5);
+        // Use a cookie file to persist session if DDG requests it
+        $cookie_file = '/tmp/ddg_cookies.txt';
+        curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
+        curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
+
+        $html = curl_exec($ch);
+        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
+
+        if ($http_code === 200 && !empty($html) && strlen($html) > 500) {
+            break;
+        }
+
+        $attempts++;
+        if ($attempts < $max_attempts) {
+            usleep(700000); // Wait 0.7s before retry
+        }
+    }
+
+    if ($http_code !== 200 || empty($html)) {
+        return "Error in tela (HTTP $http_code): " . ($error ?: "Vacuum responsum.");
+    }
+
+    $matches = [];
+    // Pattern 1: a.result__snippet
+    preg_match_all('/<a[^>]*class="result__snippet"[^>]*>(.*?)<\/a>/s', $html, $matches);
+
+    if (empty($matches[1])) {
+        // Pattern 2: div.result__snippet
+        preg_match_all('/<div[^>]*class="result__snippet"[^>]*>(.*?)<\/div>/s', $html, $matches);
+    }
+
+    $snippets = array_slice($matches[1] ?? [], 0, 5);
     $clean_snippets = array_map(function ($s) {
-        return strip_tags(html_entity_decode($s));
+        return trim(strip_tags(html_entity_decode($s)));
     }, $snippets);
+
+    if (empty($clean_snippets)) {
+        // Fallback: any text paragraphs
+        preg_match_all('/<p[^>]*>(.*?)<\/p>/s', $html, $matches);
+        $snippets = array_slice($matches[1] ?? [], 0, 3);
+        $clean_snippets = array_map(function ($s) {
+            return trim(strip_tags(html_entity_decode($s)));
+        }, $snippets);
+    }
+
+    if (empty($clean_snippets)) {
+        return "Nihil inventum (regex mismatch). Raw length: " . strlen($html) . " bytes. Query: " . $query;
+    }
 
     return implode("\n---\n", $clean_snippets);
 }
@@ -46,7 +140,7 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $cubiculum = $_GET['room'] ?? $_POST['room'] ?? 'default';
 
 if ($action === 'list') {
-    $resp = loqui_cum_daemonio("INDEX_FABULATIONUM|" . $usor);
+    $resp = loqui_cum_daemonio("INDEX_FABULATIONUM|" . $usor . "|" . $user_fp);
     $partes = explode("|", $resp, 3);
     $rooms = [];
     if ($partes[0] == "200") {
@@ -58,7 +152,7 @@ if ($action === 'list') {
 }
 
 if ($action === 'load') {
-    $resp = loqui_cum_daemonio("LEGENDE_NUNTIOS|" . $usor . "|" . $cubiculum);
+    $resp = loqui_cum_daemonio("LEGENDE_NUNTIOS|" . $usor . "|" . $cubiculum . "|" . $user_fp);
     $partes = explode("|", $resp, 3);
     $historia = ($partes[0] == "200") ? $partes[2] : "";
     header('Content-Type: text/plain');
@@ -67,7 +161,7 @@ if ($action === 'load') {
 }
 
 if ($action === 'delete') {
-    loqui_cum_daemonio("DELE_FABULATIONEM|" . $usor . "|" . $cubiculum);
+    loqui_cum_daemonio("DELE_FABULATIONEM|" . $usor . "|" . $cubiculum . "|" . $user_fp);
     header('Content-Type: application/json');
     echo json_encode(["status" => "ok"]);
     exit();
@@ -78,7 +172,7 @@ if ($action === 'rename') {
     if (!empty($new_room)) {
         $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '', $new_room);
         if ($safeName) {
-            loqui_cum_daemonio("RENOMINARE_FABULATIONEM|" . $usor . "|" . $cubiculum . "|" . $safeName);
+            loqui_cum_daemonio("RENOMINARE_FABULATIONEM|" . $usor . "|" . $cubiculum . "|" . $safeName . "|" . $user_fp);
         }
     }
     header('Content-Type: application/json');
@@ -93,7 +187,7 @@ if ($action === 'send') {
 
     // 0. Check if it's the first message in this room
     $is_first = false;
-    $resp_hist = loqui_cum_daemonio("LEGENDE_NUNTIOS|" . $usor . "|" . $cubiculum);
+    $resp_hist = loqui_cum_daemonio("LEGENDE_NUNTIOS|" . $usor . "|" . $cubiculum . "|" . $user_fp);
     $partes_hist = explode("|", $resp_hist, 3);
     if ($partes_hist[0] !== "200" || trim($partes_hist[2]) === "") {
         $is_first = true;
@@ -123,14 +217,14 @@ if ($action === 'send') {
             $new_title = preg_replace('/[^a-zA-Z0-9]/', '', ucwords($new_title));
             if (!empty($new_title)) {
                 $renamed_to = substr($new_title, 0, 30);
-                loqui_cum_daemonio("RENOMINARE_FABULATIONEM|" . $usor . "|" . $cubiculum . "|" . $renamed_to);
+                loqui_cum_daemonio("RENOMINARE_FABULATIONEM|" . $usor . "|" . $cubiculum . "|" . $renamed_to . "|" . $user_fp);
                 $cubiculum = $renamed_to;
             }
         }
     }
 
     // 1. Save user message
-    loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|Tute: " . $nuntius);
+    loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Tute: " . $nuntius);
 
     // 2. Query Knowledge Base (RAG) & Web Search
     $rag_resp = loqui_cum_daemonio("INVESTIGARE|" . $nuntius);
@@ -158,6 +252,7 @@ if ($action === 'send') {
         "event" => "debug",
         "lingua" => $lingua_mode,
         "search" => $search_mode,
+        "search_res" => $tela_contextus,
         "search_len" => strlen($tela_contextus),
         "post_keys" => array_keys($_POST)
     ]) . "\n\n";
@@ -173,13 +268,13 @@ if ($action === 'send') {
     if (!$apikey) {
         $msg = "Clavis API deest. Dicent mihi Oraculum non respondere.";
         echo "data: " . json_encode(["choices" => [["delta" => ["content" => $msg]]]]) . "\n\n";
-        loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|Oraculum: " . $msg);
+        loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $msg);
         exit();
     }
 
     $promptus = "Contextus Localis (Tabularium): " . $contextus . "\n";
     if ($tela_contextus) {
-        $promptus .= "Contextus ex Tela (DuckDuckGo): " . $tela_contextus . "\n";
+        $promptus .= "Contextus Realis-Temporis (Web Search): " . $tela_contextus . "\n";
     }
     $promptus .= "Interrogatio: " . $nuntius . "\n";
 
@@ -190,7 +285,8 @@ if ($action === 'send') {
         - If the user writes in English, respond in ENGLISH.
         - Semper conserva personam philosophi antiqui. 
         - CRITICAL RULE: Do NOT respond in Latin unless the user speaks Latin. Respond exactly in the language of the user's message.
-        - ALWAYS start your response with greeting or acknowledgment in the same language as user.";
+        - ALWAYS start your response with greeting or acknowledgment in the same language as user.
+        - If 'Web Search' context is provided, prioritize it for current events. Mention that you consulted the digital oracle.";
     }
 
     $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
@@ -246,6 +342,6 @@ if ($action === 'send') {
     $clean_resp = str_replace(["\r", "\n"], " ", trim($full_response));
     if (empty($clean_resp))
         $clean_resp = "Oraculum mutum est.";
-    loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|Oraculum: " . $clean_resp);
+    loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
     exit();
 }
