@@ -156,6 +156,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             border: 2px solid #ff0000; padding: 30px; text-align: center;
             background-color: #000; box-shadow: 0 0 20px #ff0000;
         }
+
+        /* Config Modal Styles */
+        #config-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85); z-index: 9999;
+            display: none; justify-content: center; align-items: center;
+        }
+        .config-content {
+            border: 2px solid #00FF00; padding: 30px; text-align: left;
+            background-color: #000; box-shadow: 0 0 20px #00FF00;
+            width: 80%; max-width: 600px;
+        }
+        .config-section {
+            margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dotted #00FF00;
+        }
+        .config-section:last-child {
+            border-bottom: none; margin-bottom: 0; padding-bottom: 0;
+        }
+        .config-input {
+            width: 100%; margin-bottom: 10px; margin-top: 5px; box-sizing: border-box;
+            background-color: #000; color: #00FF00; border: 1px solid #00FF00; padding: 10px;
+            font-family: inherit; font-size: 20px;
+        }
+        .config-btn { margin-top: 10px; }
+        .danger-btn { background-color: #330000; color: #ff3333; border-color: #ff3333; }
+        .danger-btn:hover { background-color: #ff0000; color: #fff; }
     </style>
 </head>
 <body>
@@ -203,6 +229,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         </div>
     </div>
 
+    <!-- Configuration Modal -->
+    <div id="config-modal">
+        <div class="config-content">
+            <h2 style="margin-top: 0; text-shadow: 0 0 5px #00FF00; text-align: center;">Configuratio Rationis (Account Settings)</h2>
+            <div id="config-alert" style="color: #ffff00; text-align: center; margin-bottom: 15px; font-weight: bold;"></div>
+
+            <div class="config-section">
+                <h3>Renominare Usorem (Rename User)</h3>
+                <input type="text" id="config-new-name" class="config-input" placeholder="Novum Nomen...">
+                <button class="config-btn" onclick="renameUser()">Renominare</button>
+            </div>
+
+            <div class="config-section">
+                <h3>Mutare Tessellam (Change Password) <span style="font-size: 16px; color: #008800;">- Tantum pro ANIMA (Only for Email users)</span></h3>
+                <input type="password" id="config-old-pass" class="config-input" placeholder="Vetus Tessella (Old Password)...">
+                <input type="password" id="config-new-pass" class="config-input" placeholder="Nova Tessella (New Password)...">
+                <button class="config-btn" onclick="changePassword()">Mutare</button>
+            </div>
+
+            <div class="config-section" style="border-top: 2px dashed #ff0000; padding-top: 15px;">
+                <h3 style="color: #ff3333; margin-top: 0;">Zona Periculosa (Danger Zone)</h3>
+                <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button class="config-btn danger-btn" onclick="deleteAllChats()">[!] Delere Omnes Fabulationes</button>
+                    <button class="config-btn danger-btn" onclick="deleteAccount()">[!!!] Delere Rationem (Delete Account)</button>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button onclick="closeConfigModal()">Inducere (Close)</button>
+            </div>
+        </div>
+    </div>
+
     <div class="layout-wrapper">
         <div class="sidebar">
             <h2>Pluteus (Chats)</h2>
@@ -210,9 +269,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             <ul class="chat-list" id="chat-list">
                 <!-- Chats will load here via JS -->
             </ul>
-            <form method="POST" action="fabulatio.php" style="margin-top:auto;">
-                <input type="submit" name="exire" value="Exire (Logout)" style="width:100%; background: #330000; color: #ff3333; border-color: #ff3333;">
-            </form>
+            <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="openConfigModal()" style="width: 100%; background: #000; color: #00FF00; border: 1px dashed #00FF00; text-align: left; padding: 10px;">⚙ Configuratio (Settings)</button>
+                <form method="POST" action="fabulatio.php" style="margin: 0;">
+                    <input type="submit" name="exire" value="Exire (Logout)" style="width:100%; background: #330000; color: #ff3333; border-color: #ff3333;">
+                </form>
+            </div>
         </div>
 
         <div class="main-chat">
@@ -475,6 +537,100 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             currentSearchMode = currentSearchMode === 'off' ? 'on' : 'off';
             sessionStorage.setItem('search_mode', currentSearchMode);
             updateToggleUI();
+        }
+
+        // Configuration Actions
+        function openConfigModal() {
+            document.getElementById('config-modal').style.display = 'flex';
+            document.getElementById('config-alert').textContent = '';
+            document.getElementById('config-new-name').value = '';
+            document.getElementById('config-old-pass').value = '';
+            document.getElementById('config-new-pass').value = '';
+        }
+
+        function closeConfigModal() {
+            document.getElementById('config-modal').style.display = 'none';
+        }
+
+        function configAlert(msg, isError = false) {
+            const el = document.getElementById('config-alert');
+            el.style.color = isError ? '#ff3333' : '#00ff00';
+            el.textContent = msg;
+            setTimeout(() => { el.textContent = ''; }, 4000);
+        }
+
+        function renameUser() {
+            const newName = document.getElementById('config-new-name').value.trim();
+            if (!newName) return;
+            const formData = new URLSearchParams();
+            formData.append('action', 'renominare_usorem');
+            formData.append('novum_nomen', newName);
+
+            fetch('api.php', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        configAlert("Nomen mutatum est. Reficiens... (Reloading)");
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        configAlert(data.message, true);
+                    }
+                });
+        }
+
+        function changePassword() {
+            const oldPass = document.getElementById('config-old-pass').value;
+            const newPass = document.getElementById('config-new-pass').value;
+            if (!oldPass || !newPass) return;
+            const formData = new URLSearchParams();
+            formData.append('action', 'mutare_tessaram');
+            formData.append('vetus_pass', oldPass);
+            formData.append('nova_pass', newPass);
+
+            fetch('api.php', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        configAlert("Tessella mutata est (Password changed).");
+                        document.getElementById('config-old-pass').value = '';
+                        document.getElementById('config-new-pass').value = '';
+                    } else {
+                        configAlert(data.message, true);
+                    }
+                });
+        }
+
+        function deleteAllChats() {
+            if (confirm("Visne vere delere omnes fabulationes? (Are you sure you want to delete all chats?)")) {
+                const formData = new URLSearchParams();
+                formData.append('action', 'delere_omnes_fabulationes');
+                fetch('api.php', { method: 'POST', body: formData })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'ok') {
+                            configAlert("Omnes fabulationes deletae sunt. Reficiens...");
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            configAlert(data.message, true);
+                        }
+                    });
+            }
+        }
+
+        function deleteAccount() {
+            if (confirm("MONITUM! (WARNING!)\nVisne vere delere rationem et omnia data tua? Haec actio non potest revocari!\n(Are you sure you want to delete your account and all data? This cannot be undone!)")) {
+                const formData = new URLSearchParams();
+                formData.append('action', 'delere_rationem');
+                fetch('api.php', { method: 'POST', body: formData })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'ok') {
+                            location.href = 'index.php';
+                        } else {
+                            configAlert(data.message, true);
+                        }
+                    });
+            }
         }
 
         // Initial UI Update

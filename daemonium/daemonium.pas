@@ -331,6 +331,235 @@ begin
     Result := FormareResponsum(404, 'Error', 'Non inventum');
 end;
 
+function RenominareUsorem(VetusNomen, NovumNomen: String): String;
+var
+  F, TempF: TextFile;
+  Linea, TempLinea: String;
+  P: Integer;
+  ExistensEmail, ExistensNomen, Rest: String;
+  SR: TSearchRec;
+  VetusFabulatio, NovaFabulatio: String;
+begin
+  if NovumNomen = '' then Exit(FormareResponsum(400, 'Error', 'Novum nomen vacuum est'));
+
+  // 1. Check if new name already exists in registrum.txt
+  if FileExists(TABULARIUM_REGISTRUM) then
+  begin
+    AssignFile(F, TABULARIUM_REGISTRUM);
+    Reset(F);
+    while not EOF(F) do
+    begin
+      ReadLn(F, Linea);
+      P := Pos('|', Linea);
+      if P > 0 then
+      begin
+        ExistensNomen := Copy(Linea, 1, P - 1);
+        if ExistensNomen = NovumNomen then
+        begin
+          CloseFile(F);
+          Exit(FormareResponsum(400, 'Error', 'Nomen iam occupatum'));
+        end;
+      end;
+    end;
+    CloseFile(F);
+  end;
+
+  // 2. Update usores.txt
+  if FileExists(TABULARIUM_USORES) then
+  begin
+    AssignFile(F, TABULARIUM_USORES);
+    Reset(F);
+    AssignFile(TempF, TABULARIUM_USORES + '.tmp');
+    Rewrite(TempF);
+    while not EOF(F) do
+    begin
+      ReadLn(F, Linea);
+      if Linea = VetusNomen then
+        WriteLn(TempF, NovumNomen)
+      else
+        WriteLn(TempF, Linea);
+    end;
+    CloseFile(F);
+    CloseFile(TempF);
+    DeleteFile(TABULARIUM_USORES);
+    RenameFile(TABULARIUM_USORES + '.tmp', TABULARIUM_USORES);
+  end;
+
+  // 3. Update registrum.txt
+  if FileExists(TABULARIUM_REGISTRUM) then
+  begin
+    AssignFile(F, TABULARIUM_REGISTRUM);
+    Reset(F);
+    AssignFile(TempF, TABULARIUM_REGISTRUM + '.tmp');
+    Rewrite(TempF);
+    while not EOF(F) do
+    begin
+      ReadLn(F, Linea);
+      P := Pos('|', Linea);
+      if P > 0 then
+      begin
+        ExistensNomen := Copy(Linea, 1, P - 1);
+        Rest := Copy(Linea, P + 1, Length(Linea));
+        if ExistensNomen = VetusNomen then
+          WriteLn(TempF, NovumNomen + '|' + Rest)
+        else
+          WriteLn(TempF, Linea);
+      end;
+    end;
+    CloseFile(F);
+    CloseFile(TempF);
+    DeleteFile(TABULARIUM_REGISTRUM);
+    RenameFile(TABULARIUM_REGISTRUM + '.tmp', TABULARIUM_REGISTRUM);
+  end;
+
+  // 4. Rename fingerprint file
+  if FileExists(PREFIXUS_FP + VetusNomen + '.txt') then
+    RenameFile(PREFIXUS_FP + VetusNomen + '.txt', PREFIXUS_FP + NovumNomen + '.txt');
+
+  // 5. Rename all fabulatio files
+  if FindFirst(PREFIXUS_FABULATIO + VetusNomen + '_*.txt', faAnyFile, SR) = 0 then
+  begin
+    repeat
+      VetusFabulatio := '../tabularium/' + SR.Name;
+      NovaFabulatio := StringReplace(VetusFabulatio, PREFIXUS_FABULATIO + VetusNomen + '_', PREFIXUS_FABULATIO + NovumNomen + '_', []);
+      RenameFile(VetusFabulatio, NovaFabulatio);
+    until FindNext(SR) <> 0;
+    FindClose(SR);
+  end;
+
+  Result := FormareResponsum(200, 'Successus', NovumNomen);
+end;
+
+function MutareTessellam(Nomen, VetusPass, NovaPass: String): String;
+var
+  F, TempF: TextFile;
+  Linea, Rest: String;
+  P: Integer;
+  ExistensNomen, ExistensEmail, ExistensPass: String;
+  Mutatum: Boolean;
+begin
+  if NovaPass = '' then Exit(FormareResponsum(400, 'Error', 'Nova tessera vacua est'));
+  if not FileExists(TABULARIUM_REGISTRUM) then Exit(FormareResponsum(404, 'Error', 'Registrum non exstat'));
+
+  Mutatum := False;
+  AssignFile(F, TABULARIUM_REGISTRUM);
+  Reset(F);
+  AssignFile(TempF, TABULARIUM_REGISTRUM + '.tmp');
+  Rewrite(TempF);
+
+  while not EOF(F) do
+  begin
+    ReadLn(F, Linea);
+    Rest := Linea;
+
+    P := Pos('|', Rest); ExistensNomen := Copy(Rest, 1, P - 1); Rest := Copy(Rest, P + 1, Length(Rest));
+    P := Pos('|', Rest); ExistensEmail := Copy(Rest, 1, P - 1); Rest := Copy(Rest, P + 1, Length(Rest));
+    P := Pos('|', Rest); ExistensPass := Copy(Rest, 1, P - 1); Rest := Copy(Rest, P + 1, Length(Rest));
+
+    if (ExistensNomen = Nomen) and (ExistensPass = VetusPass) then
+    begin
+      WriteLn(TempF, ExistensNomen + '|' + ExistensEmail + '|' + NovaPass + '|' + Rest);
+      Mutatum := True;
+    end
+    else
+      WriteLn(TempF, Linea);
+  end;
+
+  CloseFile(F);
+  CloseFile(TempF);
+
+  if Mutatum then
+  begin
+    DeleteFile(TABULARIUM_REGISTRUM);
+    RenameFile(TABULARIUM_REGISTRUM + '.tmp', TABULARIUM_REGISTRUM);
+    Result := FormareResponsum(200, 'Successus', 'Tessera mutata est');
+  end
+  else
+  begin
+    DeleteFile(TABULARIUM_REGISTRUM + '.tmp');
+    Result := FormareResponsum(401, 'Error', 'Vetus tessera non est recta vel usor non inventus');
+  end;
+end;
+
+function DelereRationem(Nomen: String): String;
+var
+  F, TempF: TextFile;
+  Linea: String;
+  P: Integer;
+  ExistensNomen: String;
+  SR: TSearchRec;
+begin
+  // 1. Remove from usores.txt
+  if FileExists(TABULARIUM_USORES) then
+  begin
+    AssignFile(F, TABULARIUM_USORES);
+    Reset(F);
+    AssignFile(TempF, TABULARIUM_USORES + '.tmp');
+    Rewrite(TempF);
+    while not EOF(F) do
+    begin
+      ReadLn(F, Linea);
+      if Linea <> Nomen then WriteLn(TempF, Linea);
+    end;
+    CloseFile(F);
+    CloseFile(TempF);
+    DeleteFile(TABULARIUM_USORES);
+    RenameFile(TABULARIUM_USORES + '.tmp', TABULARIUM_USORES);
+  end;
+
+  // 2. Remove from registrum.txt
+  if FileExists(TABULARIUM_REGISTRUM) then
+  begin
+    AssignFile(F, TABULARIUM_REGISTRUM);
+    Reset(F);
+    AssignFile(TempF, TABULARIUM_REGISTRUM + '.tmp');
+    Rewrite(TempF);
+    while not EOF(F) do
+    begin
+      ReadLn(F, Linea);
+      P := Pos('|', Linea);
+      if P > 0 then ExistensNomen := Copy(Linea, 1, P - 1) else ExistensNomen := Linea;
+      if ExistensNomen <> Nomen then WriteLn(TempF, Linea);
+    end;
+    CloseFile(F);
+    CloseFile(TempF);
+    DeleteFile(TABULARIUM_REGISTRUM);
+    RenameFile(TABULARIUM_REGISTRUM + '.tmp', TABULARIUM_REGISTRUM);
+  end;
+
+  // 3. Delete fingerprint file
+  if FileExists(PREFIXUS_FP + Nomen + '.txt') then
+    DeleteFile(PREFIXUS_FP + Nomen + '.txt');
+
+  // 4. Delete all fabulatio files
+  if FindFirst(PREFIXUS_FABULATIO + Nomen + '_*.txt', faAnyFile, SR) = 0 then
+  begin
+    repeat
+      DeleteFile('../tabularium/' + SR.Name);
+    until FindNext(SR) <> 0;
+    FindClose(SR);
+  end;
+
+  Result := FormareResponsum(200, 'Successus', 'Ratio deleta est');
+end;
+
+function DelereOmnesFabulationes(Nomen: String): String;
+var
+  SR: TSearchRec;
+  Comes: Integer;
+begin
+  Comes := 0;
+  if FindFirst(PREFIXUS_FABULATIO + Nomen + '_*.txt', faAnyFile, SR) = 0 then
+  begin
+    repeat
+      if DeleteFile('../tabularium/' + SR.Name) then Inc(Comes);
+    until FindNext(SR) <> 0;
+    FindClose(SR);
+  end;
+
+  Result := FormareResponsum(200, 'Successus', IntToStr(Comes) + ' fabulationes deletae sunt');
+end;
+
 { RAG: Investigare in Scientia }
 function Investigare(VerbaQuery: String): String;
 var
@@ -480,6 +709,46 @@ begin
       begin
         if VerificareFingerprint(Parametrum1, DataInput[4]) then
           Responsum := RenominareFabulationem(Parametrum1, Parametrum2, DataInput[3])
+        else
+          Responsum := FormareResponsum(403, 'Error', 'FP mismatch');
+      end;
+    end
+    else if Mandatum = 'RENOMINARE_USOREM' then
+    begin
+      if DataInput.Count > 3 then
+      begin
+        if VerificareFingerprint(Parametrum1, DataInput[3]) then
+          Responsum := RenominareUsorem(Parametrum1, Parametrum2)
+        else
+          Responsum := FormareResponsum(403, 'Error', 'FP mismatch');
+      end;
+    end
+    else if Mandatum = 'MUTARE_TESSARAM' then
+    begin
+      if DataInput.Count > 4 then
+      begin
+        if VerificareFingerprint(Parametrum1, DataInput[4]) then
+          Responsum := MutareTessellam(Parametrum1, Parametrum2, DataInput[3])
+        else
+          Responsum := FormareResponsum(403, 'Error', 'FP mismatch');
+      end;
+    end
+    else if Mandatum = 'DELERE_RATIONEM' then
+    begin
+      if DataInput.Count > 2 then
+      begin
+        if VerificareFingerprint(Parametrum1, Parametrum2) then
+          Responsum := DelereRationem(Parametrum1)
+        else
+          Responsum := FormareResponsum(403, 'Error', 'FP mismatch');
+      end;
+    end
+    else if Mandatum = 'DELERE_OMNES_FABULATIONES' then
+    begin
+      if DataInput.Count > 2 then
+      begin
+        if VerificareFingerprint(Parametrum1, Parametrum2) then
+          Responsum := DelereOmnesFabulationes(Parametrum1)
         else
           Responsum := FormareResponsum(403, 'Error', 'FP mismatch');
       end;
