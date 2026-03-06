@@ -1,2 +1,4 @@
-Meta-Llama-3.1-8B-Instruct
-Meta-Llama-3.1-70B-Instruct
+gpt-oss-120b
+DeepSeek-R1-Distill-Llama-70B
+DeepSeek-V3.1
+Llama-3.3-Swallow-70B-Instruct-v0.4
