@@ -58,12 +58,59 @@ if ($action === 'login_anima' || $action === 'register_anima' || $action === 'fo
     exit();
 }
 
+// Move session check above `get_user_state`
 if (!isset($_SESSION["usor"]) || !isset($_SESSION["fp"])) {
     http_response_code(401);
     exit("Unauthorized (No Session or FP)");
 }
 $usor = $_SESSION["usor"];
 $user_fp = $_SESSION["fp"];
+
+if ($action === 'get_user_state') {
+    // Get messages count
+    $resp_nuntios = loqui_cum_daemonio("NUMERARE_NUNTIOS|" . $usor . "|" . $user_fp);
+    $partes_nuntios = explode("|", $resp_nuntios);
+    $messages = 0;
+    if ($partes_nuntios[0] == "200") {
+        $messages = (int)$partes_nuntios[2];
+    }
+
+    // Calculate level (1 msg -> level 1, 2 msgs -> level 2, etc up to 13)
+    // 2 messages = level 2 as per user request (so level = min(13, 1 + floor(messages / 2)))
+    $level = min(13, 1 + floor($messages / 2));
+
+    // Get options
+    $resp_opt = loqui_cum_daemonio("LEGERE_OPTIONES|" . $usor . "|" . $user_fp);
+    $partes_opt = explode("|", $resp_opt);
+    $options_json = "{}";
+    if ($partes_opt[0] == "200") {
+        $options_json = $partes_opt[2];
+    }
+
+    header('Content-Type: application/json');
+    echo json_encode([
+        "status" => "ok",
+        "messages" => $messages,
+        "level" => $level,
+        "options" => json_decode($options_json, true) ?: new stdClass()
+    ]);
+    exit();
+}
+
+if ($action === 'save_options') {
+    $options_str = $_POST['options'] ?? '{}';
+    $safe_options = json_encode(json_decode($options_str)); // Validate JSON
+    if ($safe_options) {
+        $resp = loqui_cum_daemonio("SERVARE_OPTIONES|" . $usor . "|" . $safe_options . "|" . $user_fp);
+        $partes = explode("|", $resp);
+        if ($partes[0] == "200") {
+            echo json_encode(["status" => "ok"]);
+            exit();
+        }
+    }
+    echo json_encode(["status" => "error", "message" => "Could not save options"]);
+    exit();
+}
 
 function investigare_in_tela($query)
 {
