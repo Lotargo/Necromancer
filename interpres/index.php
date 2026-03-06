@@ -2,7 +2,8 @@
 session_start();
 
 function loqui_cum_daemonio($mandatum) {
-    $fp = fsockopen("127.0.0.1", 8080, $errno, $errstr, 10);
+    $daemonium_host = getenv("DAEMONIUM_HOST") ?: "127.0.0.1";
+    $fp = fsockopen($daemonium_host, 8080, $errno, $errstr, 10);
     if (!$fp) {
         return "500|Error|Daemonium non respondet";
     }

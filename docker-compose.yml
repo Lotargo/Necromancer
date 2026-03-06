@@ -1,0 +1,24 @@
+services:
+  daemonium:
+    build:
+      context: ./daemonium
+    container_name: chat_daemonium
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./tabularium:/app/tabularium
+    restart: always
+
+  interpres:
+    build:
+      context: ./interpres
+    container_name: chat_interpres
+    ports:
+      - "8000:8000"
+    environment:
+      - DAEMONIUM_HOST=daemonium
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_API_URL=${OPENAI_API_URL:-}
+    depends_on:
+      - daemonium
+    restart: always
