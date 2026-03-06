@@ -130,6 +130,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             border: 2px solid #00FF00; padding: 30px; text-align: center;
             background-color: #000; box-shadow: 0 0 20px #00FF00;
         }
+
+        /* Delete Chat Modal Styles */
+        #delete-chat-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85); z-index: 9998;
+            display: none; justify-content: center; align-items: center;
+        }
+        .delete-chat-content {
+            border: 2px solid #ff0000; padding: 30px; text-align: center;
+            background-color: #000; box-shadow: 0 0 20px #ff0000;
+        }
     </style>
 </head>
 <body>
@@ -161,6 +172,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             <div style="margin-top: 20px;">
                 <button onclick="submitRenameChat()" style="margin-right: 15px;">Renominare (Rename)</button>
                 <button onclick="closeRenameModal()" class="cancel-btn">Inducere (Cancel)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Chat Modal -->
+    <div id="delete-chat-modal">
+        <div class="delete-chat-content">
+            <h2 style="margin-top: 0; color: #ff0000; text-shadow: 0 0 5px #ff0000;">Delere Fabulationem</h2>
+            <p style="font-size: 24px; color: #ff3333;">Visne vere delere fabulationem: <span id="delete-room-name" style="color:#ffff00;"></span>?</p>
+            <div style="margin-top: 20px;">
+                <button onclick="submitDeleteChat()" class="cancel-btn" style="margin-right: 15px;">Ita, Delere (Yes, Delete)</button>
+                <button onclick="closeDeleteModal()">Inducere (Cancel)</button>
             </div>
         </div>
     </div>
@@ -355,12 +378,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             }
         }
 
+        let roomToDelete = '';
+
         function deleteRoom(room, event) {
             event.stopPropagation();
-            if (confirm("Visne delere fabulationem: " + room + "?")) {
-                fetch('api.php?action=delete&room=' + room)
+            roomToDelete = room;
+            const roomSpan = document.getElementById('delete-room-name');
+            if (roomSpan) roomSpan.textContent = room;
+            const modal = document.getElementById('delete-chat-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            const modal = document.getElementById('delete-chat-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function submitDeleteChat() {
+            if (roomToDelete) {
+                fetch('api.php?action=delete&room=' + roomToDelete)
                     .then(() => {
-                        if (currentRoom === room) {
+                        // Also remove from virtualRooms if it was just drafted
+                        virtualRooms = virtualRooms.filter(r => r !== roomToDelete);
+                        if (currentRoom === roomToDelete) {
                             chatEl.textContent = "Eligere fabulationem e pluteo...";
                             currentRoom = '';
                             nuntiusInput.disabled = true;
@@ -368,6 +408,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                             roomLabel.textContent = '';
                         }
                         loadChats();
+                        closeDeleteModal();
                     });
             }
         }
