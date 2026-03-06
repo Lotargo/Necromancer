@@ -1,2 +1,1 @@
-gpt-oss-120b
-llama-3.3-70b
+llama3.1-8b
