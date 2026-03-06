@@ -14,11 +14,12 @@ services:
       context: ./interpres
     container_name: chat_interpres
     ports:
-      - "8000:8000"
+      - "666:8000"
     environment:
       - DAEMONIUM_HOST=daemonium
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_API_URL=${OPENAI_API_URL:-}
+      - OPENAI_API_MODEL=${OPENAI_API_MODEL:-}
     depends_on:
       - daemonium
     restart: always

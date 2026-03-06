@@ -28,13 +28,14 @@ function invocare_oraculum($contextus, $interrogatio) {
 
     $promptus = "Contextus: " . $contextus . "\nInterrogatio: " . $interrogatio . "\nResponde Latine.";
 
+    $model = getenv("OPENAI_API_MODEL") ?: "gpt-3.5-turbo";
     $data = [
-        "model" => "gpt-3.5-turbo",
+        "model" => $model,
         "messages" => [
             ["role" => "system", "content" => "Tu es philosophus Romanus. Responde semper Latine."],
             ["role" => "user", "content" => $promptus]
         ],
-        "max_tokens" => 150
+        "max_tokens" => 300
     ];
 
     $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
@@ -57,7 +58,7 @@ function invocare_oraculum($contextus, $interrogatio) {
     if (isset($json["choices"][0]["message"]["content"])) {
         return $json["choices"][0]["message"]["content"];
     } else {
-        return "Oraculum mutum est.";
+        return "Oraculum mutum est. (Codex: " . htmlspecialchars($result) . ")";
     }
 }
 
