@@ -102,12 +102,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             font-size: 36px; font-weight: bold; overflow: hidden; white-space: pre-wrap; margin: 0 auto;
             border-right: .15em solid #00FF00; animation: blink-caret .75s step-end infinite;
         }
+
+        /* New Chat Modal Styles */
+        #new-chat-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.85); z-index: 9998;
+            display: none; justify-content: center; align-items: center;
+        }
+        .new-chat-content {
+            border: 2px solid #00FF00; padding: 30px; text-align: center;
+            background-color: #000; box-shadow: 0 0 20px #00FF00;
+        }
+        #new-chat-input { width: 80%; margin-bottom: 20px; text-align: center; }
+        .cancel-btn { background-color: #330000; color: #ff3333; border-color: #ff3333; }
+        .cancel-btn:hover { background-color: #ff3333; color: #fff; }
     </style>
 </head>
 <body>
     <div id="welcome-modal">
         <div class="welcome-content">
             <div class="welcome-text" id="welcome-typewriter"></div>
+        </div>
+    </div>
+
+    <!-- New Chat Modal -->
+    <div id="new-chat-modal">
+        <div class="new-chat-content">
+            <h2 style="margin-top: 0; text-shadow: 0 0 5px #00FF00;">Nova Fabulatio</h2>
+            <p style="font-size: 24px;">Quod est nomen novae fabulationis? (Name of new chat?)</p>
+            <input type="text" id="new-chat-input" autocomplete="off" onkeydown="if(event.key === 'Enter') submitNewChat()">
+            <div style="margin-top: 20px;">
+                <button onclick="submitNewChat()" style="margin-right: 15px;">Creare (Create)</button>
+                <button onclick="closeNewChatModal()" class="cancel-btn">Inducere (Cancel)</button>
+            </div>
         </div>
     </div>
 
@@ -166,13 +193,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         window.onload = () => {
             loadChats(true);
-            const sessionKey = 'welcomeShown_<?php echo htmlspecialchars($usor); ?>';
-            if (!sessionStorage.getItem(sessionKey)) {
-                typeWriterWelcome();
-                sessionStorage.setItem(sessionKey, 'true');
-            } else {
-                modalEl.style.display = 'none';
-            }
+            typeWriterWelcome();
         };
 
         modalEl.addEventListener('click', closeWelcomeModal);
@@ -218,11 +239,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         function createNewChat() {
-            const name = prompt("Quod est nomen novae fabulationis? (Name of new chat?)");
+            document.getElementById('new-chat-modal').style.display = 'flex';
+            document.getElementById('new-chat-input').value = '';
+            document.getElementById('new-chat-input').focus();
+        }
+
+        function closeNewChatModal() {
+            document.getElementById('new-chat-modal').style.display = 'none';
+        }
+
+        function submitNewChat() {
+            const name = document.getElementById('new-chat-input').value.trim();
             if (name) {
                 const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '');
                 if (safeName) {
                     selectRoom(safeName);
+                    closeNewChatModal();
                 }
             }
         }
