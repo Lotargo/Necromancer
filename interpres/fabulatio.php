@@ -190,6 +190,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
     <script>
         let currentRoom = '';
+        let virtualRooms = []; // Newly created rooms without history yet
         const chatEl = document.getElementById("chat");
         const chatListEl = document.getElementById("chat-list");
         const chatForm = document.getElementById("chat-form");
@@ -234,8 +235,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     let rooms = data.rooms || [];
                     if (rooms.length === 1 && rooms[0] === "") rooms = [];
                     
+                    // Merge physical rooms with virtual unsaved rooms
+                    virtualRooms.forEach(vr => {
+                        if (!rooms.includes(vr)) rooms.unshift(vr);
+                    });
+                    
+                    // If current room still isn't in there (e.g. just renamed before refresh), add it
                     if (currentRoom && currentRoom !== '' && !rooms.includes(currentRoom)) {
-                        rooms.unshift(currentRoom); // Add newly created virtual chat to the list
+                         rooms.unshift(currentRoom);
                     }
 
                     if (rooms.length > 0) {
@@ -288,6 +295,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             if (name) {
                 const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '');
                 if (safeName) {
+                    if (!virtualRooms.includes(safeName)) {
+                        virtualRooms.push(safeName);
+                    }
                     selectRoom(safeName);
                     closeNewChatModal();
                 }
