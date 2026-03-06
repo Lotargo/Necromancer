@@ -204,7 +204,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <label>Password:</label>
                 <input type="password" id="anima-pass" style="background-color: #000; color: #00FF00; border: 1px solid #00FF00; font-family: inherit; font-size: 24px; padding: 10px; width: 100%; box-sizing: border-box;">
             </div>
-
+            
             <div class="form-footer">
                 <label class="checkbox-group">
                     <input type="checkbox" id="anima-remember"> Memento Mei

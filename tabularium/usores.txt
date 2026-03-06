@@ -6,3 +6,4 @@ Necro
 Legatus_X
 AnimaUser
 RealUser
+Lotargo
