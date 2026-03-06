@@ -163,13 +163,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // Start animation immediately
         window.onload = () => {
-            // Check if user came from inside we could skip it using sessionstorage, but for now show it
-            if (!sessionStorage.getItem('introShown')) {
-                typeWriter();
-                sessionStorage.setItem('introShown', 'true');
-            } else {
-                modalEl.style.display = 'none'; // Skip if already seen this session
-            }
+            typeWriter();
         };
 
         // click to skip
