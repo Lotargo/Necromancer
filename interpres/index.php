@@ -56,8 +56,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <title>Porta Introitus</title>
     <style>
-        body { background-color: black; color: #00FF00; font-family: "Courier New", Courier, monospace; margin: 0; padding: 20px; }
-        input[type="text"], input[type="submit"] { background-color: black; color: #00FF00; border: 1px solid #00FF00; }
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        
+        body { 
+            background-color: #050505; color: #00FF00; 
+            font-family: 'VT323', "Courier New", Courier, monospace; 
+            margin: 0; padding: 0;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh; overflow: hidden;
+        }
+        
+        /* CRT Scanline Effect */
+        body::after {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        }
+        
+        .container {
+            border: 2px solid #00FF00; padding: 40px; box-shadow: 0 0 20px #00FF00, inset 0 0 20px #00FF00;
+            background-color: #000; z-index: 1; text-align: center;
+            width: 80%; max-width: 600px; position: relative;
+        }
+
+        h1 { font-size: 48px; text-shadow: 0 0 10px #00FF00; margin-bottom: 30px;}
+        label { font-size: 24px; }
+        
+        input[type="text"], input[type="submit"] { 
+            background-color: #000; color: #00FF00; border: 1px solid #00FF00; 
+            font-family: 'VT323', "Courier New", Courier, monospace;
+            font-size: 24px; padding: 10px; margin-top: 10px;
+            box-shadow: inset 0 0 5px #00FF00; transition: all 0.2s;
+        }
+        
+        input[type="submit"]:hover {
+            background-color: #00FF00; color: #000; cursor: pointer;
+        }
+
         a { color: #00FF00; }
         
         /* Modal Styles */
@@ -68,19 +103,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             opacity: 1; transition: opacity 0.5s ease;
         }
         .modal-content {
-            border: 4px double #00FF00; padding: 20px 40px; text-align: center;
-            background-color: #050505; max-width: 600px;
-            box-shadow: 0 0 15px #00FF00 inset;
+            border: 4px double #00FF00; padding: 40px; text-align: center;
+            background-color: #050505; max-width: 800px;
+            box-shadow: 0 0 25px #00FF00 inset;
         }
         .retro-text {
-            font-size: 24px; font-weight: bold; text-transform: uppercase;
+            font-size: 32px; font-weight: bold; text-transform: uppercase;
             overflow: hidden; white-space: pre-wrap; margin: 0 auto;
             border-right: .15em solid #00FF00; 
             animation: blink-caret .75s step-end infinite;
+            text-align: left;
         }
         @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #00FF00; } }
         /* Glitch effect on header */
-        .glitch { font-size: 30px; font-weight: bold; text-shadow: 2px 2px #0f0; margin-bottom: 20px;}
+        .glitch { font-size: 42px; font-weight: bold; text-shadow: 2px 2px #0f0, -2px -2px #f00; margin-bottom: 30px; letter-spacing: 5px;}
     </style>
 </head>
 <body>
