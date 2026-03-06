@@ -102,6 +102,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             box-shadow: inset 0 0 10px var(--main-color); scroll-behavior: smooth;
         }
 
+        .reasoning-text {
+            color: var(--dim-color); font-style: italic; opacity: 0.8;
+            font-size: 18px; display: inline;
+        }
+
+        .tool-text {
+            color: var(--warn-color); font-weight: bold; font-style: italic;
+            background-color: var(--hover-color); padding: 2px 5px; margin: 2px 0;
+            border: 1px dashed var(--warn-color); display: inline-block;
+        }
+
         .toggles-bar {
             display: flex; gap: 15px; margin-bottom: 10px; align-items: center;
             border-top: 1px dotted var(--dim-color); padding-top: 10px;
@@ -851,6 +862,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             formData.append('lingua', currentLangMode);
             formData.append('search', currentSearchMode);
 
+            let reasoningSpan = null;
+            let normalTextSpan = document.createElement('span');
+            chatEl.appendChild(normalTextSpan);
+
             fetch('api.php', {
                 method: 'POST',
                 body: formData,
@@ -885,10 +900,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                         // Clean up virtualRooms
                                         virtualRooms = virtualRooms.filter(r => r !== oldRoom);
                                         loadChats();
-                                    } else if (dataNode.event === 'debug') {
-                                        console.log("SSE Debug:", dataNode);
-                                    } else if (dataNode.choices && dataNode.choices[0].delta.content) {
-                                        chatEl.textContent += dataNode.choices[0].delta.content;
+                                    } else if (dataNode.event === 'tool_call') {
+                                        const toolSpan = document.createElement('span');
+                                        toolSpan.className = 'tool-text';
+                                        toolSpan.textContent = `\n[Instrumentum: ${dataNode.name}]\n`;
+                                        chatEl.appendChild(toolSpan);
+                                        // Reset normal text span after a tool call
+                                        normalTextSpan = document.createElement('span');
+                                        chatEl.appendChild(normalTextSpan);
+                                        chatEl.scrollTop = chatEl.scrollHeight;
+                                    } else if (dataNode.choices && dataNode.choices[0].delta) {
+                                        const delta = dataNode.choices[0].delta;
+                                        if (delta.reasoning_content) {
+                                            if (!reasoningSpan) {
+                                                reasoningSpan = document.createElement('span');
+                                                reasoningSpan.className = 'reasoning-text';
+                                                chatEl.insertBefore(reasoningSpan, normalTextSpan);
+                                            }
+                                            reasoningSpan.textContent += delta.reasoning_content;
+                                        }
+                                        if (delta.content) {
+                                            normalTextSpan.textContent += delta.content;
+                                        }
                                         chatEl.scrollTop = chatEl.scrollHeight;
                                     }
                                 } catch(e) {}
@@ -899,7 +932,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 }
                 read();
             }).catch(err => {
-                chatEl.textContent += "\nError: " + err;
+                const errSpan = document.createElement('span');
+                errSpan.textContent = "\nError: " + err;
+                chatEl.appendChild(errSpan);
                 nuntiusInput.disabled = false;
                 sendBtn.disabled = false;
             });
