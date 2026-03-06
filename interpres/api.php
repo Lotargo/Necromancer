@@ -228,10 +228,12 @@ if ($action === 'renominare_usorem') {
         if ($partes[0] == "200") {
             $_SESSION["usor"] = $safeName;
             echo json_encode(["status" => "ok", "novum_nomen" => $safeName]);
-        } else {
+        }
+        else {
             echo json_encode(["status" => "error", "message" => $partes[2] ?? 'Error']);
         }
-    } else {
+    }
+    else {
         echo json_encode(["status" => "error", "message" => "Nomen non validum"]);
     }
     exit();
@@ -251,7 +253,8 @@ if ($action === 'mutare_tessaram') {
 
     if ($partes[0] == "200") {
         echo json_encode(["status" => "ok"]);
-    } else {
+    }
+    else {
         echo json_encode(["status" => "error", "message" => $partes[2] ?? 'Error']);
     }
     exit();
@@ -264,7 +267,8 @@ if ($action === 'delere_rationem') {
     if ($partes[0] == "200") {
         session_destroy();
         echo json_encode(["status" => "ok"]);
-    } else {
+    }
+    else {
         echo json_encode(["status" => "error", "message" => $partes[2] ?? 'Error']);
     }
     exit();
@@ -276,7 +280,8 @@ if ($action === 'delere_omnes_fabulationes') {
 
     if ($partes[0] == "200") {
         echo json_encode(["status" => "ok"]);
-    } else {
+    }
+    else {
         echo json_encode(["status" => "error", "message" => $partes[2] ?? 'Error']);
     }
     exit();
@@ -345,7 +350,8 @@ if ($action === 'send') {
     header('Content-Type: text/event-stream');
     header('Cache-Control: no-cache');
     header('Connection: keep-alive');
-    while (ob_get_level() > 0) ob_end_flush();
+    while (ob_get_level() > 0)
+        ob_end_flush();
 
     $lingua_mode = $_POST['lingua'] ?? 'latin';
     $search_mode = $_POST['search'] ?? 'off';
@@ -366,12 +372,13 @@ if ($action === 'send') {
 
     $system_role = "Tu es philosophus Romanus. Responde semper Latine.";
     if ($lingua_mode === 'auto') {
-        $system_role = "Tu es philosophus expertus. Responde in eadem lingua qua usor te adloquitur. 
-        - Если пользователь пишет на русском, отвечай на РУССКОМ языке.
-        - If the user writes in English, respond in ENGLISH.
-        - Semper conserva personam philosophi antiqui. 
-        - CRITICAL RULE: Do NOT respond in Latin unless the user speaks Latin. Respond exactly in the language of the user's message.
-        - ALWAYS start your response with greeting or acknowledgment in the same language as user.
+        $system_role = "You are an ancient Roman philosopher. 
+        CRITICAL INSTRUCTION: You MUST speak in the EXACT SAME LANGUAGE that the user is speaking!
+        - If the user writes in Russian, you MUST reply entirely in Russian (for example: 'Приветствую, путник...').
+        - If the user writes in English, you MUST reply entirely in English.
+        - NEVER reply in Latin unless the user explicitly speaks Latin to you.
+        - Maintain your persona as a wise Roman philosopher, but express your thoughts natively in the user's language.
+        - ALWAYS start your response with a greeting or acknowledgment in the user's language.
         - Use the provided tools (search_web, search_knowledge_base) to find facts if needed.";
     }
 
@@ -385,7 +392,8 @@ if ($action === 'send') {
         foreach ($lines as $line) {
             if (strpos($line, 'Tute: ') === 0) {
                 $chat_history[] = ["role" => "user", "content" => substr($line, 6)];
-            } elseif (strpos($line, 'Oraculum: ') === 0) {
+            }
+            elseif (strpos($line, 'Oraculum: ') === 0) {
                 $chat_history[] = ["role" => "assistant", "content" => substr($line, 10)];
             }
         }
@@ -509,7 +517,8 @@ if ($action === 'send') {
                                         echo "data: " . json_encode(["event" => "tool_call", "name" => $tc['function']['name']]) . "\n\n";
                                         flush();
                                     }
-                                } else {
+                                }
+                                else {
                                     if (isset($tc['function']['arguments'])) {
                                         $tool_calls_buffer[$idx]['function']['arguments'] .= $tc['function']['arguments'];
                                     }
@@ -553,11 +562,13 @@ if ($action === 'send') {
                 $tool_result = "";
                 if ($tool_name === 'search_web') {
                     $tool_result = investigare_in_tela($query);
-                } elseif ($tool_name === 'search_knowledge_base') {
+                }
+                elseif ($tool_name === 'search_knowledge_base') {
                     $rag_resp = loqui_cum_daemonio("INVESTIGARE|" . $query);
                     $partes_rag = explode("|", $rag_resp);
                     $tool_result = ($partes_rag[0] == "200") ? $partes_rag[2] : "Nihil inventum.";
-                } else {
+                }
+                else {
                     $tool_result = "Instrumentum ignotum.";
                 }
 
@@ -568,8 +579,9 @@ if ($action === 'send') {
                     "content" => $tool_result
                 ];
             }
-            // Loop continues because we appended tool results
-        } else {
+        // Loop continues because we appended tool results
+        }
+        else {
             // No tool calls, we are done
             break;
         }
