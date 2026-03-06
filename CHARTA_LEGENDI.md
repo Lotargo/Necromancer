@@ -17,11 +17,12 @@ Hoc est repositorium in quo vivit chat antiquus et arcanus, scriptus in linguis 
 ## Magia Nigra (Docker Compose)
 
 Ut incipias per "Docker", solum opus est uti hoc mandato:
+1. Effingo `.env.example` in `.env` et scribe tuam clavem (`OPENAI_API_KEY`) et alias variabiles in ea.
+2. Curre:
 ```bash
-export OPENAI_API_KEY="tua-clavis-hic"
 docker-compose up --build -d
 ```
-Tunc aperi navigatorem ad `http://localhost:8000`.
+Tunc aperi navigatorem ad `http://localhost:666`.
 
 ## Quomodo incipere sine Magia (Manual run)
 
@@ -36,16 +37,20 @@ Tunc aperi navigatorem ad `http://localhost:8000`.
 4. In secundo termino, curre PHP:
    ```bash
    cd interpres
-   php -S 127.0.0.1:8000
+   php -S 127.0.0.1:666
    ```
-5. Aperi navigatorem ad `http://127.0.0.1:8000`.
+5. Aperi navigatorem ad `http://127.0.0.1:666`.
 
 ## Quomodo API configurare (How to configure API)
 
-Si vis uti alio provisore (e.g. ad compatibilitatem cum OpenAI protocollo, sicut LocalAI vel vLLM), potes etiam URL mutare:
+Si vis uti alio provisore (e.g. ad compatibilitatem cum OpenAI protocollo, sicut LocalAI vel vLLM), potes etiam URL in `.env` fasciculo mutare:
+```ini
+OPENAI_API_URL=https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+OPENAI_API_MODEL=gemini-1.5-flash
+OPENAI_API_KEY=tua-clavis-hic
+```
+Deinde curre:
 ```bash
-export OPENAI_API_URL="http://localhost:8080/v1/chat/completions"
-export OPENAI_API_KEY="tua-clavis-hic"
 docker-compose up --build -d
 ```
 
