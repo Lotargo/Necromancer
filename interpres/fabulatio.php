@@ -36,7 +36,8 @@ function invocare_oraculum($contextus, $interrogatio) {
         "max_tokens" => 150
     ];
 
-    $ch = curl_init("https://api.openai.com/v1/chat/completions");
+    $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
+    $ch = curl_init($api_url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
