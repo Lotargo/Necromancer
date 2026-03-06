@@ -117,33 +117,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #00FF00; } }
         /* Glitch effect on header */
         .glitch { font-size: 42px; font-weight: bold; text-shadow: 2px 2px #0f0, -2px -2px #f00; margin-bottom: 30px; letter-spacing: 5px;}
-
-        /* CRT Effects */
-        .scanline, .artifact {
-            position: fixed; left: 0; width: 100%; height: 2px;
-            background: rgba(0, 255, 0, 0.4);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
-            z-index: 100; pointer-events: none;
-            display: none;
-        }
-
-        .artifact {
-            height: 4px;
-            background: repeating-linear-gradient(0deg, rgba(0, 255, 0, 0.3), rgba(0, 255, 0, 0.3) 1px, transparent 1px, transparent 2px);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
-        }
-
-        @keyframes scanline-anim {
-            0% { top: -5%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 105%; opacity: 0; }
-        }
-
-        .crt-active {
-            display: block;
-            animation: scanline-anim 2s linear forwards;
-        }
     </style>
 </head>
 <body>
@@ -153,10 +126,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <div class="retro-text" id="typewriter"></div>
         </div>
     </div>
-
-    <!-- CRT Visual Elements -->
-    <div id="scanline" class="scanline"></div>
-    <div id="artifact" class="artifact"></div>
 
     <h1>Salve Viator!</h1>
     <?php if ($error)
@@ -199,27 +168,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         // click to skip
         modalEl.addEventListener('click', closeModal);
-
-        // CRT Effects Trigger Logic
-        function triggerScanline() {
-            const el = document.getElementById('scanline');
-            el.classList.remove('crt-active');
-            void el.offsetWidth; // Trigger reflow
-            el.classList.add('crt-active');
-            setTimeout(triggerScanline, Math.random() * (15000 - 7000) + 7000);
-        }
-
-        function triggerArtifact() {
-            const el = document.getElementById('artifact');
-            el.classList.remove('crt-active');
-            void el.offsetWidth; // Trigger reflow
-            el.classList.add('crt-active');
-            setTimeout(triggerArtifact, Math.random() * (42000 - 7000) + 7000);
-        }
-
-        // Start effects
-        setTimeout(triggerScanline, 5000);
-        setTimeout(triggerArtifact, 10000);
     </script>
 </body>
 </html>

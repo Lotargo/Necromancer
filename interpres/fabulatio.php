@@ -88,6 +88,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             box-sizing: border-box; font-size: 22px;
             box-shadow: inset 0 0 10px #00FF00; scroll-behavior: smooth;
         }
+
+        .toggles-bar {
+            display: flex; gap: 15px; margin-bottom: 10px; align-items: center;
+            border-top: 1px dotted #008800; padding-top: 10px;
+        }
+        .toggle-btn {
+            font-size: 18px; padding: 5px 12px; min-width: 140px; text-align: center;
+        }
+        .toggle-active {
+            background-color: #00FF00 !important; color: #000 !important;
+            box-shadow: 0 0 10px #00FF00;
+        }
+        .toggle-inactive {
+            color: #008800; border-color: #008800;
+        }
         
         .blink { animation: blink-animation 1s steps(5, start) infinite; -webkit-animation: blink-animation 1s steps(5, start) infinite; }
         @keyframes blink-animation { to { visibility: hidden; } }
@@ -141,33 +156,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             border: 2px solid #ff0000; padding: 30px; text-align: center;
             background-color: #000; box-shadow: 0 0 20px #ff0000;
         }
-
-        /* CRT Effects */
-        .scanline, .artifact {
-            position: fixed; left: 0; width: 100%; height: 2px;
-            background: rgba(0, 255, 0, 0.4);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
-            z-index: 10000; pointer-events: none;
-            display: none;
-        }
-
-        .artifact {
-            height: 4px;
-            background: repeating-linear-gradient(0deg, rgba(0, 255, 0, 0.3), rgba(0, 255, 0, 0.3) 1px, transparent 1px, transparent 2px);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
-        }
-
-        @keyframes scanline-anim {
-            0% { top: -5%; opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { top: 105%; opacity: 0; }
-        }
-
-        .crt-active {
-            display: block;
-            animation: scanline-anim 2s linear forwards;
-        }
     </style>
 </head>
 <body>
@@ -215,10 +203,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         </div>
     </div>
 
-    <!-- CRT Visual Elements -->
-    <div id="scanline" class="scanline"></div>
-    <div id="artifact" class="artifact"></div>
-
     <div class="layout-wrapper">
         <div class="sidebar">
             <h2>Pluteus (Chats)</h2>
@@ -234,6 +218,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         <div class="main-chat">
             <h1>Forum: <?php echo htmlspecialchars($usor); ?> <span class="blink">_</span> <span id="current-room-label" style="font-size: 24px; color: #008800; float: right;"></span></h1>
             <div id="chat">Eligere fabulationem e pluteo...</div>
+
+            <div class="toggles-bar">
+                <button id="toggle-lang" class="toggle-btn" onclick="toggleLanguage()">Lingua: Latina [L]</button>
+                <button id="toggle-search" class="toggle-btn" onclick="toggleSearch()">Investigatio: OFF [-]</button>
+                <span id="toggles-info" style="font-size: 14px; color: #006600; font-family: monospace; flex-grow: 1; text-align: right;">MODUS: TRADITIO</span>
+            </div>
 
             <form id="chat-form" style="display: flex; gap: 10px;">
                 <input type="text" id="nuntius" name="nuntius" style="flex-grow: 1;" autocomplete="off" placeholder="Dicent..." disabled>
@@ -447,6 +437,49 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             }
         }
 
+        // Toggles State Management
+        let currentLangMode = sessionStorage.getItem('lang_mode') || 'latin';
+        let currentSearchMode = sessionStorage.getItem('search_mode') || 'off';
+
+        function updateToggleUI() {
+            const btnLang = document.getElementById('toggle-lang');
+            const btnSearch = document.getElementById('toggle-search');
+            const info = document.getElementById('toggles-info');
+
+            if (currentLangMode === 'latin') {
+                btnLang.textContent = "Lingua: Latina [L]";
+                btnLang.classList.remove('toggle-active');
+            } else {
+                btnLang.textContent = "Lingua: Auto [A]";
+                btnLang.classList.add('toggle-active');
+            }
+
+            if (currentSearchMode === 'off') {
+                btnSearch.textContent = "Investigatio: OFF [-]";
+                btnSearch.classList.remove('toggle-active');
+            } else {
+                btnSearch.textContent = "Investigatio: DDG [S]";
+                btnSearch.classList.add('toggle-active');
+            }
+
+            info.textContent = `MODUS: ${currentLangMode.toUpperCase()} | SEARCH: ${currentSearchMode.toUpperCase()}`;
+        }
+
+        function toggleLanguage() {
+            currentLangMode = currentLangMode === 'latin' ? 'auto' : 'latin';
+            sessionStorage.setItem('lang_mode', currentLangMode);
+            updateToggleUI();
+        }
+
+        function toggleSearch() {
+            currentSearchMode = currentSearchMode === 'off' ? 'on' : 'off';
+            sessionStorage.setItem('search_mode', currentSearchMode);
+            updateToggleUI();
+        }
+
+        // Initial UI Update
+        updateToggleUI();
+
         chatForm.onsubmit = function(e) {
             e.preventDefault();
             const msg = nuntiusInput.value.trim();
@@ -464,6 +497,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             formData.append('action', 'send');
             formData.append('room', currentRoom);
             formData.append('nuntius', msg);
+            formData.append('lingua', currentLangMode);
+            formData.append('search', currentSearchMode);
 
             fetch('api.php', {
                 method: 'POST',
@@ -513,31 +548,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 sendBtn.disabled = false;
             });
         };
-
-        // CRT Effects Trigger Logic
-        function triggerScanline() {
-            const el = document.getElementById('scanline');
-            if (el) {
-                el.classList.remove('crt-active');
-                void el.offsetWidth; // Trigger reflow
-                el.classList.add('crt-active');
-            }
-            setTimeout(triggerScanline, Math.random() * (15000 - 7000) + 7000);
-        }
-
-        function triggerArtifact() {
-            const el = document.getElementById('artifact');
-            if (el) {
-                el.classList.remove('crt-active');
-                void el.offsetWidth; // Trigger reflow
-                el.classList.add('crt-active');
-            }
-            setTimeout(triggerArtifact, Math.random() * (42000 - 7000) + 7000);
-        }
-
-        // Wait for welcome animation to finish or start shortly after
-        setTimeout(triggerScanline, 8000);
-        setTimeout(triggerArtifact, 12000);
     </script>
 </body>
 </html>

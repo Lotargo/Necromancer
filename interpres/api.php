@@ -18,6 +18,30 @@ function loqui_cum_daemonio($mandatum)
     return trim($responsum);
 }
 
+function investigare_in_tela($query)
+{
+    $url = "https://html.duckduckgo.com/html/?q=" . urlencode($query);
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124 Safari/537.36');
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $html = curl_exec($ch);
+    curl_close($ch);
+
+    if (!$html)
+        return "Nihil inventum est in tela.";
+
+    // Simple extraction of snippets using regex to avoid DOM dependency issues
+    preg_match_all('/<a class="result__snippet"[^>]*>(.*?)<\/a>/s', $html, $matches);
+    $snippets = array_slice($matches[1], 0, 5);
+    $clean_snippets = array_map(function ($s) {
+        return strip_tags(html_entity_decode($s));
+    }, $snippets);
+
+    return implode("\n---\n", $clean_snippets);
+}
+
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 $cubiculum = $_GET['room'] ?? $_POST['room'] ?? 'default';
 
@@ -108,10 +132,16 @@ if ($action === 'send') {
     // 1. Save user message
     loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|Tute: " . $nuntius);
 
-    // 2. Query Knowledge Base (RAG)
+    // 2. Query Knowledge Base (RAG) & Web Search
     $rag_resp = loqui_cum_daemonio("INVESTIGARE|" . $nuntius);
     $partes_rag = explode("|", $rag_resp);
     $contextus = ($partes_rag[0] == "200") ? $partes_rag[2] : "";
+
+    $search_mode = $_POST['search'] ?? 'off';
+    $tela_contextus = "";
+    if ($search_mode === 'on') {
+        $tela_contextus = investigare_in_tela($nuntius);
+    }
 
     // 3. Prepare LLM Stream
     header('Content-Type: text/event-stream');
@@ -134,13 +164,24 @@ if ($action === 'send') {
         exit();
     }
 
-    $promptus = "Contextus: " . $contextus . "\nInterrogatio: " . $nuntius . "\nResponde Latine.";
-    $model = getenv("OPENAI_API_MODEL") ?: "gpt-3.5-turbo";
+    $promptus = "Contextus Localis: " . $contextus . "\n";
+    if ($tela_contextus) {
+        $promptus .= "Contextus ex Tela (DuckDuckGo): " . $tela_contextus . "\n";
+    }
+    $promptus .= "Interrogatio: " . $nuntius . "\nResponde.";
+
+    $lingua_mode = $_POST['lingua'] ?? 'latin';
+    $system_role = "Tu es philosophus Romanus. Responde semper Latine.";
+    if ($lingua_mode === 'auto') {
+        $system_role = "Tu es philosophus expertus. Responde in eadem lingua qua usor te adloquitur. Si usor te adloquitur Russice, responde Russice. Si Anglice, Anglice. Semper conserva personam philosophi antiqui.";
+    }
+
+    $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
 
     $data = [
         "model" => $model,
         "messages" => [
-            ["role" => "system", "content" => "Tu es philosophus Romanus. Responde semper Latine."],
+            ["role" => "system", "content" => $system_role],
             ["role" => "user", "content" => $promptus]
         ],
         "max_tokens" => 300,
