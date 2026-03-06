@@ -20,8 +20,20 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_API_URL=${OPENAI_API_URL:-}
       - OPENAI_API_MODEL=${OPENAI_API_MODEL:-}
+      - AEQUILIBRIUM_HOST=aequilibrium
     volumes:
       - ./interpres:/app/interpres
     depends_on:
       - daemonium
+      - aequilibrium
+    restart: always
+
+  aequilibrium:
+    build:
+      context: ./aequilibrium
+    container_name: chat_aequilibrium
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./tabularium:/app/tabularium
     restart: always
