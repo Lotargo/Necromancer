@@ -1,5 +1,6 @@
 <?php
 session_start();
+set_time_limit(0);
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
 function loqui_cum_daemonio($mandatum)
@@ -615,10 +616,7 @@ if ($action === 'send') {
         }
 
         // Add the assistant's message to history
-        $assistant_message = ["role" => "assistant"];
-        if (!empty($current_content)) {
-            $assistant_message["content"] = $current_content;
-        }
+        $assistant_message = ["role" => "assistant", "content" => $current_content ?: ""];
 
         // Prepare tool calls for history
         if (!empty($tool_calls_buffer)) {
@@ -668,5 +666,9 @@ if ($action === 'send') {
     if (empty($clean_resp))
         $clean_resp = "Oraculum mutum est.";
     loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
+
+    // Unpin session from load balancer after ReAct loop finishes
+    purgare_sessionem_aequilibrio($cubiculum);
+
     exit();
 }

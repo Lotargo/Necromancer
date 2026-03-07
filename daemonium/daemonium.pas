@@ -697,7 +697,9 @@ begin
 
   DataInput := TStringList.Create;
   try
-    ExtractStrings(['|'], [], PChar(LineaData), DataInput);
+    DataInput.StrictDelimiter := True;
+    DataInput.Delimiter := '|';
+    DataInput.DelimitedText := LineaData;
     Mandatum := '';
     Parametrum1 := '';
     Parametrum2 := '';
