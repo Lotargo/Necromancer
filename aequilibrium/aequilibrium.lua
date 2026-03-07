@@ -162,6 +162,12 @@ local function EligereProvisorem(id_sessionis)
     end
 
     local provisor_electus = provisores_parati[IndexProvisor]
+
+    if not provisor_electus then
+        IndexProvisor = 1
+        provisor_electus = provisores_parati[IndexProvisor]
+    end
+
     IndexProvisor = IndexProvisor + 1
 
     -- Eligere clavem et modelum internum pro hoc provisore
@@ -203,7 +209,11 @@ local function TractareClientem(cliens_sock)
         local mandatum, parametrum1 = linea_data:match("([^|]+)|?([^|]*)")
 
         local responsum = ""
-        if mandatum == "PETERE_CLAVEM" then
+        if mandatum == "PURGARE_SESSIONEM" then
+            Sessiones[parametrum1] = nil
+            responsum = FormareResponsum(200, "Sessio purgata est", "", "", "", "")
+            print("[>] Sessio purgata: " .. (parametrum1 or "ignota"))
+        elseif mandatum == "PETERE_CLAVEM" then
 
             local nomen, clavis, url, modelum, error_msg = EligereProvisorem(parametrum1)
 
