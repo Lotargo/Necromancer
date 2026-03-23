@@ -2,3 +2,5 @@ lotargo
 lotargo_test
 agent_tester
 jetski_4242
+BotUser
+TestUser
