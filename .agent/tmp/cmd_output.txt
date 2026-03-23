@@ -1,5 +1,106 @@
 ﻿STATUS:DONE
 EXIT_CODE:0
-TIME:0,1s
+TIME:1,8s
 ---OUTPUT---
-LINE-BASED PATCH SUCCESSFUL
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0   0     0   0     0     0     0  --:--:-- --:--:-- --:--:--     0* Host api.groq.com:443 was resolved.
+* IPv6: 2606:4700:4409::ac40:9514, 2606:4700:4405::6812:26ec
+* IPv4: 172.64.149.20, 104.18.38.236
+*   Trying [2606:4700:4409::ac40:9514]:443...
+* Immediate connect fail for 2606:4700:4409::ac40:9514: Network unreachable
+*   Trying 172.64.149.20:443...
+* ALPN: curl offers h2,http/1.1
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [1558 bytes data]
+* SSL Trust Anchors:
+*   CAfile: /etc/ssl/certs/ca-certificates.crt
+*   CApath: /etc/ssl/certs
+{ [5 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [1210 bytes data]
+* TLSv1.3 (IN), TLS change cipher, Change cipher spec (1):
+{ [1 bytes data]
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+{ [19 bytes data]
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+{ [2516 bytes data]
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+{ [80 bytes data]
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+{ [52 bytes data]
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+} [1 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+} [52 bytes data]
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / X25519MLKEM768 / id-ecPublicKey
+* ALPN: server accepted h2
+* Server certificate:
+*   subject: CN=api.groq.com
+*   start date: Mar 12 00:22:01 2026 GMT
+*   expire date: Jun 10 01:21:58 2026 GMT
+*   issuer: C=US; O=Google Trust Services; CN=WE1
+*   Certificate level 0: Public key type EC/prime256v1 (256/128 Bits/secBits), signed using ecdsa-with-SHA256
+*   Certificate level 1: Public key type EC/prime256v1 (256/128 Bits/secBits), signed using ecdsa-with-SHA384
+*   Certificate level 2: Public key type EC/secp384r1 (384/192 Bits/secBits), signed using ecdsa-with-SHA384
+*   subjectAltName: "api.groq.com" matches cert's "api.groq.com"
+* SSL certificate verified via OpenSSL.
+* Established connection to api.groq.com (172.64.149.20 port 443) from 172.29.0.4 port 56924 
+
+  0     0   0     0   0     0     0     0  --:--:-- --:--:-- --:--:--     0* using HTTP/2
+* [HTTP/2] [1] OPENED stream for https://api.groq.com/openai/v1/models
+* [HTTP/2] [1] [:method: HEAD]
+* [HTTP/2] [1] [:scheme: https]
+* [HTTP/2] [1] [:authority: api.groq.com]
+* [HTTP/2] [1] [:path: /openai/v1/models]
+* [HTTP/2] [1] [user-agent: curl/8.17.0]
+* [HTTP/2] [1] [accept: */*]
+} [5 bytes data]
+> HEAD /openai/v1/models HTTP/2
+> Host: api.groq.com
+> User-Agent: curl/8.17.0
+> Accept: */*
+> 
+* Request completely sent off
+{ [5 bytes data]
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+{ [238 bytes data]
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+{ [238 bytes data]
+< HTTP/2 404 
+< date: Mon, 23 Mar 2026 18:44:40 GMT
+< content-type: application/json
+< content-length: 203
+< cache-control: private, max-age=0, no-store, no-cache, must-revalidate
+< server: cloudflare
+< vary: Origin
+< x-groq-region: dls
+< x-request-id: req_01kme06vwbea1b8g7b7hgzxzc7
+< via: 1.1 google
+< alt-svc: h3=":443"; ma=86400
+< cf-cache-status: DYNAMIC
+< strict-transport-security: max-age=15552000
+< set-cookie: __cf_bm=Mzxmv5BFrXJJeUX3Yw82epShZa9a_6NrThKcWKRtVQE-1774291480.3646445-1.0.1.1-IAOV8nKeaH5.R0lbvRtCDNNF.ruxtXCsMRNQRzHZwZu75mEK9Y7SLfa.dIAXgsQwXdzDx9KcsWdgjUPotzAo2.3o1rHBydyw_rZoPvwN9zSnQoFHll8Zh9XjddITEvG0; HttpOnly; Secure; Path=/; Domain=groq.com; Expires=Mon, 23 Mar 2026 19:14:40 GMT
+< cf-ray: 9e0f96b84e4be4ce-RIX
+< 
+{ [0 bytes data]
+
+  0   203   0     0   0     0     0     0  --:--:-- --:--:-- --:--:--     0
+* Connection #0 to host api.groq.com:443 left intact
+HTTP/2 404 
+date: Mon, 23 Mar 2026 18:44:40 GMT
+content-type: application/json
+content-length: 203
+cache-control: private, max-age=0, no-store, no-cache, must-revalidate
+server: cloudflare
+vary: Origin
+x-groq-region: dls
+x-request-id: req_01kme06vwbea1b8g7b7hgzxzc7
+via: 1.1 google
+alt-svc: h3=":443"; ma=86400
+cf-cache-status: DYNAMIC
+strict-transport-security: max-age=15552000
+set-cookie: __cf_bm=Mzxmv5BFrXJJeUX3Yw82epShZa9a_6NrThKcWKRtVQE-1774291480.3646445-1.0.1.1-IAOV8nKeaH5.R0lbvRtCDNNF.ruxtXCsMRNQRzHZwZu75mEK9Y7SLfa.dIAXgsQwXdzDx9KcsWdgjUPotzAo2.3o1rHBydyw_rZoPvwN9zSnQoFHll8Zh9XjddITEvG0; HttpOnly; Secure; Path=/; Domain=groq.com; Expires=Mon, 23 Mar 2026 19:14:40 GMT
+cf-ray: 9e0f96b84e4be4ce-RIX
