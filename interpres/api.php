@@ -367,7 +367,7 @@ if ($action === 'send') {
         $ch_t = curl_init($api_url);
         curl_setopt($ch_t, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch_t, CURLOPT_POST, true);
-        curl_setopt($ch_t, CURLOPT_POSTFIELDS, json_encode($data_title));
+        curl_setopt($ch_t, CURLOPT_POSTFIELDS, json_encode($data_title, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE));
         curl_setopt($ch_t, CURLOPT_HTTPHEADER, ["Content-Type: application/json", "Authorization: Bearer " . $apikey]);
         $res_t = curl_exec($ch_t);
         curl_close($ch_t);
@@ -511,11 +511,18 @@ if ($action === 'send') {
         $ch = curl_init($api_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        $json_encoded_data = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        file_put_contents(__DIR__ . "/tmp_payload.txt", print_r($data, true) . "
+---
+" . $json_encoded_data . "
+========================
+", FILE_APPEND);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $json_encoded_data);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             "Content-Type: application/json",
             "Authorization: Bearer " . $apikey
         ]);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
         curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$tool_calls_buffer, &$current_content, &$final_response_content, &$error_buffer, &$total_reasoning) {
             $lines = explode("\n", $chunk);

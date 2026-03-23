@@ -91,8 +91,16 @@ local function LegereUnamLineam(via)
     return nil
 end
 
+local ProvisoresParatiCache = nil
+local UltimaLectio = 0
+
 -- Functio: Colligere omnia data provisoris (Hot Reload / On the fly)
 local function ColligereDataProvisorum()
+    local nunc = os.time()
+    if ProvisoresParatiCache and (nunc - UltimaLectio < 60) then
+        return ProvisoresParatiCache
+    end
+
     local provisores_parati = {}
 
     for _, nomen in ipairs(NOMINA_PROVISORUM) do
@@ -111,6 +119,9 @@ local function ColligereDataProvisorum()
             })
         end
     end
+
+    ProvisoresParatiCache = provisores_parati
+    UltimaLectio = nunc
 
     return provisores_parati
 end
@@ -266,6 +277,10 @@ if ffi.C.listen(servus_sock, 128) < 0 then
 end
 
 print("Aequilibrium audit in portu " .. PORTUS .. " ...")
+
+-- Warm up cache before answering requests
+ColligereDataProvisorum()
+print("Cache provisorum paratus est.")
 
 -- Loop principalis (Main loop)
 while true do
