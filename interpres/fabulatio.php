@@ -70,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         /* Bookshelf Sidebar */
         .sidebar {
-            width: 250px; border: 2px solid var(--main-color); padding: 15px;
+            width: 250px; min-width: 250px; flex-shrink: 0; border: 2px solid var(--main-color); padding: 15px; /* min-width and flex-shrink: 0 prevents sidebar from shrinking when chat expands */
             box-shadow: 0 0 20px var(--main-color), inset 0 0 10px var(--main-color); background-color: var(--container-bg);
             display: flex; flex-direction: column; height: 100%; box-sizing: border-box;
         }
@@ -99,6 +99,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             flex-grow: 1; border: 2px solid var(--main-color); padding: 30px;
             box-shadow: 0 0 20px var(--main-color), inset 0 0 10px var(--main-color); background-color: var(--container-bg);
             display: flex; flex-direction: column; overflow: hidden; height: 100%; box-sizing: border-box;
+            min-width: 0; min-height: 0; /* min-width: 0 and min-height: 0 prevents flex overflow/expanding beyond screen limits */
         }
 
         h1 { font-size: 36px; text-shadow: 0 0 5px var(--main-color); margin-top: 0;}
@@ -115,7 +116,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             padding: 15px; margin-bottom: 20px;
             box-sizing: border-box; font-size: 22px;
             box-shadow: inset 0 0 10px var(--main-color); scroll-behavior: smooth;
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; min-height: 0; /* min-height: 0 prevents flex child overflow */
         }
 
         .msg-user {
@@ -586,7 +587,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         // AJAX Chat Logic
         function loadChats(selectDefault = false) {
-            fetch('api.php?action=list')
+            fetch('api.php?action=list&t=' + Date.now())
                 .then(r => r.json())
                 .then(data => {
                     chatListEl.innerHTML = '';
@@ -643,7 +644,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 loadChats(false);
             }
 
-            fetch('api.php?action=load&room=' + room)
+            fetch('api.php?action=load&room=' + encodeURIComponent(room) + '&t=' + Date.now())
                 .then(r => r.text())
                 .then(text => {
                     if (!text || text.trim() === '') {
@@ -689,10 +690,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         function createNewChat() {
-            const tempName = "Nova_Fabulatio";
-            if (!virtualRooms.includes(tempName)) {
-                virtualRooms.push(tempName);
+            let tempName = "Nova_Fabulatio";
+            let counter = 1;
+            while (virtualRooms.includes(tempName) || Array.from(chatListEl.children).some(li => {
+                const nameEl = li.querySelector('.chat-item-name');
+                return nameEl && nameEl.textContent === tempName;
+            })) {
+                tempName = "Nova_Fabulatio_" + counter;
+                counter++;
             }
+            virtualRooms.push(tempName);
             selectRoom(tempName);
         }
 
@@ -754,7 +761,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         function submitDeleteChat() {
             if (roomToDelete) {
-                fetch('api.php?action=delete&room=' + roomToDelete)
+                const formData = new URLSearchParams();
+                formData.append('action', 'delete');
+                formData.append('room', roomToDelete);
+                
+                fetch('api.php', { method: 'POST', body: formData })
                     .then(() => {
                         // Also remove from virtualRooms if it was just drafted
                         virtualRooms = virtualRooms.filter(r => r !== roomToDelete);
