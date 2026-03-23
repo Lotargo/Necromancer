@@ -148,9 +148,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         #chat ul, #chat ol { margin: 0 0 10px 0; padding-left: 25px; }
         #chat strong { color: #fff; text-shadow: 0 0 5px var(--main-color); }
 
-        .reasoning-text {
-            color: var(--dim-color); font-style: italic; opacity: 0.8;
-            font-size: 18px; display: inline;
+        .reasoning-details {
+            margin: 5px 0 15px 0;
+            padding: 8px 12px;
+            border: 1px dashed var(--dim-color);
+            background: rgba(0, 0, 0, 0.3);
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .reasoning-details summary {
+            cursor: pointer;
+            color: var(--dim-color);
+            font-style: italic;
+            font-size: 14px;
+            outline: none;
+            user-select: none;
+        }
+        .reasoning-details summary:hover {
+            color: var(--main-color);
+            text-shadow: 0 0 5px var(--main-color);
+        }
+        .reasoning-content {
+            margin-top: 10px;
+            color: var(--dim-color);
+            opacity: 0.9;
+            font-size: 16px;
+            border-top: 1px dotted var(--dark-color);
+            padding-top: 8px;
         }
 
         .tool-text {
@@ -584,6 +607,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         };
 
         modalEl.addEventListener('click', closeWelcomeModal);
+        
+        // Close Modals on Outside Click
+        window.addEventListener('click', function(event) {
+            const configModal = document.getElementById('config-modal');
+            const renameModal = document.getElementById('rename-chat-modal');
+            const deleteModal = document.getElementById('delete-chat-modal');
+            
+            if (event.target === configModal) closeConfigModal();
+            if (event.target === renameModal) closeRenameModal();
+            if (event.target === deleteModal) closeDeleteModal();
+        });
 
         // AJAX Chat Logic
         function loadChats(selectDefault = false) {
@@ -662,15 +696,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                         const isOracle = block.startsWith('Oraculum:');
                         
                         let cleanBlock = block;
-                        if (isUser) cleanBlock = block.replace(/^Tute:\s*/, '');
-                        if (isOracle) cleanBlock = block.replace(/^Oraculum:\s*/, '');
-                        
                         const msgDiv = document.createElement('div');
                         msgDiv.className = isUser ? 'msg-user' : 'msg-oracle';
-                        
-                        let prefix = isUser ? '**Tute:** ' : '**Oraculum:** ';
-                        
-                        msgDiv.innerHTML = DOMPurify.sanitize(marked.parse(prefix + cleanBlock));
+
+                        if (isOracle) {
+                            cleanBlock = block.replace(/^Oraculum:\s*/, '');
+                            let thoughtMatch = cleanBlock.match(/<thought>(.*?)<\/thought>(.*)/s);
+                            if (thoughtMatch) {
+                                let thought = thoughtMatch[1];
+                                let actualMsg = thoughtMatch[2];
+                                msgDiv.innerHTML = `<strong>Oraculum: </strong>
+                                    <details class="reasoning-details">
+                                        <summary>Cogitationes Oraculi...</summary>
+                                        <div class="reasoning-content">${DOMPurify.sanitize(marked.parse(thought))}</div>
+                                    </details>
+                                    <div>${DOMPurify.sanitize(marked.parse(actualMsg))}</div>`;
+                            } else {
+                                msgDiv.innerHTML = DOMPurify.sanitize(marked.parse('**Oraculum:** ' + cleanBlock));
+                            }
+                        } else {
+                            cleanBlock = block.replace(/^Tute:\s*/, '');
+                            msgDiv.innerHTML = DOMPurify.sanitize(marked.parse('**Tute:** ' + cleanBlock));
+                        }
                         
                         renderMathInElement(msgDiv, {
                             delimiters: [
@@ -1310,6 +1357,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             let normalTextSpan = document.createElement('span');
             oraclePrefix.appendChild(normalTextSpan);
 
+            window.streamingState = null;
             fetch('api.php', {
                 method: 'POST',
                 body: formData,
@@ -1356,31 +1404,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                         normalTextSpan = document.createElement('span');
                                         oraclePrefix.appendChild(normalTextSpan);
                                         chatEl.scrollTop = chatEl.scrollHeight;
-                                    } else if (dataNode.choices && dataNode.choices[0].delta) {
-                                        const delta = dataNode.choices[0].delta;
-                                        if (delta.reasoning_content) {
-                                            if (!reasoningSpan) {
-                                                reasoningSpan = document.createElement('span');
-                                                reasoningSpan.className = 'reasoning-text';
-                                                chatEl.insertBefore(reasoningSpan, oraclePrefix);
-                                            }
-                                            reasoningSpan.dataset.raw = (reasoningSpan.dataset.raw || '') + delta.reasoning_content;
-                                            reasoningSpan.innerHTML = DOMPurify.sanitize(marked.parse(reasoningSpan.dataset.raw));
-                                        }
-                                        if (delta.content) {
-                                            normalTextSpan.dataset.raw = (normalTextSpan.dataset.raw || '') + delta.content;
-                                            normalTextSpan.innerHTML = DOMPurify.sanitize(marked.parse(normalTextSpan.dataset.raw));
-                                            renderMathInElement(normalTextSpan, {
-                                                delimiters: [
-                                                    {left: '$$', right: '$$', display: true},
-                                                    {left: '\\[', right: '\\]', display: true},
-                                                    {left: '$', right: '$', display: false},
-                                                    {left: '\\(', right: '\\)', display: false}
-                                                ], throwOnError: false
-                                            });
-                                        }
-                                        chatEl.scrollTop = chatEl.scrollHeight;
-                                    }
+                                     } else if (dataNode.choices && dataNode.choices[0].delta) {
+                                         const delta = dataNode.choices[0].delta;
+                                         if (delta.reasoning_content || delta.content) {
+                                             if (!window.streamingState) {
+                                                 window.streamingState = { reasoning: "", content: "", inThought: false, rid: 0 };
+                                             }
+                                             const s = window.streamingState;
+                                             if (delta.reasoning_content) s.reasoning += delta.reasoning_content;
+                                             if (delta.content) {
+                                                 let c = delta.content;
+                                                 if (c.includes("<thought>")) { s.inThought = true; c = c.replace("<thought>", ""); }
+                                                 if (c.includes("</thought>")) { s.inThought = false; c = c.replace("</thought>", ""); }
+                                                 if (s.inThought) s.reasoning += c; else s.content += c;
+                                             }
+                                             if (!s.rid) {
+                                                 s.rid = requestAnimationFrame(() => {
+                                                     if (!window.streamingState) return;
+                                                     if (s.reasoning) {
+                                                         if (!reasoningSpan) {
+                                                             reasoningSpan = document.createElement('details');
+                                                             reasoningSpan.className = 'reasoning-details';
+                                                             reasoningSpan.innerHTML = '<summary>Cogitationes Oraculi...</summary><div class="reasoning-content"></div>';
+                                                             chatEl.insertBefore(reasoningSpan, oraclePrefix);
+                                                         }
+                                                         const contentDiv = reasoningSpan.querySelector('.reasoning-content');
+                                                         if (contentDiv) contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(s.reasoning));
+                                                     }
+                                                     if (s.content) {
+                                                         normalTextSpan.innerHTML = DOMPurify.sanitize(marked.parse(s.content));
+                                                         renderMathInElement(normalTextSpan, {
+                                                             delimiters: [
+                                                                 {left: '$$', right: '$$', display: true}, {left: '\\[', right: '\\]', display: true},
+                                                                 {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}
+                                                             ], throwOnError: false
+                                                         });
+                                                     }
+                                                     chatEl.scrollTop = chatEl.scrollHeight;
+                                                     s.rid = 0;
+                                                 });
+                                             }
+                                         }
+                                     }
                                 } catch(e) {}
                             }
                         }

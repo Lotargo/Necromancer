@@ -503,6 +503,11 @@ if ($action === 'send') {
             $data["tools"] = $tools;
         }
 
+        $tool_calls_buffer = [];
+        $current_content = "";
+        $total_reasoning = "";
+        $error_buffer = "";
+
         $ch = curl_init($api_url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_POST, true);
@@ -512,11 +517,7 @@ if ($action === 'send') {
             "Authorization: Bearer " . $apikey
         ]);
 
-        $tool_calls_buffer = [];
-        $current_content = "";
-        $error_buffer = "";
-
-        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$tool_calls_buffer, &$current_content, &$final_response_content, &$error_buffer) {
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$tool_calls_buffer, &$current_content, &$final_response_content, &$error_buffer, &$total_reasoning) {
             $lines = explode("\n", $chunk);
             foreach ($lines as $line) {
                 // If the API returns a JSON error, it usually doesn't start with "data: "
@@ -545,6 +546,7 @@ if ($action === 'send') {
                         }
 
                         if (isset($delta['reasoning_content']) && $delta['reasoning_content'] !== null) {
+                            $total_reasoning .= $delta['reasoning_content'];
                             echo "data: " . json_encode(["choices" => [["delta" => ["reasoning_content" => $delta['reasoning_content']]]]]) . "\n\n";
                             flush();
                         }
@@ -663,6 +665,11 @@ if ($action === 'send') {
 
     // Save bot response
     $clean_resp = str_replace(["\r", "\n"], " ", trim($final_response_content));
+    $clean_reasoning = str_replace(["\r", "\n"], " ", trim($total_reasoning));
+    if (!empty($clean_reasoning)) {
+        $clean_resp = "<thought>" . $clean_reasoning . "</thought> " . $clean_resp;
+    }
+    
     if (empty($clean_resp))
         $clean_resp = "Oraculum mutum est.";
     loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
