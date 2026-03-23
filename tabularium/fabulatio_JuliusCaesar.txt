@@ -1,2 +1,0 @@
-Tute: Salve oraculum!
-Oraculum: Clavis API deest. Dicent mihi Oraculum non respondere.
