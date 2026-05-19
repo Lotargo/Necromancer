@@ -33,12 +33,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
         :root {
-            --main-color: #00FF00;
-            --bg-color: #050505;
-            --container-bg: #000;
-            --dim-color: #008800;
-            --dark-color: #003300;
-            --hover-color: #002200;
+            --main-color: #1aff66;
+            --bg-color: #010501;
+            --container-bg: rgba(2, 8, 2, 0.85);
+            --dim-color: #0d8033;
+            --dark-color: #03200b;
+            --hover-color: #063b15;
             --danger-color: #ff3333;
             --danger-bg: #330000;
             --danger-hover: #ff0000;
@@ -59,8 +59,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         body::after {
             content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 99; background-size: 100% 2px, 3px 100%; pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.18) 50%), 
+                        radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.7) 100%);
+            z-index: 99; background-size: 100% 3px, 100% 100%; pointer-events: none;
+            opacity: 0.9;
         }
 
         .layout-wrapper {
@@ -72,10 +74,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         .sidebar {
             width: 250px; min-width: 250px; flex-shrink: 0; border: 2px solid var(--main-color); padding: 15px; /* min-width and flex-shrink: 0 prevents sidebar from shrinking when chat expands */
             box-shadow: 0 0 20px var(--main-color), inset 0 0 10px var(--main-color); background-color: var(--container-bg);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             display: flex; flex-direction: column; height: 100%; box-sizing: border-box;
+            border-radius: 8px;
         }
         
-        .sidebar h2 { margin-top: 0; text-shadow: 0 0 5px var(--main-color); border-bottom: 1px dotted var(--main-color); padding-bottom: 10px; }
+        .sidebar h2 { margin-top: 0; text-shadow: 0 0 8px var(--main-color); border-bottom: 1px dotted var(--main-color); padding-bottom: 10px; }
 
         .chat-list { list-style: none; padding: 0; flex-grow: 1; overflow-y: auto; margin-top: 0; }
         
@@ -98,17 +102,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         .main-chat {
             flex-grow: 1; border: 2px solid var(--main-color); padding: 30px;
             box-shadow: 0 0 20px var(--main-color), inset 0 0 10px var(--main-color); background-color: var(--container-bg);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             display: flex; flex-direction: column; overflow: hidden; height: 100%; box-sizing: border-box;
             min-width: 0; min-height: 0; /* min-width: 0 and min-height: 0 prevents flex overflow/expanding beyond screen limits */
+            border-radius: 8px;
         }
 
-        h1 { font-size: 36px; text-shadow: 0 0 5px var(--main-color); margin-top: 0;}
+        h1 { font-size: 36px; text-shadow: 0 0 8px var(--main-color); margin-top: 0;}
         
         input[type="text"], input[type="submit"], button { 
-            background-color: var(--container-bg); color: var(--main-color); border: 1px solid var(--main-color); padding: 10px;
+            background-color: rgba(0, 0, 0, 0.6); color: var(--main-color); border: 1px solid var(--main-color); padding: 10px;
             font-family: 'VT323', "Courier New", Courier, monospace; font-size: 24px;
+            box-shadow: 0 0 8px rgba(26, 255, 102, 0.2), inset 0 0 5px rgba(26, 255, 102, 0.2);
+            transition: all 0.2s ease-in-out;
+            border-radius: 4px;
         }
-        input[type="submit"]:hover, button:hover { background-color: var(--main-color); color: var(--container-bg); cursor: pointer; }
+        input[type="text"]:focus {
+            outline: none;
+            box-shadow: 0 0 12px var(--main-color), inset 0 0 8px var(--main-color);
+        }
+        input[type="submit"]:hover, button:hover { background-color: var(--main-color); color: #000; cursor: pointer; box-shadow: 0 0 15px var(--main-color); }
         input[type="submit"]:disabled, input[type="text"]:disabled { opacity: 0.5; cursor: not-allowed; }
         
         #chat { 
@@ -117,6 +130,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             box-sizing: border-box; font-size: 22px;
             box-shadow: inset 0 0 10px var(--main-color); scroll-behavior: smooth;
             display: flex; flex-direction: column; min-height: 0; /* min-height: 0 prevents flex child overflow */
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
         }
 
         .msg-user {
@@ -983,7 +998,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         // --- Levels & Visual Options System ---
 
         const THEMES = [
-            { name: "Viridis (Green)", colors: { main: '#00FF00', bg: '#050505', cont: '#000', dim: '#008800', dark: '#003300', hov: '#002200' } },
+            { name: "Viridis (Green)", colors: { main: '#1aff66', bg: '#010501', cont: 'rgba(2, 8, 2, 0.85)', dim: '#0d8033', dark: '#03200b', hov: '#063b15' } },
             { name: "Electinum (Amber)", colors: { main: '#FFB000', bg: '#100800', cont: '#000', dim: '#885500', dark: '#331100', hov: '#221100' } },
             { name: "Cyanus (Cyan)", colors: { main: '#00FFFF', bg: '#000810', cont: '#000', dim: '#008888', dark: '#003333', hov: '#002222' } },
             { name: "Cruor (Blood Red)", colors: { main: '#FF0000', bg: '#100000', cont: '#000', dim: '#880000', dark: '#330000', hov: '#220000' } },
@@ -1219,6 +1234,91 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         const pBlood = [];
         for(let i=0; i<30; i++) pBlood.push({x: Math.random()*window.innerWidth, y: -Math.random()*window.innerHeight, speed: 1 + Math.random()*3, radius: 2 + Math.random()*4});
 
+        let occultAngle = 0;
+        
+        function drawOccultCircles(ctx, w, h) {
+            const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
+            ctx.save();
+            ctx.translate(w / 2, h / 2);
+            ctx.rotate(occultAngle);
+            occultAngle += 0.0008; // Медленное плавное вращение
+
+            // Свечение
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = mainC;
+            ctx.strokeStyle = mainC;
+            ctx.fillStyle = mainC;
+            ctx.lineWidth = 1.5;
+
+            // 1. Внешнее кольцо
+            ctx.beginPath();
+            ctx.arc(0, 0, 250, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 2. Внутреннее кольцо
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 210, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.lineWidth = 1;
+
+            // 3. Декоративное кольцо со штрихами
+            ctx.beginPath();
+            ctx.arc(0, 0, 180, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.lineWidth = 0.5;
+            for (let a = 0; a < Math.PI * 2; a += Math.PI / 30) {
+                const cos = Math.cos(a);
+                const sin = Math.sin(a);
+                ctx.beginPath();
+                ctx.moveTo(180 * cos, 180 * sin);
+                ctx.lineTo(210 * cos, 210 * sin);
+                ctx.stroke();
+            }
+            ctx.lineWidth = 1;
+
+            // 4. Семиконечная оккультная звезда
+            const numPoints = 7;
+            const points = [];
+            for (let i = 0; i < numPoints; i++) {
+                const a = (i * Math.PI * 2) / numPoints - Math.PI / 2;
+                points.push({ x: 180 * Math.cos(a), y: 180 * Math.sin(a) });
+            }
+            
+            ctx.beginPath();
+            let curr = 0;
+            ctx.moveTo(points[curr].x, points[curr].y);
+            for (let i = 0; i < numPoints; i++) {
+                curr = (curr + 3) % numPoints;
+                ctx.lineTo(points[curr].x, points[curr].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+
+            points.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 5. Древние руны по кругу
+            const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ', 'ᛇ', 'ᛈ', 'ᛉ', 'ᛊ', 'ᛏ', 'ᛒ', 'ᛖ', 'ᛗ', 'ᛚ', 'ᛜ', 'ᛞ', 'ᛟ'];
+            ctx.font = '18px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            runes.forEach((rune, index) => {
+                const a = (index * Math.PI * 2) / runes.length - Math.PI / 2;
+                ctx.save();
+                ctx.rotate(a);
+                ctx.fillText(rune, 0, -230);
+                ctx.restore();
+            });
+
+            ctx.restore();
+        }
+
         function drawAdv() {
             requestAnimationFrame(drawAdv);
             const w = advCanvas.width; const h = advCanvas.height;
@@ -1229,19 +1329,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             const isEyes = bBody.classList.contains('glitch-eyes');
             const isBlood = bBody.classList.contains('glitch-blood');
             
-            if (!isWeb && !isStars && !isEyes && !isBlood) {
-                advCtx.clearRect(0,0,w,h);
-                return;
-            }
-
-            const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#0F0';
-            
-            if(isStars) {
+            if (isStars) {
                 advCtx.fillStyle = 'rgba(0,0,0,0.3)';
                 advCtx.fillRect(0,0,w,h);
             } else {
                 advCtx.clearRect(0,0,w,h);
             }
+            
+            // Рисуем оккультные круги
+            drawOccultCircles(advCtx, w, h);
+
+            const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
 
             if (isStars) {
                 advCtx.fillStyle = mainC;
