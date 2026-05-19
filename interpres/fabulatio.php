@@ -36,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             --main-color: #1aff66;
             --bg-color: #010501;
             --container-bg: rgba(2, 8, 2, 0.85);
-            --dim-color: #0d8033;
+            --dim-color: #094d1f;
             --dark-color: #03200b;
             --hover-color: #063b15;
             --danger-color: #ff3333;
@@ -46,72 +46,111 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         html, body {
-            overflow-x: hidden;
+            overflow: hidden;
             margin: 0; padding: 0;
             width: 100%; height: 100%;
         }
         body { 
             background-color: var(--bg-color); color: var(--main-color);
             font-family: 'VT323', "Courier New", Courier, monospace; 
-            box-sizing: border-box; padding: 20px;
+            box-sizing: border-box; padding: 15px;
             display: flex; justify-content: center; align-items: center;
         }
 
         body::after {
             content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.18) 50%), 
-                        radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.7) 100%);
-            z-index: 99; background-size: 100% 3px, 100% 100%; pointer-events: none;
-            opacity: 0.9;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%), 
+                        radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.85) 100%);
+            z-index: 999; background-size: 100% 3px, 100% 100%; pointer-events: none;
+            opacity: 0.95;
         }
 
         .layout-wrapper {
-            display: flex; gap: 20px; width: 95%; max-width: 1400px; height: 80vh;
-            position: relative; z-index: 10;
+            display: grid;
+            grid-template-columns: 80px 1fr 260px;
+            gap: 15px;
+            width: 98vw;
+            height: 96vh;
+            max-width: 1600px;
+            box-sizing: border-box;
+            position: relative;
+            z-index: 10;
         }
 
-        /* Bookshelf Sidebar */
-        .sidebar {
-            width: 250px; min-width: 250px; flex-shrink: 0; border: 2px solid var(--main-color); padding: 15px; /* min-width and flex-shrink: 0 prevents sidebar from shrinking when chat expands */
-            box-shadow: 0 0 20px var(--main-color), inset 0 0 10px var(--main-color); background-color: var(--container-bg);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            display: flex; flex-direction: column; height: 100%; box-sizing: border-box;
-            border-radius: 8px;
+        /* Side Columns */
+        .side-col-left, .side-col-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+            box-sizing: border-box;
+            padding: 10px 0;
         }
-        
-        .sidebar h2 { margin-top: 0; text-shadow: 0 0 8px var(--main-color); border-bottom: 1px dotted var(--main-color); padding-bottom: 10px; }
 
-        .chat-list { list-style: none; padding: 0; flex-grow: 1; overflow-y: auto; margin-top: 0; }
-        
-        .chat-item {
-            padding: 10px; border: 1px dashed var(--dim-color); margin-bottom: 10px; cursor: pointer;
-            display: flex; justify-content: space-between; align-items: center; font-size: 20px;
+        .glyph-chain-left, .glyph-chain-right {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
         }
-        
-        .chat-item:hover, .chat-item.active { background-color: var(--hover-color); border-style: solid; border-color: var(--main-color); }
-        
-        .chat-item-name { flex-grow: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
-        
-        .action-btns { display: flex; gap: 5px; }
-        .ren-btn { color: #ffff33; cursor: pointer; border: none; background: none; font-family: inherit; font-size: 20px; text-shadow: 0 0 2px yellow;}
-        .ren-btn:hover { color: #ffff00; font-weight: bold; background: #333300;}
-        .del-btn { color: var(--danger-color); cursor: pointer; border: none; background: none; font-family: inherit; font-size: 20px; text-shadow: 0 0 2px red;}
-        .del-btn:hover { color: var(--danger-hover); font-weight: bold; background: var(--danger-bg);}
 
-        /* Main Chat Window */
-        .main-chat {
-            flex-grow: 1; border: 2px solid var(--main-color); padding: 30px;
-            box-shadow: 0 0 20px var(--main-color), inset 0 0 10px var(--main-color); background-color: var(--container-bg);
+        @keyframes glyph-glow {
+            0% { filter: drop-shadow(0 0 1px var(--main-color)); opacity: 0.5; }
+            50% { filter: drop-shadow(0 0 8px var(--main-color)); opacity: 1.0; }
+            100% { filter: drop-shadow(0 0 1px var(--main-color)); opacity: 0.5; }
+        }
+        .mystic-glyph {
+            animation: glyph-glow 4s infinite ease-in-out;
+            margin: 20px 0;
+        }
+
+        .corner-canvas {
+            filter: drop-shadow(0 0 5px var(--main-color));
+            background: transparent;
+        }
+
+        /* Center Column */
+        .col-center {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .header-title {
+            border: 1px solid var(--main-color);
+            padding: 10px 20px;
+            text-align: center;
+            font-size: 26px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 8px var(--main-color);
+            box-shadow: 0 0 10px rgba(26, 255, 102, 0.3), inset 0 0 5px rgba(26, 255, 102, 0.2);
+            background-color: var(--container-bg);
+            margin-bottom: 15px;
+            font-weight: bold;
+            border-radius: 4px;
+            backdrop-filter: blur(5px);
+        }
+
+        .chat-window {
+            flex-grow: 1;
+            border: 4px double var(--main-color);
+            padding: 25px;
+            box-shadow: 0 0 15px rgba(26, 255, 102, 0.3), inset 0 0 15px rgba(26, 255, 102, 0.3);
+            background-color: var(--container-bg);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             display: flex; flex-direction: column; overflow: hidden; height: 100%; box-sizing: border-box;
-            min-width: 0; min-height: 0; /* min-width: 0 and min-height: 0 prevents flex overflow/expanding beyond screen limits */
-            border-radius: 8px;
+            min-width: 0; min-height: 0;
+            border-radius: 6px;
         }
 
-        h1 { font-size: 36px; text-shadow: 0 0 8px var(--main-color); margin-top: 0;}
+        h1 { font-size: 32px; text-shadow: 0 0 8px var(--main-color); margin-top: 0; margin-bottom: 15px; border-bottom: 1px dotted var(--dim-color); padding-bottom: 10px;}
         
         input[type="text"], input[type="submit"], button { 
-            background-color: rgba(0, 0, 0, 0.6); color: var(--main-color); border: 1px solid var(--main-color); padding: 10px;
+            background-color: rgba(0, 0, 0, 0.8); color: var(--main-color); border: 1px solid var(--main-color); padding: 10px;
             font-family: 'VT323', "Courier New", Courier, monospace; font-size: 24px;
             box-shadow: 0 0 8px rgba(26, 255, 102, 0.2), inset 0 0 5px rgba(26, 255, 102, 0.2);
             transition: all 0.2s ease-in-out;
@@ -125,56 +164,61 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         input[type="submit"]:disabled, input[type="text"]:disabled { opacity: 0.5; cursor: not-allowed; }
         
         #chat { 
-            width: 100%; flex-grow: 1; border: 1px solid var(--main-color); overflow-y: auto; overflow-x: hidden;
-            padding: 15px; margin-bottom: 20px;
-            box-sizing: border-box; font-size: 22px;
-            box-shadow: inset 0 0 10px var(--main-color); scroll-behavior: smooth;
-            display: flex; flex-direction: column; min-height: 0; /* min-height: 0 prevents flex child overflow */
-            background: rgba(0, 0, 0, 0.4);
+            width: 100%; flex-grow: 1; border: 1px solid var(--dim-color); overflow-y: auto; overflow-x: hidden;
+            padding: 15px; margin-bottom: 15px;
+            box-sizing: border-box; font-size: 24px;
+            box-shadow: inset 0 0 10px rgba(26, 255, 102, 0.1); scroll-behavior: smooth;
+            display: flex; flex-direction: column; min-height: 0;
+            background: rgba(0, 0, 0, 0.6);
             border-radius: 6px;
         }
 
-        .msg-user {
-            background-color: var(--dark-color); border: 1px solid var(--main-color);
-            padding: 10px 15px; margin: 5px 0 15px 0; align-self: flex-end;
-            border-radius: 10px 10px 0 10px; color: var(--main-color);
-            box-shadow: 0 0 10px var(--dark-color); max-width: 85%;
-            word-wrap: break-word; overflow-wrap: break-word;
+        /* Message Styles: Pure Terminal Log */
+        .terminal-row {
+            margin-bottom: 14px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            text-shadow: 0 0 4px rgba(26, 255, 102, 0.6);
+        }
+        .terminal-row strong {
+            color: #fff;
+            text-shadow: 0 0 8px var(--main-color);
+            margin-right: 8px;
+        }
+        .user-row {
+            color: var(--main-color);
+        }
+        .oracle-row {
+            color: #a3ffc2;
         }
 
-        .msg-oracle {
-            background-color: var(--container-bg); border: 1px dashed var(--dim-color);
-            padding: 10px 15px; margin: 5px 0 15px 0; align-self: flex-start;
-            border-radius: 10px 10px 10px 0; color: var(--main-color); max-width: 85%;
-            word-wrap: break-word; overflow-wrap: break-word;
-        }
-
-        
-        #chat p { margin: 0 0 10px 0; }
+        #chat p { margin: 0 0 8px 0; display: inline; }
         #chat pre {
+            display: block;
             background-color: var(--dark-color); border: 1px dotted var(--main-color);
-            padding: 10px; overflow-x: auto;
+            padding: 10px; overflow-x: auto; margin-top: 10px;
             font-family: inherit; font-size: inherit; text-shadow: none;
         }
         #chat code {
             background-color: var(--dark-color); color: var(--warn-color);
             padding: 2px 5px; font-family: inherit; font-size: 0.9em;
         }
-        #chat ul, #chat ol { margin: 0 0 10px 0; padding-left: 25px; }
-        #chat strong { color: #fff; text-shadow: 0 0 5px var(--main-color); }
+        #chat ul, #chat ol { margin: 10px 0; padding-left: 25px; }
 
         .reasoning-details {
-            margin: 5px 0 15px 0;
+            margin: 8px 0;
             padding: 8px 12px;
             border: 1px dashed var(--dim-color);
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.5);
             font-family: 'Courier New', Courier, monospace;
+            border-radius: 4px;
         }
         .reasoning-details summary {
             cursor: pointer;
             color: var(--dim-color);
             font-style: italic;
-            font-size: 14px;
+            font-size: 16px;
             outline: none;
             user-select: none;
         }
@@ -187,7 +231,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             color: var(--dim-color);
             opacity: 0.9;
             font-size: 16px;
-            border-top: 1px dotted var(--dark-color);
+            border-top: 1px dotted var(--dim-color);
             padding-top: 8px;
         }
 
@@ -205,29 +249,240 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             font-size: 18px; padding: 5px 12px; min-width: 140px; text-align: center;
         }
         .toggle-active {
-            background-color: var(--main-color) !important; color: var(--container-bg) !important;
+            background-color: var(--main-color) !important; color: var(--bg-color) !important;
             box-shadow: 0 0 10px var(--main-color);
         }
         .toggle-inactive {
             color: var(--dim-color); border-color: var(--dim-color);
         }
         
-        .blink { animation: blink-animation 1s steps(5, start) infinite; -webkit-animation: blink-animation 1s steps(5, start) infinite; }
+        .blink { animation: blink-animation 1s steps(5, start) infinite; }
+        .blink-fast { animation: blink-animation 0.5s steps(5, start) infinite; }
         @keyframes blink-animation { to { visibility: hidden; } }
-        @-webkit-keyframes blink-animation { to { visibility: hidden; } }
 
-        /* Welcome Modal Styles */
-        #welcome-modal {
+        /* Status Widget */
+        .status-widget {
+            width: 100%;
+            border: 2px solid var(--main-color);
+            box-shadow: 0 0 10px rgba(26, 255, 102, 0.3), inset 0 0 8px rgba(26, 255, 102, 0.3);
+            background-color: var(--container-bg);
+            border-radius: 6px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 380px;
+            box-sizing: border-box;
+            backdrop-filter: blur(5px);
+        }
+
+        .widget-header {
+            background-color: var(--dim-color);
+            color: #fff;
+            padding: 6px 12px;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-align: center;
+            text-shadow: 0 0 4px #000;
+            border-bottom: 2px solid var(--main-color);
+        }
+
+        .widget-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--dim-color);
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .widget-tab-btn {
+            flex: 1;
+            font-size: 14px !important;
+            padding: 6px 2px !important;
+            border: none !important;
+            background: transparent !important;
+            color: var(--dim-color) !important;
+            border-right: 1px solid var(--dim-color) !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .widget-tab-btn:last-child {
+            border-right: none !important;
+        }
+        .widget-tab-btn:hover {
+            background-color: rgba(26, 255, 102, 0.1) !important;
+            color: var(--main-color) !important;
+        }
+        .widget-tab-btn.active {
+            background-color: var(--hover-color) !important;
+            color: var(--main-color) !important;
+            font-weight: bold;
+            text-shadow: 0 0 5px var(--main-color);
+        }
+
+        .widget-content {
+            flex-grow: 1;
+            overflow: hidden;
+            padding: 12px;
+            position: relative;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .widget-pane {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .widget-scroll-pane {
+            overflow-y: auto;
+            height: 100%;
+        }
+
+        .widget-action-btn {
+            width: 100%;
+            font-size: 18px !important;
+            padding: 6px !important;
+            margin-bottom: 10px;
+            background-color: rgba(0, 51, 0, 0.6) !important;
+            border-style: dashed !important;
+        }
+        .widget-action-btn:hover {
+            background-color: var(--main-color) !important;
+            border-style: solid !important;
+        }
+
+        .widget-logout-btn {
+            width: 100%;
+            font-size: 18px !important;
+            padding: 6px !important;
+            background-color: var(--danger-bg) !important;
+            color: var(--danger-color) !important;
+            border-color: var(--danger-color) !important;
+        }
+        .widget-logout-btn:hover {
+            background-color: var(--danger-hover) !important;
+            color: #fff !important;
+        }
+
+        .chat-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .chat-item {
+            padding: 6px 10px;
+            border: 1px dashed var(--dim-color);
+            margin-bottom: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 18px;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+        .chat-item:hover, .chat-item.active {
+            background-color: var(--hover-color);
+            border-style: solid;
+            border-color: var(--main-color);
+            box-shadow: 0 0 8px rgba(26, 255, 102, 0.2);
+        }
+
+        .chat-item-name {
+            flex-grow: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 5px;
+        }
+        .ren-btn {
+            color: #ffff33;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: inherit;
+            font-size: 16px;
+            text-shadow: 0 0 2px yellow;
+            padding: 2px !important;
+            box-shadow: none !important;
+        }
+        .ren-btn:hover {
+            color: #ffff00;
+            font-weight: bold;
+            background: #333300;
+        }
+        .del-btn {
+            color: var(--danger-color);
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-family: inherit;
+            font-size: 16px;
+            text-shadow: 0 0 2px red;
+            padding: 2px !important;
+            box-shadow: none !important;
+        }
+        .del-btn:hover {
+            color: var(--danger-hover);
+            font-weight: bold;
+            background: var(--danger-bg);
+        }
+
+        #widget-telemetry-short {
+            margin-top: 10px;
+            font-size: 16px;
+            color: var(--dim-color);
+            border-top: 1px dotted var(--dim-color);
+            padding-top: 8px;
+        }
+
+        .font-mono {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Bookshelf Sidebar - legacy compatibility */
+        .sidebar { display: none !important; }
+        .main-chat { display: none !important; }
+
+        /* Config Modal Styles */
+        #config-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--container-bg); z-index: 9999;
-            display: flex; justify-content: center; align-items: center;
-            opacity: 1; transition: opacity 0.5s ease;
+            background-color: rgba(0,0,0,0.85); z-index: 9999;
+            display: none; justify-content: center; align-items: center;
         }
-        .welcome-content { text-align: center; color: var(--main-color); }
-        .welcome-text {
-            font-size: 36px; font-weight: bold; overflow: hidden; white-space: pre-wrap; margin: 0 auto;
-            border-right: .15em solid var(--main-color); animation: blink-caret .75s step-end infinite;
+        .config-content {
+            border: 2px solid var(--main-color); padding: 30px; text-align: left;
+            background-color: var(--container-bg); box-shadow: 0 0 20px var(--main-color);
+            width: 80%; max-width: 600px;
+            max-height: 90vh; overflow-y: auto;
         }
+        .config-section {
+            margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dotted var(--main-color);
+        }
+        .config-section:last-child {
+            border-bottom: none; margin-bottom: 0; padding-bottom: 0;
+        }
+        .config-input, .config-select {
+            width: 100%; margin-bottom: 10px; margin-top: 5px; box-sizing: border-box;
+            background-color: var(--container-bg); color: var(--main-color); border: 1px solid var(--main-color); padding: 10px;
+            font-family: inherit; font-size: 20px;
+        }
+        .config-btn { margin-top: 10px; }
+        .danger-btn { background-color: var(--danger-bg); color: var(--danger-color); border-color: var(--danger-color); }
+        .danger-btn:hover { background-color: var(--danger-hover); color: #fff; }
 
         /* New Chat Modal Styles */
         #new-chat-modal {
@@ -264,33 +519,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             border: 2px solid #ff0000; padding: 30px; text-align: center;
             background-color: #000; box-shadow: 0 0 20px #ff0000;
         }
-
-        /* Config Modal Styles */
-        #config-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.85); z-index: 9999;
-            display: none; justify-content: center; align-items: center;
-        }
-        .config-content {
-            border: 2px solid var(--main-color); padding: 30px; text-align: left;
-            background-color: var(--container-bg); box-shadow: 0 0 20px var(--main-color);
-            width: 80%; max-width: 600px;
-            max-height: 90vh; overflow-y: auto;
-        }
-        .config-section {
-            margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dotted var(--main-color);
-        }
-        .config-section:last-child {
-            border-bottom: none; margin-bottom: 0; padding-bottom: 0;
-        }
-        .config-input, .config-select {
-            width: 100%; margin-bottom: 10px; margin-top: 5px; box-sizing: border-box;
-            background-color: var(--container-bg); color: var(--main-color); border: 1px solid var(--main-color); padding: 10px;
-            font-family: inherit; font-size: 20px;
-        }
-        .config-btn { margin-top: 10px; }
-        .danger-btn { background-color: var(--danger-bg); color: var(--danger-color); border-color: var(--danger-color); }
-        .danger-btn:hover { background-color: var(--danger-hover); color: #fff; }
 
         /* Glitches - Applied conditionally */
         body.glitch-shake .sidebar {
