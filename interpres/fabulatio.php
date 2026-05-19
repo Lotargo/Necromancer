@@ -80,6 +80,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         /* Side Columns */
         .side-col-left {
+            grid-column: 1;
+            grid-row: 1 / 4;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -90,6 +92,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         .side-col-right {
+            grid-column: 3;
+            grid-row: 1 / 4;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -124,6 +128,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         /* Center Column */
         .col-center {
+            grid-column: 2;
+            grid-row: 1 / 4;
             display: grid;
             grid-template-rows: 60px 1fr 150px;
             gap: 15px;
@@ -794,7 +800,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
     <div class="layout-wrapper">
         <!-- Left Side Column -->
         <div class="side-col-left">
-            <canvas id="canvas-lt" class="corner-canvas" width="70" height="70"></canvas>
+            <canvas id="canvas-lt" class="corner-canvas" width="80" height="80"></canvas>
             <div class="glyph-chain-left">
                 <!-- Pentagram -->
                 <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -815,7 +821,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     <path d="M12 11V19M8 15H16M6 4C7.5 5 10.5 5 12 5C13.5 5 16.5 5 18 4" />
                 </svg>
             </div>
-            <canvas id="canvas-lb" class="corner-canvas" width="70" height="70"></canvas>
+            <canvas id="canvas-lb" class="corner-canvas" width="220" height="220"></canvas>
         </div>
 
         <!-- Center Column -->
@@ -835,11 +841,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     <input type="submit" id="send-btn" value="Mittere" disabled>
                 </form>
             </div>
+
+            <!-- Bottom Panel under Chat -->
+            <div class="bottom-panel" style="display: flex; gap: 15px; height: 100%; box-sizing: border-box; align-items: center;">
+                <canvas id="canvas-mb" class="corner-canvas" width="120" height="120" style="flex-shrink: 0;"></canvas>
+                <div class="bottom-decor" style="flex-grow: 1; border: 1px solid var(--dim-color); height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 15px; box-sizing: border-box; background: rgba(0, 0, 0, 0.4); text-shadow: 0 0 4px var(--main-color); overflow: hidden;">
+                    <div style="font-size: 18px; color: var(--main-color); margin-bottom: 5px;">RITUAL_GRID: SYNCHRONIZED</div>
+                    <div style="font-size: 14px; color: var(--dim-color); font-family: monospace; line-height: 1.2;">
+                        [SYSTEM LOG] RUNES CHARGED // ECTOPLASM LEVEL: NORMAL // DEATH GRID RUNTIME: 8472s<br>
+                        [ORACLE INT] SPECTRUM STABLE // ANOMALIES DETECTED: 0
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Right Side Column -->
         <div class="side-col-right">
-            <canvas id="canvas-rt" class="corner-canvas" width="70" height="70"></canvas>
+            <canvas id="canvas-rt" class="corner-canvas" width="80" height="80"></canvas>
             <div class="glyph-chain-right">
                 <!-- Salt / Earth -->
                 <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation-delay: 0.5s;">
@@ -854,7 +872,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     <line x1="8" y1="17" x2="16" y2="17" />
                 </svg>
             </div>
-            <canvas id="canvas-rb" class="corner-canvas" width="70" height="70"></canvas>
 
             <!-- Status Widget -->
             <div class="status-widget">
@@ -1534,17 +1551,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         const canvasLt = document.getElementById('canvas-lt');
         const canvasLb = document.getElementById('canvas-lb');
         const canvasRt = document.getElementById('canvas-rt');
-        const canvasRb = document.getElementById('canvas-rb');
+        const canvasMb = document.getElementById('canvas-mb');
 
         const ctxLt = canvasLt ? canvasLt.getContext('2d') : null;
         const ctxLb = canvasLb ? canvasLb.getContext('2d') : null;
         const ctxRt = canvasRt ? canvasRt.getContext('2d') : null;
-        const ctxRb = canvasRb ? canvasRb.getContext('2d') : null;
+        const ctxMb = canvasMb ? canvasMb.getContext('2d') : null;
 
         let angleLt = 0;
         let angleLb = 0;
         let angleRt = 0;
-        let angleRb = 0;
+        let angleMb = 0;
 
         let mouseX = 0; let mouseY = 0;
         window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
@@ -1565,7 +1582,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         const pBlood = [];
         for(let i=0; i<30; i++) pBlood.push({x: Math.random()*window.innerWidth, y: -Math.random()*window.innerHeight, speed: 1 + Math.random()*3, radius: 2 + Math.random()*4});
 
-        function drawOccultCircleSingle(ctx, w, h, angle) {
+        // 1. Left-Top Occult Circle (Pentagram, 80x80)
+        function drawOccultCircleLt(ctx, w, h, angle) {
             if (!ctx) return;
             const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
             ctx.clearRect(0, 0, w, h);
@@ -1573,80 +1591,231 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             ctx.translate(w / 2, h / 2);
             ctx.rotate(angle);
 
-            const R = Math.min(w, h) / 2 - 4; // Scale circle relative to small canvas dimensions
+            const R = Math.min(w, h) / 2 - 4;
 
-            // Glow and lines
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = mainC;
+            ctx.strokeStyle = mainC;
+            ctx.fillStyle = mainC;
+            ctx.lineWidth = 1.0;
+
+            // Outer circles
+            ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, R * 0.82, 0, Math.PI * 2); ctx.stroke();
+
+            // Pentagram
+            const pts = [];
+            for (let i = 0; i < 5; i++) {
+                const a = (i * Math.PI * 2) / 5 - Math.PI / 2;
+                pts.push({ x: R * 0.82 * Math.cos(a), y: R * 0.82 * Math.sin(a) });
+            }
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            ctx.lineTo(pts[2].x, pts[2].y);
+            ctx.lineTo(pts[4].x, pts[4].y);
+            ctx.lineTo(pts[1].x, pts[1].y);
+            ctx.lineTo(pts[3].x, pts[3].y);
+            ctx.closePath();
+            ctx.stroke();
+
+            // Runes (8 basic ones)
+            const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ'];
+            ctx.font = '8px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            runes.forEach((rune, index) => {
+                const a = (index * Math.PI * 2) / runes.length;
+                ctx.save();
+                ctx.rotate(a);
+                ctx.fillText(rune, 0, -R * 0.91);
+                ctx.restore();
+            });
+            ctx.restore();
+        }
+
+        // 2. Right-Top Occult Circle (Hexagram / Solomon's Seal, 80x80)
+        function drawOccultCircleRt(ctx, w, h, angle) {
+            if (!ctx) return;
+            const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
+            ctx.clearRect(0, 0, w, h);
+            ctx.save();
+            ctx.translate(w / 2, h / 2);
+            ctx.rotate(angle);
+
+            const R = Math.min(w, h) / 2 - 4;
+
+            ctx.shadowBlur = 4;
+            ctx.shadowColor = mainC;
+            ctx.strokeStyle = mainC;
+            ctx.fillStyle = mainC;
+            ctx.lineWidth = 1.0;
+
+            // Outer circles
+            ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, R * 0.82, 0, Math.PI * 2); ctx.stroke();
+
+            // Hexagram (Two overlapping triangles)
+            ctx.beginPath();
+            for(let i=0; i<3; i++) {
+                const a = (i * Math.PI * 2) / 3 - Math.PI / 2;
+                const x = R * 0.82 * Math.cos(a);
+                const y = R * 0.82 * Math.sin(a);
+                if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            }
+            ctx.closePath(); ctx.stroke();
+
+            ctx.beginPath();
+            for(let i=0; i<3; i++) {
+                const a = (i * Math.PI * 2) / 3 + Math.PI / 6;
+                const x = R * 0.82 * Math.cos(a);
+                const y = R * 0.82 * Math.sin(a);
+                if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+            }
+            ctx.closePath(); ctx.stroke();
+
+            // Dots in centers and corners
+            ctx.beginPath(); ctx.arc(0,0, 2, 0, Math.PI*2); ctx.fill();
+            ctx.restore();
+        }
+
+        // 3. Left-Bottom Occult Circle (Large complex runic wheel, 220x220)
+        function drawOccultCircleLb(ctx, w, h, angle) {
+            if (!ctx) return;
+            const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
+            ctx.clearRect(0, 0, w, h);
+            ctx.save();
+            ctx.translate(w / 2, h / 2);
+
+            const R = Math.min(w, h) / 2 - 6;
+
             ctx.shadowBlur = 6;
             ctx.shadowColor = mainC;
             ctx.strokeStyle = mainC;
             ctx.fillStyle = mainC;
             ctx.lineWidth = 1.0;
 
-            // 1. Outer Circle
-            ctx.beginPath();
-            ctx.arc(0, 0, R, 0, Math.PI * 2);
-            ctx.stroke();
+            // --- OUTER ROTATION PART (Runes wheel) ---
+            ctx.save();
+            ctx.rotate(angle);
 
-            // 2. Inner Circle
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(0, 0, R * 0.84, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.lineWidth = 0.8;
+            // Outer dual boundary
+            ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, R - 12, 0, Math.PI * 2); ctx.stroke();
 
-            // 3. Spikes and Inner Circle
-            ctx.beginPath();
-            ctx.arc(0, 0, R * 0.72, 0, Math.PI * 2);
-            ctx.stroke();
-            
+            // Runes (24 Elder Futhark)
+            const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ', 'ᛇ', 'ᛈ', 'ᛉ', 'ᛊ', 'ᛏ', 'ᛒ', 'ᛖ', 'ᛗ', 'ᛚ', 'ᛜ', 'ᛞ', 'ᛟ'];
+            ctx.font = '10px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            runes.forEach((rune, index) => {
+                const a = (index * Math.PI * 2) / runes.length;
+                ctx.save();
+                ctx.rotate(a);
+                ctx.fillText(rune, 0, -(R - 6));
+                ctx.restore();
+            });
+            ctx.restore();
+
+            // --- MIDDLE STATIONARY PART ---
+            ctx.beginPath(); ctx.arc(0, 0, R - 20, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, R - 32, 0, Math.PI * 2); ctx.stroke();
+
+            // Radial spokes
             ctx.lineWidth = 0.5;
             for (let a = 0; a < Math.PI * 2; a += Math.PI / 12) {
-                const cos = Math.cos(a);
-                const sin = Math.sin(a);
                 ctx.beginPath();
-                ctx.moveTo(R * 0.72 * cos, R * 0.72 * sin);
-                ctx.lineTo(R * 0.84 * cos, R * 0.84 * sin);
+                ctx.moveTo((R - 32) * Math.cos(a), (R - 32) * Math.sin(a));
+                ctx.lineTo((R - 20) * Math.cos(a), (R - 20) * Math.sin(a));
                 ctx.stroke();
             }
-            ctx.lineWidth = 0.8;
+            ctx.lineWidth = 1.0;
 
-            // 4. Seven-Pointed Star
-            const numPoints = 7;
-            const points = [];
-            for (let i = 0; i < numPoints; i++) {
-                const a = (i * Math.PI * 2) / numPoints - Math.PI / 2;
-                points.push({ x: R * 0.72 * Math.cos(a), y: R * 0.72 * Math.sin(a) });
+            // --- INNER COUNTER-ROTATION PART ---
+            ctx.save();
+            ctx.rotate(-angle * 0.7);
+
+            ctx.beginPath(); ctx.arc(0, 0, R - 40, 0, Math.PI * 2); ctx.stroke();
+
+            // Internal Pentagram/Heptagram
+            const pts = [];
+            const nPoints = 7;
+            for (let i = 0; i < nPoints; i++) {
+                const a = (i * Math.PI * 2) / nPoints - Math.PI / 2;
+                pts.push({ x: (R - 40) * Math.cos(a), y: (R - 40) * Math.sin(a) });
             }
-            
             ctx.beginPath();
             let curr = 0;
-            ctx.moveTo(points[curr].x, points[curr].y);
-            for (let i = 0; i < numPoints; i++) {
-                curr = (curr + 3) % numPoints;
-                ctx.lineTo(points[curr].x, points[curr].y);
+            ctx.moveTo(pts[curr].x, pts[curr].y);
+            for (let i = 0; i < nPoints; i++) {
+                curr = (curr + 3) % nPoints;
+                ctx.lineTo(pts[curr].x, pts[curr].y);
             }
             ctx.closePath();
             ctx.stroke();
 
-            points.forEach(p => {
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-                ctx.fill();
+            // Additional small circles inside
+            pts.forEach(p => {
+                ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.stroke();
             });
 
-            // 5. Runes
-            const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ', 'ᛇ', 'ᛈ', 'ᛉ', 'ᛊ', 'ᛏ', 'ᛒ', 'ᛖ', 'ᛗ', 'ᛚ', 'ᛜ', 'ᛞ', 'ᛟ'];
-            ctx.font = Math.max(5, Math.floor(R * 0.16)) + 'px monospace';
+            ctx.restore();
+            ctx.restore();
+        }
+
+        // 4. Middle-Bottom Occult Circle (Mercury/Venus orbiter under chat, 120x120)
+        function drawOccultCircleMb(ctx, w, h, angle) {
+            if (!ctx) return;
+            const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
+            ctx.clearRect(0, 0, w, h);
+            ctx.save();
+            ctx.translate(w / 2, h / 2);
+
+            const R = Math.min(w, h) / 2 - 5;
+
+            ctx.shadowBlur = 5;
+            ctx.shadowColor = mainC;
+            ctx.strokeStyle = mainC;
+            ctx.fillStyle = mainC;
+            ctx.lineWidth = 1.0;
+
+            // Outer rotating ring with 12 runes
+            ctx.save();
+            ctx.rotate(-angle * 0.9);
+            ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(0, 0, R - 12, 0, Math.PI * 2); ctx.stroke();
+
+            const runes = ['ᛁ', 'ᛃ', 'ᛇ', 'ᛈ', 'ᛉ', 'ᛊ', 'ᛏ', 'ᛒ', 'ᛖ', 'ᛗ', 'ᛚ', 'ᛜ'];
+            ctx.font = '8px monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            
             runes.forEach((rune, index) => {
-                const a = (index * Math.PI * 2) / runes.length - Math.PI / 2;
+                const a = (index * Math.PI * 2) / runes.length;
                 ctx.save();
                 ctx.rotate(a);
-                ctx.fillText(rune, 0, -R * 0.92);
+                ctx.fillText(rune, 0, -(R - 6));
                 ctx.restore();
             });
+            ctx.restore();
+
+            // Inner rotating orbits and dots
+            ctx.save();
+            ctx.rotate(angle * 1.2);
+            ctx.beginPath(); ctx.arc(0, 0, R - 24, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(R - 24, 0, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+
+            // Center stationary Alchemy Symbol (Mercury / Venus)
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            // Circle
+            ctx.arc(0, 4, 10, 0, Math.PI * 2);
+            // Cross
+            ctx.moveTo(0, 14); ctx.lineTo(0, 24);
+            ctx.moveTo(-6, 19); ctx.lineTo(6, 19);
+            // Horns (Mercury crescent)
+            ctx.moveTo(-10, -10);
+            ctx.quadraticCurveTo(0, -2, 10, -10);
+            ctx.stroke();
 
             ctx.restore();
         }
@@ -1668,16 +1837,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 advCtx.clearRect(0,0,w,h);
             }
             
-            // Draw four corner occult circles
-            if (ctxLt) drawOccultCircleSingle(ctxLt, canvasLt.width, canvasLt.height, angleLt);
-            if (ctxLb) drawOccultCircleSingle(ctxLb, canvasLb.width, canvasLb.height, angleLb);
-            if (ctxRt) drawOccultCircleSingle(ctxRt, canvasRt.width, canvasRt.height, angleRt);
-            if (ctxRb) drawOccultCircleSingle(ctxRb, canvasRb.width, canvasRb.height, angleRb);
+            // Draw four unique occult circles
+            if (ctxLt) drawOccultCircleLt(ctxLt, canvasLt.width, canvasLt.height, angleLt);
+            if (ctxLb) drawOccultCircleLb(ctxLb, canvasLb.width, canvasLb.height, angleLb);
+            if (ctxRt) drawOccultCircleRt(ctxRt, canvasRt.width, canvasRt.height, angleRt);
+            if (ctxMb) drawOccultCircleMb(ctxMb, canvasMb.width, canvasMb.height, angleMb);
 
-            angleLt += 0.008;
-            angleLb -= 0.008;
-            angleRt -= 0.008;
-            angleRb += 0.008;
+            angleLt += 0.006;
+            angleLb += 0.004;
+            angleRt -= 0.006;
+            angleMb += 0.005;
 
             const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
 
