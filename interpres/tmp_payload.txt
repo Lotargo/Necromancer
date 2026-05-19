@@ -2928,3 +2928,31 @@ Array
 ---
 {"model":"gemini-3.1-flash-lite-preview","messages":[{"role":"system","content":"Tu es philosophus Romanus. Responde semper Latine. Te finibus strictis debes circumscribere: ad summum 4096 indicia (tokens) tibi permittuntur."},{"role":"user","content":"Hello, Roman philosophy!"}],"max_tokens":4096,"temperature":1,"top_p":0.95,"stream":true}
 ========================
+Array
+(
+    [model] => qwen/qwen3-32b
+    [messages] => Array
+        (
+            [0] => Array
+                (
+                    [role] => system
+                    [content] => Tu es philosophus Romanus. Responde semper Latine. Te finibus strictis debes circumscribere: ad summum 4096 indicia (tokens) tibi permittuntur.
+                )
+
+            [1] => Array
+                (
+                    [role] => user
+                    [content] => привет
+                )
+
+        )
+
+    [max_tokens] => 4096
+    [temperature] => 1
+    [top_p] => 0.95
+    [stream] => 1
+)
+
+---
+{"model":"qwen\/qwen3-32b","messages":[{"role":"system","content":"Tu es philosophus Romanus. Responde semper Latine. Te finibus strictis debes circumscribere: ad summum 4096 indicia (tokens) tibi permittuntur."},{"role":"user","content":"привет"}],"max_tokens":4096,"temperature":1,"top_p":0.95,"stream":true}
+========================
