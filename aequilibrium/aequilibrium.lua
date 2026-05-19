@@ -131,7 +131,7 @@ local function EligereInterna(provisor_data)
     local nomen = provisor_data.nomen
 
     -- Eligere clavem
-    local idx_clavis = IndicesClavium[nomen]
+    local idx_clavis = IndicesClavium[nomen] or 1
     if idx_clavis > #provisor_data.claves then
         idx_clavis = 1
     end
@@ -139,7 +139,7 @@ local function EligereInterna(provisor_data)
     IndicesClavium[nomen] = idx_clavis + 1
 
     -- Eligere modelum
-    local idx_modelum = IndicesModelorum[nomen]
+    local idx_modelum = IndicesModelorum[nomen] or 1
     if idx_modelum > #provisor_data.modela then
         idx_modelum = 1
     end
@@ -208,38 +208,44 @@ end
 
 -- Functio: Tractare clientem (Handle client connection)
 local function TractareClientem(cliens_sock)
-    local buffer = ffi.new("char[1024]")
-    local bytes_read = ffi.C.recv(cliens_sock, buffer, 1023, 0)
+    local status, err = pcall(function()
+        local buffer = ffi.new("char[1024]")
+        local bytes_read = ffi.C.recv(cliens_sock, buffer, 1023, 0)
 
-    if bytes_read > 0 then
-        local linea_data = ffi.string(buffer, bytes_read)
-        -- Remove whitespace and newline
-        linea_data = linea_data:gsub("^%s*(.-)%s*$", "%1")
+        if bytes_read > 0 then
+            local linea_data = ffi.string(buffer, bytes_read)
+            -- Remove whitespace and newline
+            linea_data = linea_data:gsub("^%s*(.-)%s*$", "%1")
 
-        -- Mandatum: PETERE_CLAVEM|ID_SESSIONIS
-        local mandatum, parametrum1 = linea_data:match("([^|]+)|?([^|]*)")
+            -- Mandatum: PETERE_CLAVEM|ID_SESSIONIS
+            local mandatum, parametrum1 = linea_data:match("([^|]+)|?([^|]*)")
 
-        local responsum = ""
-        if mandatum == "PURGARE_SESSIONEM" then
-            Sessiones[parametrum1] = nil
-            responsum = FormareResponsum(200, "Sessio purgata est", "", "", "", "")
-            print("[>] Sessio purgata: " .. (parametrum1 or "ignota"))
-        elseif mandatum == "PETERE_CLAVEM" then
+            local responsum = ""
+            if mandatum == "PURGARE_SESSIONEM" then
+                Sessiones[parametrum1] = nil
+                responsum = FormareResponsum(200, "Sessio purgata est", "", "", "", "")
+                print("[>] Sessio purgata: " .. (parametrum1 or "ignota"))
+            elseif mandatum == "PETERE_CLAVEM" then
 
-            local nomen, clavis, url, modelum, error_msg = EligereProvisorem(parametrum1)
+                local nomen, clavis, url, modelum, error_msg = EligereProvisorem(parametrum1)
 
-            if nomen then
-                responsum = FormareResponsum(200, "Successus", nomen, clavis, url, modelum)
-                print("[>] Sessio: " .. (parametrum1 or "ignota") .. " -> Electus: " .. nomen .. " [" .. modelum .. "] (Clavis rotata)")
+                if nomen then
+                    responsum = FormareResponsum(200, "Successus", nomen, clavis, url, modelum)
+                    print("[>] Sessio: " .. (parametrum1 or "ignota") .. " -> Electus: " .. nomen .. " [" .. modelum .. "] (Clavis rotata)")
+                else
+                    responsum = FormareResponsum(500, error_msg, "", "", "", "")
+                    print("[!] Error: " .. error_msg)
+                end
             else
-                responsum = FormareResponsum(500, error_msg, "", "", "", "")
-                print("[!] Error: " .. error_msg)
+                responsum = FormareResponsum(400, "Mandatum incognitum", "", "", "", "")
             end
-        else
-            responsum = FormareResponsum(400, "Mandatum incognitum", "", "", "", "")
-        end
 
-        ffi.C.send(cliens_sock, responsum, #responsum, 0)
+            ffi.C.send(cliens_sock, responsum, #responsum, 0)
+        end
+    end)
+
+    if not status then
+        print("[!] Error in TractareClientem: " .. tostring(err))
     end
 
     ffi.C.close(cliens_sock)

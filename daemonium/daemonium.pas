@@ -3,17 +3,16 @@ program Daemonium;
 {$mode objfpc}{$H+}
 
 uses
-  Classes, SysUtils, sockets, strutils, baseunix;
+  Classes, SysUtils, sockets, strutils, baseunix, sqldb, pqconnection, db, sha1;
 
 const
   PORTUS = 8080;
-  TABULARIUM_USORES = '../tabularium/usores.txt';
   TABULARIUM_SCIENTIA = '../tabularium/scientia/scientia.txt';
-  PREFIXUS_FABULATIO = '../tabularium/fabulatio_';
-  PREFIXUS_FP = '../tabularium/fp_';
-  TABULARIUM_REGISTRUM = '../tabularium/registrum.txt';
   SPIRITUS_MAIL_LOG = '../tabularium/spiritus_mail.log';
-  PREFIXUS_OPTIONES = '../tabularium/optiones_';
+
+var
+  DBConn: TPQConnection;
+  DBTran: TSQLTransaction;
 
 type
   TResponsum = record
@@ -27,189 +26,316 @@ begin
   Result := IntToStr(Codex) + '|' + Nuntius + '|' + Data + sLineBreak;
 end;
 
-function VerificareFingerprint(Nomen, FP: String): Boolean;
-var
-  F: TextFile;
-  ServatumFP: String;
-  NomenFasciculi: String;
+function HashPassword(Pass: String): String;
 begin
-  Result := True;
-  NomenFasciculi := PREFIXUS_FP + Nomen + '.txt';
-  if FileExists(NomenFasciculi) then
+  // Cryptographically secure hashing with a static salt
+  Result := SHA1Print(SHA1String(Pass + 'NecromancerSalt1337'));
+end;
+
+procedure InitDatabase;
+var
+  Host, PortStr, DbName, User, Pass: String;
+  Query: TSQLQuery;
+  Retries: Integer;
+  ConnectedSuccessfully: Boolean;
+begin
+  Host := GetEnvironmentVariable('DB_HOST');
+  if Host = '' then Host := 'db';
+  PortStr := GetEnvironmentVariable('DB_PORT');
+  if PortStr = '' then PortStr := '5432';
+  DbName := GetEnvironmentVariable('DB_NAME');
+  if DbName = '' then DbName := 'necromancer';
+  User := GetEnvironmentVariable('DB_USER');
+  if User = '' then User := 'necromancer';
+  Pass := GetEnvironmentVariable('DB_PASS');
+  if Pass = '' then Pass := 'necromancer_secret';
+
+  WriteLn('Database Config: Host=', Host, ', Port=', PortStr, ', DB=', DbName, ', User=', User);
+
+  DBConn := TPQConnection.Create(nil);
+  DBConn.HostName := Host;
+  DBConn.DatabaseName := DbName;
+  DBConn.UserName := User;
+  DBConn.Password := Pass;
+  if PortStr <> '5432' then
+    DBConn.Params.Add('port=' + PortStr);
+
+  DBTran := TSQLTransaction.Create(DBConn);
+  DBConn.Transaction := DBTran;
+
+  Retries := 0;
+  ConnectedSuccessfully := False;
+
+  while (not ConnectedSuccessfully) and (Retries < 15) do
   begin
-    AssignFile(F, NomenFasciculi);
-    Reset(F);
-    ReadLn(F, ServatumFP);
-    CloseFile(F);
-    Result := (ServatumFP = FP);
+    try
+      Inc(Retries);
+      DBConn.Connected := True;
+      ConnectedSuccessfully := True;
+      WriteLn('[!] Connection to PostgreSQL established successfully.');
+    except
+      on E: Exception do
+      begin
+        if Retries >= 15 then
+        begin
+          WriteLn('[FATAL] Failed to initialize database after 15 attempts: ', E.Message);
+          Halt(1);
+        end;
+        WriteLn('[!] Database connection attempt ', Retries, ' failed. Retrying in 2 seconds...');
+        Sleep(2000);
+      end;
+    end;
+  end;
+
+  try
+    // Initialize Schema
+    Query := TSQLQuery.Create(DBConn);
+    Query.Database := DBConn;
+    Query.Transaction := DBTran;
+
+    // 1. Users Table
+    Query.SQL.Text := 
+      'CREATE TABLE IF NOT EXISTS usores (' +
+      '  nomen VARCHAR(255) PRIMARY KEY,' +
+      '  email VARCHAR(255) UNIQUE,' +
+      '  password_hash VARCHAR(255),' +
+      '  reg_type VARCHAR(50) NOT NULL,' +
+      '  fingerprint VARCHAR(255) NOT NULL,' +
+      '  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP' +
+      ');';
+    Query.ExecSQL;
+
+    // 2. User Options Table (UI settings)
+    Query.SQL.Text := 
+      'CREATE TABLE IF NOT EXISTS optiones (' +
+      '  nomen VARCHAR(255) PRIMARY KEY REFERENCES usores(nomen) ON DELETE CASCADE ON UPDATE CASCADE,' +
+      '  optiones_json TEXT NOT NULL,' +
+      '  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP' +
+      ');';
+    Query.ExecSQL;
+
+    // 3. Chat Messages Table
+    Query.SQL.Text := 
+      'CREATE TABLE IF NOT EXISTS fabulatio (' +
+      '  id SERIAL PRIMARY KEY,' +
+      '  nomen VARCHAR(255) NOT NULL REFERENCES usores(nomen) ON DELETE CASCADE ON UPDATE CASCADE,' +
+      '  cubiculum VARCHAR(255) NOT NULL DEFAULT ''default'',' +
+      '  nuntius TEXT NOT NULL,' +
+      '  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP' +
+      ');';
+    Query.ExecSQL;
+
+    // Indexes for high performance
+    Query.SQL.Text := 'CREATE INDEX IF NOT EXISTS idx_fabulatio_nomen_cubiculum ON fabulatio(nomen, cubiculum);';
+    Query.ExecSQL;
+
+    DBTran.Commit;
+    Query.Free;
+    WriteLn('[!] Database tables and schema successfully verified/created.');
+  except
+    on E: Exception do
+    begin
+      WriteLn('[FATAL] Failed to verify schema: ', E.Message);
+      Halt(1);
+    end;
   end;
 end;
 
-procedure ServareFingerprint(Nomen, FP: String);
+function VerificareFingerprint(Nomen, FP: String): Boolean;
 var
-  F: TextFile;
+  Query: TSQLQuery;
 begin
-  AssignFile(F, PREFIXUS_FP + Nomen + '.txt');
-  Rewrite(F);
-  WriteLn(F, FP);
-  CloseFile(F);
+  Result := False;
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'SELECT fingerprint FROM usores WHERE nomen = :nomen';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.Open;
+    if not Query.EOF then
+      Result := (Query.FieldByName('fingerprint').AsString = FP);
+    Query.Close;
+  except
+    on E: Exception do
+      WriteLn('[ERR] VerificareFingerprint: ', E.Message);
+  end;
+  Query.Free;
 end;
 
 function CreareUsorem(Nomen, FP: String): String;
 var
-  F: TextFile;
-  Linea: String;
+  Query: TSQLQuery;
   Invenitur: Boolean;
 begin
   Invenitur := False;
-  AssignFile(F, TABULARIUM_USORES);
-  if FileExists(TABULARIUM_USORES) then
-  begin
-    Reset(F);
-    while not EOF(F) do
-    begin
-      ReadLn(F, Linea);
-      if Linea = Nomen then
-      begin
-        Invenitur := True;
-        Break;
-      end;
-    end;
-    CloseFile(F);
-  end;
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'SELECT 1 FROM usores WHERE nomen = :nomen';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.Open;
+    Invenitur := not Query.EOF;
+    Query.Close;
 
-  if Invenitur then
-    Result := FormareResponsum(400, 'Error', 'Usor iam exstat')
-  else
-  begin
-    AssignFile(F, TABULARIUM_USORES);
-    if not FileExists(TABULARIUM_USORES) then
-      Rewrite(F)
+    if Invenitur then
+      Result := FormareResponsum(400, 'Error', 'Usor iam exstat')
     else
-      Append(F);
-    WriteLn(F, Nomen);
-    CloseFile(F);
-    ServareFingerprint(Nomen, FP);
-    Result := FormareResponsum(200, 'Successus', 'Usor creatus est');
+    begin
+      Query.SQL.Text := 'INSERT INTO usores (nomen, reg_type, fingerprint) VALUES (:nomen, ''SPIRITUS'', :fp)';
+      Query.ParamByName('nomen').AsString := Nomen;
+      Query.ParamByName('fp').AsString := FP;
+      Query.ExecSQL;
+      DBTran.CommitRetaining;
+      Result := FormareResponsum(200, 'Successus', 'Usor creatus est');
+    end;
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
   end;
+  Query.Free;
 end;
 
 function Intrare(Nomen, FP: String): String;
 var
-  F: TextFile;
-  Linea: String;
+  Query: TSQLQuery;
   Invenitur: Boolean;
+  SavedFP: String;
 begin
   Invenitur := False;
-  if FileExists(TABULARIUM_USORES) then
-  begin
-    AssignFile(F, TABULARIUM_USORES);
-    Reset(F);
-    while not EOF(F) do
+  SavedFP := '';
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'SELECT fingerprint FROM usores WHERE nomen = :nomen';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.Open;
+    if not Query.EOF then
     begin
-      ReadLn(F, Linea);
-      if Linea = Nomen then
-      begin
-        Invenitur := True;
-        Break;
-      end;
+      Invenitur := True;
+      SavedFP := Query.FieldByName('fingerprint').AsString;
     end;
-    CloseFile(F);
-  end;
+    Query.Close;
 
-  if Invenitur then
-  begin
-    if not FileExists(PREFIXUS_FP + Nomen + '.txt') then
+    if Invenitur then
     begin
-        ServareFingerprint(Nomen, FP);
-        Result := FormareResponsum(200, 'Successus', 'Primo introitus cum fingerprint permissus');
+      if SavedFP = FP then
+        Result := FormareResponsum(200, 'Successus', 'Introitus permissus')
+      else
+        Result := FormareResponsum(403, 'Error', 'Fingerprint mismatch / Accessus negatus');
     end
-    else if VerificareFingerprint(Nomen, FP) then
-      Result := FormareResponsum(200, 'Successus', 'Introitus permissus')
     else
-      Result := FormareResponsum(403, 'Error', 'Fingerprint mismatch / Accessus negatus');
-  end
-  else
-    Result := FormareResponsum(404, 'Error', 'Usor non inventus');
+      Result := FormareResponsum(404, 'Error', 'Usor non inventus');
+  except
+    on E: Exception do
+      Result := FormareResponsum(500, 'Error', E.Message);
+  end;
+  Query.Free;
 end;
 
 function CreareUsoremPlenum(Nomen, Email, Password, FP: String): String;
 var
-  F: TextFile;
-  Linea: String;
-  P: Integer;
-  ExistensEmail, ExistensNomen: String;
+  Query: TSQLQuery;
+  ExistensNomen, ExistensEmail: Boolean;
+  PassHash: String;
 begin
-  if FileExists(TABULARIUM_REGISTRUM) then
-  begin
-    AssignFile(F, TABULARIUM_REGISTRUM);
-    Reset(F);
-    while not EOF(F) do
-    begin
-      ReadLn(F, Linea);
-      P := Pos('|', Linea);
-      ExistensNomen := Copy(Linea, 1, P - 1);
-      Linea := Copy(Linea, P + 1, Length(Linea));
-      P := Pos('|', Linea);
-      ExistensEmail := Copy(Linea, 1, P - 1);
-      
-      if ExistensNomen = Nomen then
-      begin
-        CloseFile(F);
-        Exit(FormareResponsum(400, 'Error', 'Nomen iam occupatum'));
-      end;
-      if ExistensEmail = Email then
-      begin
-        CloseFile(F);
-        Exit(FormareResponsum(400, 'Error', 'Email iam registratum'));
-      end;
-    end;
-    CloseFile(F);
-  end;
+  ExistensNomen := False;
+  ExistensEmail := False;
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    // Check nickname
+    Query.SQL.Text := 'SELECT 1 FROM usores WHERE nomen = :nomen';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.Open;
+    ExistensNomen := not Query.EOF;
+    Query.Close;
 
-  AssignFile(F, TABULARIUM_REGISTRUM);
-  if not FileExists(TABULARIUM_REGISTRUM) then Rewrite(F) else Append(F);
-  WriteLn(F, Nomen + '|' + Email + '|' + Password + '|ANIMA|' + FP);
-  CloseFile(F);
-  
-  // Also add to historical usores.txt for legacy support
-  CreareUsorem(Nomen, FP);
-  
-  Result := FormareResponsum(200, 'Successus', 'Anima creata est');
+    if ExistensNomen then
+      Exit(FormareResponsum(400, 'Error', 'Nomen iam occupatum'));
+
+    // Check email
+    Query.SQL.Text := 'SELECT 1 FROM usores WHERE email = :email';
+    Query.ParamByName('email').AsString := Email;
+    Query.Open;
+    ExistensEmail := not Query.EOF;
+    Query.Close;
+
+    if ExistensEmail then
+      Exit(FormareResponsum(400, 'Error', 'Email iam registratum'));
+
+    PassHash := HashPassword(Password);
+
+    // Save record
+    Query.SQL.Text := 'INSERT INTO usores (nomen, email, password_hash, reg_type, fingerprint) ' +
+                     'VALUES (:nomen, :email, :pass, ''ANIMA'', :fp)';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.ParamByName('email').AsString := Email;
+    Query.ParamByName('pass').AsString := PassHash;
+    Query.ParamByName('fp').AsString := FP;
+    Query.ExecSQL;
+    DBTran.CommitRetaining;
+
+    Result := FormareResponsum(200, 'Successus', 'Anima creata est');
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
+  end;
+  Query.Free;
 end;
 
 function IntrarePlenum(Email, Password, FP: String): String;
 var
-  F: TextFile;
-  Linea, Pars: String;
-  Idx: Integer;
-  RegNomen, RegEmail, RegPass, RegType, RegFP: String;
+  Query: TSQLQuery;
+  PassHash: String;
+  RegNomen, RegFP, RegPass: String;
+  Invenitur: Boolean;
 begin
   Result := FormareResponsum(401, 'Error', 'Email vel Password non recte');
-  if not FileExists(TABULARIUM_REGISTRUM) then Exit;
+  Invenitur := False;
+  PassHash := HashPassword(Password);
 
-  AssignFile(F, TABULARIUM_REGISTRUM);
-  Reset(F);
-  while not EOF(F) do
-  begin
-    ReadLn(F, Linea);
-    Pars := Linea;
-    Idx := Pos('|', Pars); RegNomen := Copy(Pars, 1, Idx-1); Pars := Copy(Pars, Idx+1, Length(Pars));
-    Idx := Pos('|', Pars); RegEmail := Copy(Pars, 1, Idx-1); Pars := Copy(Pars, Idx+1, Length(Pars));
-    Idx := Pos('|', Pars); RegPass := Copy(Pars, 1, Idx-1); Pars := Copy(Pars, Idx+1, Length(Pars));
-    Idx := Pos('|', Pars); RegType := Copy(Pars, 1, Idx-1); Pars := Copy(Pars, Idx+1, Length(Pars));
-    RegFP := Pars;
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'SELECT nomen, password_hash, fingerprint FROM usores WHERE email = :email';
+    Query.ParamByName('email').AsString := Email;
+    Query.Open;
 
-    if (RegEmail = Email) and (RegPass = Password) then
+    if not Query.EOF then
     begin
-      CloseFile(F);
-      if RegFP <> FP then
-        Exit(FormareResponsum(403, 'Error', 'Fingerprint mismatch pro Anima'))
-      else
-        Exit(FormareResponsum(200, 'Successus', RegNomen));
+      Invenitur := True;
+      RegNomen := Query.FieldByName('nomen').AsString;
+      RegPass := Query.FieldByName('password_hash').AsString;
+      RegFP := Query.FieldByName('fingerprint').AsString;
     end;
+    Query.Close;
+
+    if Invenitur then
+    begin
+      if RegPass = PassHash then
+      begin
+        if RegFP <> FP then
+          Result := FormareResponsum(403, 'Error', 'Fingerprint mismatch pro Anima')
+        else
+          Result := FormareResponsum(200, 'Successus', RegNomen);
+      end;
+    end;
+  except
+    on E: Exception do
+      Result := FormareResponsum(500, 'Error', E.Message);
   end;
-  CloseFile(F);
+  Query.Free;
 end;
 
 function PetereRecuperationem(Email: String): String;
@@ -228,400 +354,385 @@ end;
 
 function AddereNuntium(Nomen, Cubiculum, Nuntius: String): String;
 var
-  F: TextFile;
-  NomenFasciculi: String;
+  Query: TSQLQuery;
 begin
   if Cubiculum = '' then Cubiculum := 'default';
-  NomenFasciculi := PREFIXUS_FABULATIO + Nomen + '_' + Cubiculum + '.txt';
-  AssignFile(F, NomenFasciculi);
-  if FileExists(NomenFasciculi) then
-    Append(F)
-  else
-    Rewrite(F);
-  WriteLn(F, Nuntius);
-  CloseFile(F);
-  Result := FormareResponsum(200, 'Successus', 'Nuntius additus est');
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'INSERT INTO fabulatio (nomen, cubiculum, nuntius) VALUES (:nomen, :cubiculum, :nuntius)';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.ParamByName('cubiculum').AsString := Cubiculum;
+    Query.ParamByName('nuntius').AsString := Nuntius;
+    Query.ExecSQL;
+    DBTran.CommitRetaining;
+    Result := FormareResponsum(200, 'Successus', 'Nuntius additus est');
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
+  end;
+  Query.Free;
 end;
 
 function LegendeNuntios(Nomen, Cubiculum: String): String;
 var
-  F: TextFile;
-  NomenFasciculi: String;
-  Linea: String;
+  Query: TSQLQuery;
   Historia: String;
 begin
   Historia := '';
   if Cubiculum = '' then Cubiculum := 'default';
-  NomenFasciculi := PREFIXUS_FABULATIO + Nomen + '_' + Cubiculum + '.txt';
-  if FileExists(NomenFasciculi) then
-  begin
-    AssignFile(F, NomenFasciculi);
-    Reset(F);
-    while not EOF(F) do
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'SELECT nuntius FROM fabulatio WHERE nomen = :nomen AND cubiculum = :cubiculum ORDER BY id ASC';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.ParamByName('cubiculum').AsString := Cubiculum;
+    Query.Open;
+
+    while not Query.EOF do
     begin
-      ReadLn(F, Linea);
       if Historia <> '' then
         Historia := Historia + '\n';
-      Historia := Historia + Linea;
+      Historia := Historia + Query.FieldByName('nuntius').AsString;
+      Query.Next;
     end;
-    CloseFile(F);
-    Result := FormareResponsum(200, 'Successus', Historia);
-  end
-  else
-    Result := FormareResponsum(404, 'Error', 'Historia non inventa');
+    Query.Close;
+
+    if Historia = '' then
+      Result := FormareResponsum(404, 'Error', 'Historia non inventa')
+    else
+      Result := FormareResponsum(200, 'Successus', Historia);
+  except
+    on E: Exception do
+      Result := FormareResponsum(500, 'Error', E.Message);
+  end;
+  Query.Free;
 end;
 
 function IndexFabulationum(Nomen: String): String;
 var
-  SR: TSearchRec;
-  Prefix: String;
+  Query: TSQLQuery;
   Lista: String;
-  Cubiculum: String;
+  Cub: String;
 begin
   Lista := '';
-  Prefix := 'fabulatio_' + Nomen + '_';
-  if FindFirst('../tabularium/' + Prefix + '*.txt', faAnyFile, SR) = 0 then
-  begin
-    repeat
-      Cubiculum := Copy(SR.Name, Length(Prefix) + 1, Length(SR.Name) - Length(Prefix) - 4);
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'SELECT DISTINCT cubiculum FROM fabulatio WHERE nomen = :nomen ORDER BY cubiculum ASC';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.Open;
+
+    while not Query.EOF do
+    begin
+      Cub := Query.FieldByName('cubiculum').AsString;
       if Lista <> '' then Lista := Lista + ',';
-      Lista := Lista + Cubiculum;
-    until FindNext(SR) <> 0;
-    FindClose(SR);
+      Lista := Lista + Cub;
+      Query.Next;
+    end;
+    Query.Close;
+
+    if Lista = '' then
+      Result := FormareResponsum(404, 'Error', 'Nihil')
+    else
+      Result := FormareResponsum(200, 'Successus', Lista);
+  except
+    on E: Exception do
+      Result := FormareResponsum(500, 'Error', E.Message);
   end;
-  
-  if Lista = '' then
-    Result := FormareResponsum(404, 'Error', 'Nihil')
-  else
-    Result := FormareResponsum(200, 'Successus', Lista);
+  Query.Free;
 end;
 
 function DeleFabulationem(Nomen, Cubiculum: String): String;
 var
-  NomenFasciculi: String;
+  Query: TSQLQuery;
+  RowsAffected: Integer;
 begin
   if Cubiculum = '' then Cubiculum := 'default';
-  NomenFasciculi := PREFIXUS_FABULATIO + Nomen + '_' + Cubiculum + '.txt';
-  if FileExists(NomenFasciculi) then
-  begin
-    DeleteFile(NomenFasciculi);
-    Result := FormareResponsum(200, 'Successus', 'Deletum');
-  end
-  else
-    Result := FormareResponsum(404, 'Error', 'Non inventum');
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'DELETE FROM fabulatio WHERE nomen = :nomen AND cubiculum = :cubiculum';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.ParamByName('cubiculum').AsString := Cubiculum;
+    Query.ExecSQL;
+    RowsAffected := Query.RowsAffected;
+    DBTran.CommitRetaining;
+
+    if RowsAffected > 0 then
+      Result := FormareResponsum(200, 'Successus', 'Deletum')
+    else
+      Result := FormareResponsum(404, 'Error', 'Non inventum');
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
+  end;
+  Query.Free;
 end;
 
 function RenominareFabulationem(Nomen, VetusCubiculum, NovumCubiculum: String): String;
 var
-  VetusNomen, NovumNomen: String;
+  Query: TSQLQuery;
+  RowsAffected: Integer;
 begin
   if VetusCubiculum = '' then VetusCubiculum := 'default';
   if NovumCubiculum = '' then Exit(FormareResponsum(400, 'Error', 'Novum nomen vacuum est'));
-  
-  VetusNomen := PREFIXUS_FABULATIO + Nomen + '_' + VetusCubiculum + '.txt';
-  NovumNomen := PREFIXUS_FABULATIO + Nomen + '_' + NovumCubiculum + '.txt';
-  
-  if FileExists(VetusNomen) then
-  begin
-    if RenameFile(VetusNomen, NovumNomen) then
+
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'UPDATE fabulatio SET cubiculum = :novum WHERE nomen = :nomen AND cubiculum = :vetus';
+    Query.ParamByName('novum').AsString := NovumCubiculum;
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.ParamByName('vetus').AsString := VetusCubiculum;
+    Query.ExecSQL;
+    RowsAffected := Query.RowsAffected;
+    DBTran.CommitRetaining;
+
+    if RowsAffected > 0 then
       Result := FormareResponsum(200, 'Successus', 'Renominatum')
     else
-      Result := FormareResponsum(500, 'Error', 'Non potest renominare');
-  end
-  else
-    Result := FormareResponsum(404, 'Error', 'Non inventum');
+      Result := FormareResponsum(404, 'Error', 'Non inventum');
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
+  end;
+  Query.Free;
 end;
 
 function RenominareUsorem(VetusNomen, NovumNomen: String): String;
 var
-  F, TempF: TextFile;
-  Linea, TempLinea: String;
-  P: Integer;
-  ExistensEmail, ExistensNomen, Rest: String;
-  SR: TSearchRec;
-  VetusFabulatio, NovaFabulatio: String;
+  Query: TSQLQuery;
+  ExistensNomen: Boolean;
 begin
   if NovumNomen = '' then Exit(FormareResponsum(400, 'Error', 'Novum nomen vacuum est'));
+  ExistensNomen := False;
 
-  // 1. Check if new name already exists in registrum.txt
-  if FileExists(TABULARIUM_REGISTRUM) then
-  begin
-    AssignFile(F, TABULARIUM_REGISTRUM);
-    Reset(F);
-    while not EOF(F) do
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    // Check if new nickname is occupied
+    Query.SQL.Text := 'SELECT 1 FROM usores WHERE nomen = :nomen';
+    Query.ParamByName('nomen').AsString := NovumNomen;
+    Query.Open;
+    ExistensNomen := not Query.EOF;
+    Query.Close;
+
+    if ExistensNomen then
+      Exit(FormareResponsum(400, 'Error', 'Nomen iam occupatum'));
+
+    // Cascade update will automatically sync all chat rooms and options!
+    Query.SQL.Text := 'UPDATE usores SET nomen = :novum WHERE nomen = :vetus';
+    Query.ParamByName('novum').AsString := NovumNomen;
+    Query.ParamByName('vetus').AsString := VetusNomen;
+    Query.ExecSQL;
+    DBTran.CommitRetaining;
+
+    Result := FormareResponsum(200, 'Successus', NovumNomen);
+  except
+    on E: Exception do
     begin
-      ReadLn(F, Linea);
-      P := Pos('|', Linea);
-      if P > 0 then
-      begin
-        ExistensNomen := Copy(Linea, 1, P - 1);
-        if ExistensNomen = NovumNomen then
-        begin
-          CloseFile(F);
-          Exit(FormareResponsum(400, 'Error', 'Nomen iam occupatum'));
-        end;
-      end;
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
     end;
-    CloseFile(F);
   end;
-
-  // 2. Update usores.txt
-  if FileExists(TABULARIUM_USORES) then
-  begin
-    AssignFile(F, TABULARIUM_USORES);
-    Reset(F);
-    AssignFile(TempF, TABULARIUM_USORES + '.tmp');
-    Rewrite(TempF);
-    while not EOF(F) do
-    begin
-      ReadLn(F, Linea);
-      if Linea = VetusNomen then
-        WriteLn(TempF, NovumNomen)
-      else
-        WriteLn(TempF, Linea);
-    end;
-    CloseFile(F);
-    CloseFile(TempF);
-    DeleteFile(TABULARIUM_USORES);
-    RenameFile(TABULARIUM_USORES + '.tmp', TABULARIUM_USORES);
-  end;
-
-  // 3. Update registrum.txt
-  if FileExists(TABULARIUM_REGISTRUM) then
-  begin
-    AssignFile(F, TABULARIUM_REGISTRUM);
-    Reset(F);
-    AssignFile(TempF, TABULARIUM_REGISTRUM + '.tmp');
-    Rewrite(TempF);
-    while not EOF(F) do
-    begin
-      ReadLn(F, Linea);
-      P := Pos('|', Linea);
-      if P > 0 then
-      begin
-        ExistensNomen := Copy(Linea, 1, P - 1);
-        Rest := Copy(Linea, P + 1, Length(Linea));
-        if ExistensNomen = VetusNomen then
-          WriteLn(TempF, NovumNomen + '|' + Rest)
-        else
-          WriteLn(TempF, Linea);
-      end;
-    end;
-    CloseFile(F);
-    CloseFile(TempF);
-    DeleteFile(TABULARIUM_REGISTRUM);
-    RenameFile(TABULARIUM_REGISTRUM + '.tmp', TABULARIUM_REGISTRUM);
-  end;
-
-  // 4. Rename fingerprint file
-  if FileExists(PREFIXUS_FP + VetusNomen + '.txt') then
-    RenameFile(PREFIXUS_FP + VetusNomen + '.txt', PREFIXUS_FP + NovumNomen + '.txt');
-
-  // 4b. Rename optiones file
-  if FileExists(PREFIXUS_OPTIONES + VetusNomen + '.txt') then
-    RenameFile(PREFIXUS_OPTIONES + VetusNomen + '.txt', PREFIXUS_OPTIONES + NovumNomen + '.txt');
-
-  // 5. Rename all fabulatio files
-  if FindFirst(PREFIXUS_FABULATIO + VetusNomen + '_*.txt', faAnyFile, SR) = 0 then
-  begin
-    repeat
-      VetusFabulatio := '../tabularium/' + SR.Name;
-      NovaFabulatio := StringReplace(VetusFabulatio, PREFIXUS_FABULATIO + VetusNomen + '_', PREFIXUS_FABULATIO + NovumNomen + '_', []);
-      RenameFile(VetusFabulatio, NovaFabulatio);
-    until FindNext(SR) <> 0;
-    FindClose(SR);
-  end;
-
-  Result := FormareResponsum(200, 'Successus', NovumNomen);
+  Query.Free;
 end;
 
 function MutareTessellam(Nomen, VetusPass, NovaPass: String): String;
 var
-  F, TempF: TextFile;
-  Linea, Rest: String;
-  P: Integer;
-  ExistensNomen, ExistensEmail, ExistensPass: String;
-  Mutatum: Boolean;
+  Query: TSQLQuery;
+  VetusPassHash, NovaPassHash: String;
+  SavedHash: String;
+  Invenitur: Boolean;
 begin
   if NovaPass = '' then Exit(FormareResponsum(400, 'Error', 'Nova tessera vacua est'));
-  if not FileExists(TABULARIUM_REGISTRUM) then Exit(FormareResponsum(404, 'Error', 'Registrum non exstat'));
+  Invenitur := False;
+  VetusPassHash := HashPassword(VetusPass);
+  NovaPassHash := HashPassword(NovaPass);
 
-  Mutatum := False;
-  AssignFile(F, TABULARIUM_REGISTRUM);
-  Reset(F);
-  AssignFile(TempF, TABULARIUM_REGISTRUM + '.tmp');
-  Rewrite(TempF);
-
-  while not EOF(F) do
-  begin
-    ReadLn(F, Linea);
-    Rest := Linea;
-
-    P := Pos('|', Rest); ExistensNomen := Copy(Rest, 1, P - 1); Rest := Copy(Rest, P + 1, Length(Rest));
-    P := Pos('|', Rest); ExistensEmail := Copy(Rest, 1, P - 1); Rest := Copy(Rest, P + 1, Length(Rest));
-    P := Pos('|', Rest); ExistensPass := Copy(Rest, 1, P - 1); Rest := Copy(Rest, P + 1, Length(Rest));
-
-    if (ExistensNomen = Nomen) and (ExistensPass = VetusPass) then
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'SELECT password_hash FROM usores WHERE nomen = :nomen';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.Open;
+    if not Query.EOF then
     begin
-      WriteLn(TempF, ExistensNomen + '|' + ExistensEmail + '|' + NovaPass + '|' + Rest);
-      Mutatum := True;
+      Invenitur := True;
+      SavedHash := Query.FieldByName('password_hash').AsString;
+    end;
+    Query.Close;
+
+    if Invenitur and (SavedHash = VetusPassHash) then
+    begin
+      Query.SQL.Text := 'UPDATE usores SET password_hash = :novum WHERE nomen = :nomen';
+      Query.ParamByName('novum').AsString := NovaPassHash;
+      Query.ParamByName('nomen').AsString := Nomen;
+      Query.ExecSQL;
+      DBTran.CommitRetaining;
+      Result := FormareResponsum(200, 'Successus', 'Tessera mutata est');
     end
     else
-      WriteLn(TempF, Linea);
+      Result := FormareResponsum(401, 'Error', 'Vetus tessera non est recta vel usor non inventus');
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
   end;
-
-  CloseFile(F);
-  CloseFile(TempF);
-
-  if Mutatum then
-  begin
-    DeleteFile(TABULARIUM_REGISTRUM);
-    RenameFile(TABULARIUM_REGISTRUM + '.tmp', TABULARIUM_REGISTRUM);
-    Result := FormareResponsum(200, 'Successus', 'Tessera mutata est');
-  end
-  else
-  begin
-    DeleteFile(TABULARIUM_REGISTRUM + '.tmp');
-    Result := FormareResponsum(401, 'Error', 'Vetus tessera non est recta vel usor non inventus');
-  end;
+  Query.Free;
 end;
 
 function DelereRationem(Nomen: String): String;
 var
-  F, TempF: TextFile;
-  Linea: String;
-  P: Integer;
-  ExistensNomen: String;
-  SR: TSearchRec;
+  Query: TSQLQuery;
 begin
-  // 1. Remove from usores.txt
-  if FileExists(TABULARIUM_USORES) then
-  begin
-    AssignFile(F, TABULARIUM_USORES);
-    Reset(F);
-    AssignFile(TempF, TABULARIUM_USORES + '.tmp');
-    Rewrite(TempF);
-    while not EOF(F) do
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    // Cascade delete automatically deletes options and chat messages!
+    Query.SQL.Text := 'DELETE FROM usores WHERE nomen = :nomen';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.ExecSQL;
+    DBTran.CommitRetaining;
+    Result := FormareResponsum(200, 'Successus', 'Ratio deleta est');
+  except
+    on E: Exception do
     begin
-      ReadLn(F, Linea);
-      if Linea <> Nomen then WriteLn(TempF, Linea);
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
     end;
-    CloseFile(F);
-    CloseFile(TempF);
-    DeleteFile(TABULARIUM_USORES);
-    RenameFile(TABULARIUM_USORES + '.tmp', TABULARIUM_USORES);
   end;
-
-  // 2. Remove from registrum.txt
-  if FileExists(TABULARIUM_REGISTRUM) then
-  begin
-    AssignFile(F, TABULARIUM_REGISTRUM);
-    Reset(F);
-    AssignFile(TempF, TABULARIUM_REGISTRUM + '.tmp');
-    Rewrite(TempF);
-    while not EOF(F) do
-    begin
-      ReadLn(F, Linea);
-      P := Pos('|', Linea);
-      if P > 0 then ExistensNomen := Copy(Linea, 1, P - 1) else ExistensNomen := Linea;
-      if ExistensNomen <> Nomen then WriteLn(TempF, Linea);
-    end;
-    CloseFile(F);
-    CloseFile(TempF);
-    DeleteFile(TABULARIUM_REGISTRUM);
-    RenameFile(TABULARIUM_REGISTRUM + '.tmp', TABULARIUM_REGISTRUM);
-  end;
-
-  // 3. Delete fingerprint file
-  if FileExists(PREFIXUS_FP + Nomen + '.txt') then
-    DeleteFile(PREFIXUS_FP + Nomen + '.txt');
-
-  // 3b. Delete optiones file
-  if FileExists(PREFIXUS_OPTIONES + Nomen + '.txt') then
-    DeleteFile(PREFIXUS_OPTIONES + Nomen + '.txt');
-
-  // 4. Delete all fabulatio files
-  if FindFirst(PREFIXUS_FABULATIO + Nomen + '_*.txt', faAnyFile, SR) = 0 then
-  begin
-    repeat
-      DeleteFile('../tabularium/' + SR.Name);
-    until FindNext(SR) <> 0;
-    FindClose(SR);
-  end;
-
-  Result := FormareResponsum(200, 'Successus', 'Ratio deleta est');
+  Query.Free;
 end;
 
 function DelereOmnesFabulationes(Nomen: String): String;
 var
-  SR: TSearchRec;
-  Comes: Integer;
+  Query: TSQLQuery;
+  RowsAffected: Integer;
 begin
-  Comes := 0;
-  if FindFirst(PREFIXUS_FABULATIO + Nomen + '_*.txt', faAnyFile, SR) = 0 then
-  begin
-    repeat
-      if DeleteFile('../tabularium/' + SR.Name) then Inc(Comes);
-    until FindNext(SR) <> 0;
-    FindClose(SR);
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'DELETE FROM fabulatio WHERE nomen = :nomen';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.ExecSQL;
+    RowsAffected := Query.RowsAffected;
+    DBTran.CommitRetaining;
+    Result := FormareResponsum(200, 'Successus', IntToStr(RowsAffected) + ' fabulationes deletae sunt');
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
   end;
-
-  Result := FormareResponsum(200, 'Successus', IntToStr(Comes) + ' fabulationes deletae sunt');
+  Query.Free;
 end;
 
 function NumerareNuntiosUsoris(Nomen: String): String;
 var
-  SR: TSearchRec;
-  F: TextFile;
+  Query: TSQLQuery;
   Comes: Integer;
 begin
   Comes := 0;
-  if FindFirst(PREFIXUS_FABULATIO + Nomen + '_*.txt', faAnyFile, SR) = 0 then
-  begin
-    repeat
-      AssignFile(F, '../tabularium/' + SR.Name);
-      Reset(F);
-      while not EOF(F) do
-      begin
-        ReadLn(F);
-        Inc(Comes);
-      end;
-      CloseFile(F);
-    until FindNext(SR) <> 0;
-    FindClose(SR);
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'SELECT COUNT(*) FROM fabulatio WHERE nomen = :nomen';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.Open;
+    if not Query.EOF then
+      Comes := Query.Fields[0].AsInteger;
+    Query.Close;
+    Result := FormareResponsum(200, 'Successus', IntToStr(Comes));
+  except
+    on E: Exception do
+      Result := FormareResponsum(500, 'Error', E.Message);
   end;
-  Result := FormareResponsum(200, 'Successus', IntToStr(Comes));
+  Query.Free;
 end;
 
 function ServareOptiones(Nomen, Optiones: String): String;
 var
-  F: TextFile;
+  Query: TSQLQuery;
 begin
-  AssignFile(F, PREFIXUS_OPTIONES + Nomen + '.txt');
-  Rewrite(F);
-  WriteLn(F, Optiones);
-  CloseFile(F);
-  Result := FormareResponsum(200, 'Successus', 'Optiones servatae sunt');
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    // High-performance UPSERT query
+    Query.SQL.Text := 'INSERT INTO optiones (nomen, optiones_json) VALUES (:nomen, :json) ' +
+                     'ON CONFLICT (nomen) DO UPDATE SET optiones_json = :json, updated_at = CURRENT_TIMESTAMP';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.ParamByName('json').AsString := Optiones;
+    Query.ExecSQL;
+    DBTran.CommitRetaining;
+    Result := FormareResponsum(200, 'Successus', 'Optiones servatae sunt');
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
+  end;
+  Query.Free;
 end;
 
 function LegereOptiones(Nomen: String): String;
 var
-  F: TextFile;
+  Query: TSQLQuery;
   Optiones: String;
+  Invenitur: Boolean;
 begin
-  if FileExists(PREFIXUS_OPTIONES + Nomen + '.txt') then
-  begin
-    AssignFile(F, PREFIXUS_OPTIONES + Nomen + '.txt');
-    Reset(F);
-    ReadLn(F, Optiones);
-    CloseFile(F);
-    Result := FormareResponsum(200, 'Successus', Optiones);
-  end
-  else
-    Result := FormareResponsum(404, 'Error', 'Nullae optiones inventae');
+  Invenitur := False;
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text := 'SELECT optiones_json FROM optiones WHERE nomen = :nomen';
+    Query.ParamByName('nomen').AsString := Nomen;
+    Query.Open;
+    if not Query.EOF then
+    begin
+      Invenitur := True;
+      Optiones := Query.FieldByName('optiones_json').AsString;
+    end;
+    Query.Close;
+
+    if Invenitur then
+      Result := FormareResponsum(200, 'Successus', Optiones)
+    else
+      Result := FormareResponsum(404, 'Error', 'Nullae optiones inventae');
+  except
+    on E: Exception do
+      Result := FormareResponsum(500, 'Error', E.Message);
+  end;
+  Query.Free;
 end;
 
-{ RAG: Investigare in Scientia }
+{ RAG: Investigare in Scientia (Reads knowledgebase text file) }
 function Investigare(VerbaQuery: String): String;
 var
   F: TextFile;
@@ -672,7 +783,7 @@ end;
 procedure TractareClientem(CliensSock: longint);
 var
   LineaData: String;
-  Mandatum, Parametrum1, Parametrum2, Parametrum3: String;
+  Mandatum, Parametrum1, Parametrum2: String;
   Responsum: String;
   DataInput: TStringList;
   Buffer: array[0..1023] of char;
@@ -703,11 +814,11 @@ begin
     Mandatum := '';
     Parametrum1 := '';
     Parametrum2 := '';
-    Parametrum3 := '';
 
     if DataInput.Count > 0 then Mandatum := DataInput[0];
     if DataInput.Count > 1 then Parametrum1 := DataInput[1];
     if DataInput.Count > 2 then Parametrum2 := DataInput[2];
+
     if Mandatum = 'CREARE_USOREM' then
       Responsum := CreareUsorem(Parametrum1, Parametrum2)
     else if Mandatum = 'CREARE_USOREM_PLENUM' then
@@ -869,6 +980,10 @@ begin
   WriteLn(' [!] WARNING: 640KB RAM IS ENOUGH FOR EVERYONE (Currently using: ', GetFPCHeapStatus.CurrHeapUsed div 1024, 'KB)');
   WriteLn(' [!] ГОД ОТ РОЖДЕСТВА ХРИСТОВА / YEAR: ', FormatDateTime('yyyy', Now));
   WriteLn('------------------------------------------------');
+
+  // Connect to PostgreSQL and verify schema
+  InitDatabase;
+
   WriteLn('Daemonium audit in portu / Listening on port ', PORTUS, '...');
 
   ServusSock := fpSocket(AF_INET, SOCK_STREAM, 0);
@@ -891,7 +1006,7 @@ begin
     Halt(1);
   end;
 
-  if fpListen(ServusSock, 10) = -1 then
+  if fpListen(ServusSock, 128) = -1 then
   begin
     WriteLn('Error: Non potest audire (listen).');
     Halt(1);
