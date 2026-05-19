@@ -13,13 +13,19 @@ function loqui_cum_daemonio($mandatum)
     fclose($fp);
     return trim($responsum);
 }
+function sani($val) {
+    if (is_array($val)) {
+        return array_map('sani', $val);
+    }
+    return str_replace(['|', "\r", "\n"], '', $val);
+}
 
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nomen = trim($_POST["nomen"]);
-    $actio = $_POST["actio"];
-    $fp = $_POST["fp"] ?? "";
+    $nomen = sani(trim($_POST["nomen"]));
+    $actio = sani($_POST["actio"]);
+    $fp = sani($_POST["fp"] ?? "");
 
     if (!empty($nomen)) {
         if ($actio == "intrare") {
@@ -285,6 +291,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             document.getElementById('form-spiritus').classList.toggle('hidden', mode === 'anima');
             document.getElementById('form-anima').classList.toggle('hidden', mode === 'spiritus');
             localStorage.setItem('login_mode', mode);
+            
+            const errorBox = document.getElementById('error-box');
+            if (errorBox) {
+                errorBox.textContent = '';
+                errorBox.classList.add('hidden');
+            }
         }
 
         // Restore mode
