@@ -67,7 +67,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         .layout-wrapper {
             display: grid;
-            grid-template-columns: 80px 1fr 260px;
+            grid-template-columns: 240px 1fr 320px;
+            grid-template-rows: 90px 1fr 180px;
             gap: 15px;
             width: 98vw;
             height: 96vh;
@@ -78,7 +79,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         /* Side Columns */
-        .side-col-left, .side-col-right {
+        .side-col-left {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+            box-sizing: border-box;
+            padding: 10px 0;
+        }
+
+        .side-col-right {
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -113,8 +124,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         /* Center Column */
         .col-center {
-            display: flex;
-            flex-direction: column;
+            display: grid;
+            grid-template-rows: 60px 1fr 150px;
+            gap: 15px;
             height: 100%;
             box-sizing: border-box;
         }
@@ -129,14 +141,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             text-shadow: 0 0 8px var(--main-color);
             box-shadow: 0 0 10px rgba(26, 255, 102, 0.3), inset 0 0 5px rgba(26, 255, 102, 0.2);
             background-color: var(--container-bg);
-            margin-bottom: 15px;
             font-weight: bold;
-            border-radius: 4px;
+            border-radius: 0px !important;
             backdrop-filter: blur(5px);
         }
 
         .chat-window {
-            flex-grow: 1;
             border: 4px double var(--main-color);
             padding: 25px;
             box-shadow: 0 0 15px rgba(26, 255, 102, 0.3), inset 0 0 15px rgba(26, 255, 102, 0.3);
@@ -144,7 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             display: flex; flex-direction: column; overflow: hidden; height: 100%; box-sizing: border-box;
             min-width: 0; min-height: 0;
-            border-radius: 6px;
+            border-radius: 0px !important;
         }
 
         h1 { font-size: 32px; text-shadow: 0 0 8px var(--main-color); margin-top: 0; margin-bottom: 15px; border-bottom: 1px dotted var(--dim-color); padding-bottom: 10px;}
@@ -154,7 +164,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             font-family: 'VT323', "Courier New", Courier, monospace; font-size: 24px;
             box-shadow: 0 0 8px rgba(26, 255, 102, 0.2), inset 0 0 5px rgba(26, 255, 102, 0.2);
             transition: all 0.2s ease-in-out;
-            border-radius: 4px;
+            border-radius: 0px !important;
         }
         input[type="text"]:focus {
             outline: none;
@@ -170,7 +180,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             box-shadow: inset 0 0 10px rgba(26, 255, 102, 0.1); scroll-behavior: smooth;
             display: flex; flex-direction: column; min-height: 0;
             background: rgba(0, 0, 0, 0.6);
-            border-radius: 6px;
+            border-radius: 0px !important;
         }
 
         /* Message Styles: Pure Terminal Log */
@@ -266,7 +276,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             border: 2px solid var(--main-color);
             box-shadow: 0 0 10px rgba(26, 255, 102, 0.3), inset 0 0 8px rgba(26, 255, 102, 0.3);
             background-color: var(--container-bg);
-            border-radius: 6px;
+            border-radius: 0px !important;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -383,7 +393,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             justify-content: space-between;
             align-items: center;
             font-size: 18px;
-            border-radius: 4px;
+            border-radius: 0px !important;
             background-color: rgba(0, 0, 0, 0.4);
         }
         .chat-item:hover, .chat-item.active {
