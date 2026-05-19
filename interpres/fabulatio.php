@@ -1033,7 +1033,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                         
                         let cleanBlock = block;
                         const msgDiv = document.createElement('div');
-                        msgDiv.className = isUser ? 'msg-user' : 'msg-oracle';
+                        msgDiv.className = 'terminal-row ' + (isUser ? 'user-row' : 'oracle-row');
 
                         if (isOracle) {
                             cleanBlock = block.replace(/^Oraculum:\s*/, '');
@@ -1041,18 +1041,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                             if (thoughtMatch) {
                                 let thought = thoughtMatch[1];
                                 let actualMsg = thoughtMatch[2];
-                                msgDiv.innerHTML = `<strong>Oraculum: </strong>
+                                msgDiv.innerHTML = `<strong>ORACLE: </strong>
                                     <details class="reasoning-details">
                                         <summary>Cogitationes Oraculi...</summary>
                                         <div class="reasoning-content">${DOMPurify.sanitize(marked.parse(thought))}</div>
                                     </details>
                                     <div>${DOMPurify.sanitize(marked.parse(actualMsg))}</div>`;
                             } else {
-                                msgDiv.innerHTML = DOMPurify.sanitize(marked.parse('**Oraculum:** ' + cleanBlock));
+                                msgDiv.innerHTML = `<strong>ORACLE: </strong><div>${DOMPurify.sanitize(marked.parse(cleanBlock))}</div>`;
                             }
                         } else {
                             cleanBlock = block.replace(/^Tute:\s*/, '');
-                            msgDiv.innerHTML = DOMPurify.sanitize(marked.parse('**Tute:** ' + cleanBlock));
+                            msgDiv.innerHTML = `<strong>USER: </strong><div>${DOMPurify.sanitize(marked.parse(cleanBlock))}</div>`;
                         }
                         
                         renderMathInElement(msgDiv, {
@@ -1520,6 +1520,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         advCanvas.width = window.innerWidth;
         advCanvas.height = window.innerHeight;
 
+        // Corner occult circles canvases
+        const canvasLt = document.getElementById('canvas-lt');
+        const canvasLb = document.getElementById('canvas-lb');
+        const canvasRt = document.getElementById('canvas-rt');
+        const canvasRb = document.getElementById('canvas-rb');
+
+        const ctxLt = canvasLt ? canvasLt.getContext('2d') : null;
+        const ctxLb = canvasLb ? canvasLb.getContext('2d') : null;
+        const ctxRt = canvasRt ? canvasRt.getContext('2d') : null;
+        const ctxRb = canvasRb ? canvasRb.getContext('2d') : null;
+
+        let angleLt = 0;
+        let angleLb = 0;
+        let angleRt = 0;
+        let angleRb = 0;
+
         let mouseX = 0; let mouseY = 0;
         window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
 
@@ -1539,56 +1555,57 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         const pBlood = [];
         for(let i=0; i<30; i++) pBlood.push({x: Math.random()*window.innerWidth, y: -Math.random()*window.innerHeight, speed: 1 + Math.random()*3, radius: 2 + Math.random()*4});
 
-        let occultAngle = 0;
-        
-        function drawOccultCircles(ctx, w, h) {
+        function drawOccultCircleSingle(ctx, w, h, angle) {
+            if (!ctx) return;
             const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
+            ctx.clearRect(0, 0, w, h);
             ctx.save();
             ctx.translate(w / 2, h / 2);
-            ctx.rotate(occultAngle);
-            occultAngle += 0.0008; // Медленное плавное вращение
+            ctx.rotate(angle);
 
-            // Свечение
-            ctx.shadowBlur = 15;
+            const R = Math.min(w, h) / 2 - 4; // Scale circle relative to small canvas dimensions
+
+            // Glow and lines
+            ctx.shadowBlur = 6;
             ctx.shadowColor = mainC;
             ctx.strokeStyle = mainC;
             ctx.fillStyle = mainC;
+            ctx.lineWidth = 1.0;
+
+            // 1. Outer Circle
+            ctx.beginPath();
+            ctx.arc(0, 0, R, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 2. Inner Circle
             ctx.lineWidth = 1.5;
-
-            // 1. Внешнее кольцо
             ctx.beginPath();
-            ctx.arc(0, 0, 250, 0, Math.PI * 2);
+            ctx.arc(0, 0, R * 0.84, 0, Math.PI * 2);
             ctx.stroke();
+            ctx.lineWidth = 0.8;
 
-            // 2. Внутреннее кольцо
-            ctx.lineWidth = 2.5;
+            // 3. Spikes and Inner Circle
             ctx.beginPath();
-            ctx.arc(0, 0, 210, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.lineWidth = 1;
-
-            // 3. Декоративное кольцо со штрихами
-            ctx.beginPath();
-            ctx.arc(0, 0, 180, 0, Math.PI * 2);
+            ctx.arc(0, 0, R * 0.72, 0, Math.PI * 2);
             ctx.stroke();
             
             ctx.lineWidth = 0.5;
-            for (let a = 0; a < Math.PI * 2; a += Math.PI / 30) {
+            for (let a = 0; a < Math.PI * 2; a += Math.PI / 12) {
                 const cos = Math.cos(a);
                 const sin = Math.sin(a);
                 ctx.beginPath();
-                ctx.moveTo(180 * cos, 180 * sin);
-                ctx.lineTo(210 * cos, 210 * sin);
+                ctx.moveTo(R * 0.72 * cos, R * 0.72 * sin);
+                ctx.lineTo(R * 0.84 * cos, R * 0.84 * sin);
                 ctx.stroke();
             }
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 0.8;
 
-            // 4. Семиконечная оккультная звезда
+            // 4. Seven-Pointed Star
             const numPoints = 7;
             const points = [];
             for (let i = 0; i < numPoints; i++) {
                 const a = (i * Math.PI * 2) / numPoints - Math.PI / 2;
-                points.push({ x: 180 * Math.cos(a), y: 180 * Math.sin(a) });
+                points.push({ x: R * 0.72 * Math.cos(a), y: R * 0.72 * Math.sin(a) });
             }
             
             ctx.beginPath();
@@ -1603,13 +1620,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
             points.forEach(p => {
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
                 ctx.fill();
             });
 
-            // 5. Древние руны по кругу
+            // 5. Runes
             const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ', 'ᛇ', 'ᛈ', 'ᛉ', 'ᛊ', 'ᛏ', 'ᛒ', 'ᛖ', 'ᛗ', 'ᛚ', 'ᛜ', 'ᛞ', 'ᛟ'];
-            ctx.font = '18px monospace';
+            ctx.font = Math.max(5, Math.floor(R * 0.16)) + 'px monospace';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
@@ -1617,7 +1634,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 const a = (index * Math.PI * 2) / runes.length - Math.PI / 2;
                 ctx.save();
                 ctx.rotate(a);
-                ctx.fillText(rune, 0, -230);
+                ctx.fillText(rune, 0, -R * 0.92);
                 ctx.restore();
             });
 
@@ -1641,8 +1658,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 advCtx.clearRect(0,0,w,h);
             }
             
-            // Рисуем оккультные круги
-            drawOccultCircles(advCtx, w, h);
+            // Draw four corner occult circles
+            if (ctxLt) drawOccultCircleSingle(ctxLt, canvasLt.width, canvasLt.height, angleLt);
+            if (ctxLb) drawOccultCircleSingle(ctxLb, canvasLb.width, canvasLb.height, angleLb);
+            if (ctxRt) drawOccultCircleSingle(ctxRt, canvasRt.width, canvasRt.height, angleRt);
+            if (ctxRb) drawOccultCircleSingle(ctxRb, canvasRb.width, canvasRb.height, angleRb);
+
+            angleLt += 0.008;
+            angleLb -= 0.008;
+            angleRt -= 0.008;
+            angleRb += 0.008;
 
             const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
 
@@ -1746,8 +1771,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             }
 
             const userMsg = document.createElement('div');
-            userMsg.className = 'msg-user';
-            userMsg.innerHTML = DOMPurify.sanitize(marked.parse(`**Tute:** ${msg}`));
+            userMsg.className = 'terminal-row user-row';
+            userMsg.innerHTML = `<strong>USER: </strong><div>${DOMPurify.sanitize(marked.parse(msg))}</div>`;
             renderMathInElement(userMsg, {
                 delimiters: [
                     {left: '$$', right: '$$', display: true},
@@ -1759,8 +1784,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             chatEl.appendChild(userMsg);
 
             let oraclePrefix = document.createElement('div');
-            oraclePrefix.className = 'msg-oracle';
-            oraclePrefix.innerHTML = `<strong>Oraculum: </strong>`;
+            oraclePrefix.className = 'terminal-row oracle-row';
+            oraclePrefix.innerHTML = `<strong>ORACLE: </strong>`;
             chatEl.appendChild(oraclePrefix);
 
             chatEl.scrollTop = chatEl.scrollHeight;
@@ -1820,7 +1845,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                         chatEl.appendChild(toolSpan);
                                         
                                         oraclePrefix = document.createElement('div');
-                                        oraclePrefix.innerHTML = `<strong>Oraculum: </strong>`;
+                                        oraclePrefix.className = 'terminal-row oracle-row';
+                                        oraclePrefix.innerHTML = `<strong>ORACLE: </strong>`;
                                         chatEl.appendChild(oraclePrefix);
                                         
                                         normalTextSpan = document.createElement('span');
@@ -1883,6 +1909,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 sendBtn.disabled = false;
             });
         };
+
+        function switchWidgetTab(tabName) {
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.widget-tab-btn').forEach(btn => btn.classList.remove('active'));
+            // Hide all tab panes
+            document.querySelectorAll('.widget-pane').forEach(pane => pane.classList.add('hidden'));
+
+            // Add active class to clicked tab button
+            const activeBtn = document.getElementById('tab-btn-' + tabName);
+            if (activeBtn) activeBtn.classList.add('active');
+
+            // Show selected tab pane
+            const activePane = document.getElementById('pane-' + tabName);
+            if (activePane) activePane.classList.remove('hidden');
+        }
     </script>
     <!-- Web Audio API for retro interaction sounds -->
     <script>

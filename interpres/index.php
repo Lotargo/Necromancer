@@ -90,25 +90,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         
         .container {
-            border: 2px solid #1aff66; padding: 40px; box-shadow: 0 0 20px #1aff66, inset 0 0 20px #1aff66;
+            border: 4px double #1aff66; padding: 40px; box-shadow: 0 0 25px rgba(26, 255, 102, 0.4), inset 0 0 20px rgba(26, 255, 102, 0.3);
             background-color: rgba(2, 8, 2, 0.85); z-index: 1; text-align: center;
             width: 80%; max-width: 600px; position: relative;
             box-sizing: border-box; word-wrap: break-word; overflow-y: auto; max-height: 90vh;
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border-radius: 8px;
+            border-radius: 4px;
         }
 
         h1 { font-size: 48px; text-shadow: 0 0 10px #1aff66; margin-bottom: 30px; margin-top: 0;}
         label { font-size: 24px; }
         
         input[type="text"], input[type="password"], input[type="submit"], button { 
-            background-color: rgba(0, 0, 0, 0.6); color: #1aff66; border: 1px solid #1aff66; 
+            background-color: rgba(0, 0, 0, 0.8); color: #1aff66; border: 1px solid #1aff66; 
             font-family: 'VT323', "Courier New", Courier, monospace;
             font-size: 24px; padding: 10px; margin-top: 10px;
             box-shadow: inset 0 0 5px rgba(26, 255, 102, 0.3); transition: all 0.2s ease-in-out;
             box-sizing: border-box;
             width: 100%;
-            border-radius: 4px;
+            border-radius: 0px;
         }
 
         input[type="text"]:focus, input[type="password"]:focus {
