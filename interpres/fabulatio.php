@@ -782,34 +782,111 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
     </div>
 
     <div class="layout-wrapper">
-        <div class="sidebar">
-            <h2>Pluteus (Chats)</h2>
-            <button onclick="createNewChat()" style="margin-bottom: 15px; background-color: #003300;">+ Nova Fabulatio</button>
-            <ul class="chat-list" id="chat-list">
-                <!-- Chats will load here via JS -->
-            </ul>
-            <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="openConfigModal()" style="width: 100%; background: var(--container-bg); color: var(--main-color); border: 1px dashed var(--main-color); text-align: left; padding: 10px;">⚙ Configuratio (Settings)</button>
-                <form method="POST" action="fabulatio.php" style="margin: 0;">
-                    <input type="submit" name="exire" value="Exire (Logout)" style="width:100%; background: var(--danger-bg); color: var(--danger-color); border-color: var(--danger-color);">
+        <!-- Left Side Column -->
+        <div class="side-col-left">
+            <canvas id="canvas-lt" class="corner-canvas" width="70" height="70"></canvas>
+            <div class="glyph-chain-left">
+                <!-- Pentagram -->
+                <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 2L15 9H22L16.5 14L18.5 21L12 17L5.5 21L7.5 14L2 9H9L12 2Z" />
+                </svg>
+                <!-- Skull -->
+                <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation-delay: 1s;">
+                    <path d="M12 2C7.58 2 4 5.58 4 10C4 13.39 6.13 16.27 9 17.39V20C9 21.1 9.9 22 11 22H13C14.1 22 15 21.1 15 20V17.39C17.87 16.27 20 13.39 20 10C20 5.58 16.42 2 12 2Z" />
+                    <circle cx="9" cy="10" r="1.5" fill="currentColor" />
+                    <circle cx="15" cy="10" r="1.5" fill="currentColor" />
+                    <path d="M11 14H13V16H11V14Z" fill="currentColor" />
+                    <path d="M9 19H15M10 21H14" />
+                </svg>
+                <!-- Mercury -->
+                <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation-delay: 2s;">
+                    <path d="M12 5A3 3 0 0 0 9 8A3 3 0 0 0 12 11A3 3 0 0 0 15 8A3 3 0 0 0 12 5Z" />
+                    <path d="M12 11V19M8 15H16M6 4C7.5 5 10.5 5 12 5C13.5 5 16.5 5 18 4" />
+                </svg>
+            </div>
+            <canvas id="canvas-lb" class="corner-canvas" width="70" height="70"></canvas>
+        </div>
+
+        <!-- Center Column -->
+        <div class="col-center">
+            <div class="header-title">ORACLE INTERFACE v1.3 // CYBER-NECROMANCY PROTOCOL</div>
+            <div class="chat-window">
+                <div id="chat">Eligere fabulationem e pluteo...</div>
+
+                <div class="toggles-bar">
+                    <button id="toggle-lang" class="toggle-btn" onclick="toggleLanguage()">Lingua: Latina [L]</button>
+                    <button id="toggle-search" class="toggle-btn" onclick="toggleSearch()">Investigatio: OFF [-]</button>
+                    <span id="toggles-info" style="font-size: 14px; color: #006600; font-family: monospace; flex-grow: 1; text-align: right;">MODUS: TRADITIO</span>
+                </div>
+
+                <form id="chat-form" style="display: flex; gap: 10px;">
+                    <input type="text" id="nuntius" name="nuntius" style="flex-grow: 1;" autocomplete="off" placeholder="Dicent..." disabled>
+                    <input type="submit" id="send-btn" value="Mittere" disabled>
                 </form>
             </div>
         </div>
 
-        <div class="main-chat">
-            <h1>Forum: <?php echo htmlspecialchars($usor); ?> <span class="blink">_</span> <span id="current-room-label" style="font-size: 24px; color: var(--dim-color); float: right;"></span></h1>
-            <div id="chat">Eligere fabulationem e pluteo...</div>
-
-            <div class="toggles-bar">
-                <button id="toggle-lang" class="toggle-btn" onclick="toggleLanguage()">Lingua: Latina [L]</button>
-                <button id="toggle-search" class="toggle-btn" onclick="toggleSearch()">Investigatio: OFF [-]</button>
-                <span id="toggles-info" style="font-size: 14px; color: #006600; font-family: monospace; flex-grow: 1; text-align: right;">MODUS: TRADITIO</span>
+        <!-- Right Side Column -->
+        <div class="side-col-right">
+            <canvas id="canvas-rt" class="corner-canvas" width="70" height="70"></canvas>
+            <div class="glyph-chain-right">
+                <!-- Salt / Earth -->
+                <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation-delay: 0.5s;">
+                    <circle cx="12" cy="12" r="9" />
+                    <line x1="3" y1="12" x2="21" y2="12" />
+                    <line x1="12" y1="3" x2="12" y2="21" />
+                </svg>
+                <!-- Sulfur -->
+                <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation-delay: 1.5s;">
+                    <path d="M12 3L5 13H19L12 3Z" />
+                    <line x1="12" y1="13" x2="12" y2="21" />
+                    <line x1="8" y1="17" x2="16" y2="17" />
+                </svg>
             </div>
+            <canvas id="canvas-rb" class="corner-canvas" width="70" height="70"></canvas>
 
-            <form id="chat-form" style="display: flex; gap: 10px;">
-                <input type="text" id="nuntius" name="nuntius" style="flex-grow: 1;" autocomplete="off" placeholder="Dicent..." disabled>
-                <input type="submit" id="send-btn" value="Mittere (Send)" disabled>
-            </form>
+            <!-- Status Widget -->
+            <div class="status-widget">
+                <div class="widget-header">SYSTEM STATUS</div>
+                <div class="widget-tabs">
+                    <button id="tab-btn-ritual" class="widget-tab-btn active" onclick="switchWidgetTab('ritual')">RITUAL_DATA</button>
+                    <button id="tab-btn-death" class="widget-tab-btn" onclick="switchWidgetTab('death')">DEATH_GRID</button>
+                    <button id="tab-btn-spectral" class="widget-tab-btn" onclick="switchWidgetTab('spectral')">SPECTRAL</button>
+                </div>
+                <div class="widget-content">
+                    <!-- Ritual Data Pane -->
+                    <div id="pane-ritual" class="widget-pane">
+                        <button onclick="createNewChat()" class="widget-action-btn">+ Nova Fabulatio</button>
+                        <ul class="chat-list" id="chat-list">
+                            <!-- Chats populated here -->
+                        </ul>
+                    </div>
+
+                    <!-- Death Grid Pane -->
+                    <div id="pane-death" class="widget-pane hidden">
+                        <div class="widget-scroll-pane">
+                            <button onclick="openConfigModal()" class="widget-action-btn" style="margin-bottom: 15px;">⚙ Configuratio</button>
+                            <form method="POST" action="fabulatio.php" style="margin: 0;">
+                                <input type="submit" name="exire" class="widget-logout-btn" value="Exire (Logout)">
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Spectral Analysis Pane -->
+                    <div id="pane-spectral" class="widget-pane hidden">
+                        <div class="widget-scroll-pane font-mono" style="font-size: 16px; color: var(--main-color);">
+                            <div style="margin-bottom: 8px;">SYSTEMA: ACTIVE</div>
+                            <div style="margin-bottom: 8px;">USER: <span style="color: #fff; text-shadow: 0 0 5px var(--main-color);"><?php echo htmlspecialchars($usor); ?></span></div>
+                            <div style="margin-bottom: 8px;">SSE CONN: <span id="telemetry-sse" class="blink-fast" style="color: #ffff00;">CONNECTING...</span></div>
+                            <div style="margin-bottom: 8px;">PING: <span id="telemetry-ping">-- ms</span></div>
+                            <div style="margin-bottom: 8px;">LEVEL: <span id="telemetry-level" style="color: #ffff00;">1</span></div>
+                            <div style="margin-bottom: 8px;">MESSAGES: <span id="telemetry-msg-count">0</span></div>
+                            <div id="widget-telemetry-short"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
