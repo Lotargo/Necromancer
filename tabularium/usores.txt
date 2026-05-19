@@ -4,3 +4,5 @@ agent_tester
 jetski_4242
 BotUser
 TestUser
+Lotargo
+123
