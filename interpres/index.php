@@ -67,87 +67,103 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <style>
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
         
+        #bgCanvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
+
         body { 
-            background-color: #050505; color: #00FF00; 
+            background-color: #010501; color: #1aff66; 
             font-family: 'VT323', "Courier New", Courier, monospace; 
             margin: 0; padding: 0;
             display: flex; justify-content: center; align-items: center;
             height: 100vh; overflow: hidden;
         }
         
-        /* CRT Scanline Effect */
+        /* CRT Scanline and Vignette Effect */
         body::after {
             content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.18) 50%), 
+                        radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.7) 100%);
+            z-index: 99; background-size: 100% 3px, 100% 100%; pointer-events: none;
+            opacity: 0.9;
         }
         
         .container {
-            border: 2px solid #00FF00; padding: 40px; box-shadow: 0 0 20px #00FF00, inset 0 0 20px #00FF00;
-            background-color: #000; z-index: 1; text-align: center;
+            border: 2px solid #1aff66; padding: 40px; box-shadow: 0 0 20px #1aff66, inset 0 0 20px #1aff66;
+            background-color: rgba(2, 8, 2, 0.85); z-index: 1; text-align: center;
             width: 80%; max-width: 600px; position: relative;
             box-sizing: border-box; word-wrap: break-word; overflow-y: auto; max-height: 90vh;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border-radius: 8px;
         }
 
-        h1 { font-size: 48px; text-shadow: 0 0 10px #00FF00; margin-bottom: 30px; margin-top: 0;}
+        h1 { font-size: 48px; text-shadow: 0 0 10px #1aff66; margin-bottom: 30px; margin-top: 0;}
         label { font-size: 24px; }
         
-        input[type="text"], input[type="submit"] { 
-            background-color: #000; color: #00FF00; border: 1px solid #00FF00; 
+        input[type="text"], input[type="password"], input[type="submit"], button { 
+            background-color: rgba(0, 0, 0, 0.6); color: #1aff66; border: 1px solid #1aff66; 
             font-family: 'VT323', "Courier New", Courier, monospace;
             font-size: 24px; padding: 10px; margin-top: 10px;
-            box-shadow: inset 0 0 5px #00FF00; transition: all 0.2s;
+            box-shadow: inset 0 0 5px rgba(26, 255, 102, 0.3); transition: all 0.2s ease-in-out;
             box-sizing: border-box;
             width: 100%;
+            border-radius: 4px;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            outline: none;
+            box-shadow: 0 0 12px #1aff66, inset 0 0 8px #1aff66;
         }
         
-        input[type="submit"] {
+        input[type="submit"], button {
             width: auto;
         }
 
         input[type="submit"]:hover, button:hover {
-            background-color: #00FF00 !important; color: #000 !important; cursor: pointer;
+            background-color: #1aff66 !important; color: #010501 !important; cursor: pointer;
+            box-shadow: 0 0 15px #1aff66;
         }
 
-        a { color: #00FF00; }
+        a { color: #1aff66; }
         
         /* Modal Styles */
         #necronomicon-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #000; z-index: 9999;
+            background-color: #010501; z-index: 9999;
             display: flex; justify-content: center; align-items: center;
             opacity: 1; transition: opacity 0.5s ease;
         }
         @keyframes modal-twitch {
-            0% { transform: translate(0); box-shadow: 0 0 25px #00FF00 inset; }
-            2% { transform: translate(-2px, 1px); box-shadow: -2px 0 10px #f00, 2px 0 10px #00f, 0 0 25px #00FF00 inset; }
-            4% { transform: translate(2px, -1px); box-shadow: 2px 0 10px #f00, -2px 0 10px #00f, 0 0 25px #00FF00 inset; }
-            6% { transform: translate(0); box-shadow: 0 0 25px #00FF00 inset; }
-            100% { transform: translate(0); box-shadow: 0 0 25px #00FF00 inset; }
+            0% { transform: translate(0); box-shadow: 0 0 25px #1aff66 inset; }
+            2% { transform: translate(-2px, 1px); box-shadow: -2px 0 10px #f00, 2px 0 10px #00f, 0 0 25px #1aff66 inset; }
+            4% { transform: translate(2px, -1px); box-shadow: 2px 0 10px #f00, -2px 0 10px #00f, 0 0 25px #1aff66 inset; }
+            6% { transform: translate(0); box-shadow: 0 0 25px #1aff66 inset; }
+            100% { transform: translate(0); box-shadow: 0 0 25px #1aff66 inset; }
         }
 
         .modal-content {
-            border: 4px double #00FF00; padding: 40px; text-align: center;
-            background-color: #050505; max-width: 800px;
-            box-shadow: 0 0 25px #00FF00 inset;
+            border: 4px double #1aff66; padding: 40px; text-align: center;
+            background-color: #020802; max-width: 800px;
+            box-shadow: 0 0 25px #1aff66 inset;
             animation: modal-twitch 3s infinite linear;
         }
         .retro-text {
             font-size: 32px; font-weight: bold; text-transform: uppercase;
             overflow: hidden; white-space: pre-wrap; margin: 0 auto;
-            border-right: .15em solid #00FF00; 
+            border-right: .15em solid #1aff66; 
             animation: blink-caret .75s step-end infinite;
             text-align: left;
         }
-        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #00FF00; } }
+        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: #1aff66; } }
         /* Glitch effect on header */
         .glitch { font-size: 42px; font-weight: bold; text-shadow: 2px 2px #0f0, -2px -2px #f00; margin-bottom: 30px; letter-spacing: 5px;}
 
         /* Mode Selector */
-        .mode-selector { display: flex; border-bottom: 2px solid #00FF00; margin-bottom: 30px; }
+        .mode-selector { display: flex; border-bottom: 2px solid #1aff66; margin-bottom: 30px; }
         .mode-tab { flex: 1; padding: 10px; cursor: pointer; border: 1px solid transparent; transition: all 0.3s; font-size: 20px;}
-        .mode-tab.active { background-color: #00FF00; color: #000; text-shadow: none; font-weight: bold;}
-        .mode-tab:hover:not(.active) { background-color: #004400; }
+        .mode-tab.active { background-color: #1aff66; color: #010501; text-shadow: none; font-weight: bold;}
+        .mode-tab:hover:not(.active) { background-color: #063b15; }
 
         .hidden { display: none !important; }
         .error-msg { color: #ff3333; font-size: 18px; margin-bottom: 20px; text-shadow: 0 0 5px #ff0000; }
@@ -167,20 +183,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             display: none; justify-content: center; align-items: center;
         }
         @keyframes small-modal-twitch {
-            0% { transform: translate(0); box-shadow: 0 0 20px #00FF00; }
-            1% { transform: translate(-3px, 2px); box-shadow: -3px 0 15px #f00, 3px 0 15px #00f, 0 0 20px #00FF00; }
-            2% { transform: translate(3px, -2px); box-shadow: 3px 0 15px #f00, -3px 0 15px #00f, 0 0 20px #00FF00; }
-            3% { transform: translate(0); box-shadow: 0 0 20px #00FF00; }
-            100% { transform: translate(0); box-shadow: 0 0 20px #00FF00; }
+            0% { transform: translate(0); box-shadow: 0 0 20px #1aff66; }
+            1% { transform: translate(-3px, 2px); box-shadow: -3px 0 15px #f00, 3px 0 15px #00f, 0 0 20px #1aff66; }
+            2% { transform: translate(3px, -2px); box-shadow: 3px 0 15px #f00, -3px 0 15px #00f, 0 0 20px #1aff66; }
+            3% { transform: translate(0); box-shadow: 0 0 20px #1aff66; }
+            100% { transform: translate(0); box-shadow: 0 0 20px #1aff66; }
         }
         .small-modal-content {
-            border: 2px solid #00FF00; padding: 30px; background-color: #000;
-            width: 400px; text-align: center; box-shadow: 0 0 20px #00FF00;
+            border: 2px solid #1aff66; padding: 30px; background-color: #010501;
+            width: 400px; text-align: center; box-shadow: 0 0 20px #1aff66;
             animation: small-modal-twitch 4s infinite linear;
+            border-radius: 6px;
         }
     </style>
 </head>
 <body>
+    <canvas id="bgCanvas"></canvas>
     <div id="necronomicon-modal">
         <div class="modal-content">
             <div class="glitch">* EX LIBRIS NECRONOMICON *</div>
@@ -356,6 +374,106 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         function openForgotModal() { document.getElementById('forgot-modal').style.display = 'flex'; }
         function closeForgotModal() { document.getElementById('forgot-modal').style.display = 'none'; }
+
+        // Background Canvas Occult Circles
+        const bgCanvas = document.getElementById('bgCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        bgCanvas.width = window.innerWidth;
+        bgCanvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        });
+
+        let bgOccultAngle = 0;
+        function drawBgOccult() {
+            requestAnimationFrame(drawBgOccult);
+            const w = bgCanvas.width;
+            const h = bgCanvas.height;
+            bgCtx.clearRect(0, 0, w, h);
+
+            bgCtx.save();
+            bgCtx.translate(w / 2, h / 2);
+            bgCtx.rotate(bgOccultAngle);
+            bgOccultAngle += 0.0008;
+
+            const mainC = '#1aff66';
+            bgCtx.shadowBlur = 15;
+            bgCtx.shadowColor = mainC;
+            bgCtx.strokeStyle = mainC;
+            bgCtx.fillStyle = mainC;
+            bgCtx.lineWidth = 1.5;
+
+            // 1. Внешнее кольцо
+            bgCtx.beginPath();
+            bgCtx.arc(0, 0, 250, 0, Math.PI * 2);
+            bgCtx.stroke();
+
+            // 2. Внутреннее кольцо
+            bgCtx.lineWidth = 2.5;
+            bgCtx.beginPath();
+            bgCtx.arc(0, 0, 210, 0, Math.PI * 2);
+            bgCtx.stroke();
+            bgCtx.lineWidth = 1;
+
+            // 3. Декоративное кольцо со штрихами
+            bgCtx.beginPath();
+            bgCtx.arc(0, 0, 180, 0, Math.PI * 2);
+            bgCtx.stroke();
+            
+            bgCtx.lineWidth = 0.5;
+            for (let a = 0; a < Math.PI * 2; a += Math.PI / 30) {
+                const cos = Math.cos(a);
+                const sin = Math.sin(a);
+                bgCtx.beginPath();
+                bgCtx.moveTo(180 * cos, 180 * sin);
+                bgCtx.lineTo(210 * cos, 210 * sin);
+                bgCtx.stroke();
+            }
+            bgCtx.lineWidth = 1;
+
+            // 4. Семиконечная звезда
+            const numPoints = 7;
+            const points = [];
+            for (let i = 0; i < numPoints; i++) {
+                const a = (i * Math.PI * 2) / numPoints - Math.PI / 2;
+                points.push({ x: 180 * Math.cos(a), y: 180 * Math.sin(a) });
+            }
+            
+            bgCtx.beginPath();
+            let curr = 0;
+            bgCtx.moveTo(points[curr].x, points[curr].y);
+            for (let i = 0; i < numPoints; i++) {
+                curr = (curr + 3) % numPoints;
+                bgCtx.lineTo(points[curr].x, points[curr].y);
+            }
+            bgCtx.closePath();
+            bgCtx.stroke();
+
+            points.forEach(p => {
+                bgCtx.beginPath();
+                bgCtx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                bgCtx.fill();
+            });
+
+            // 5. Древние руны по кругу
+            const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ', 'ᛇ', 'ᛈ', 'ᛉ', 'ᛊ', 'ᛏ', 'ᛒ', 'ᛖ', 'ᛗ', 'ᛚ', 'ᛜ', 'ᛞ', 'ᛟ'];
+            bgCtx.font = '18px monospace';
+            bgCtx.textAlign = 'center';
+            bgCtx.textBaseline = 'middle';
+            
+            runes.forEach((rune, index) => {
+                const a = (index * Math.PI * 2) / runes.length - Math.PI / 2;
+                bgCtx.save();
+                bgCtx.rotate(a);
+                bgCtx.fillText(rune, 0, -230);
+                bgCtx.restore();
+            });
+
+            bgCtx.restore();
+        }
+        drawBgOccult();
     </script>
 </body>
 </html>
