@@ -3,6 +3,8 @@ FROM public.ecr.aws/debian/debian:bullseye-slim
 
 RUN apt-get update && apt-get install -y \
     fpc \
+    libpq5 \
+    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/daemonium

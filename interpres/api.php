@@ -1,7 +1,22 @@
 <?php
 session_start();
 set_time_limit(0);
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
+
+function sani($val) {
+    if (is_array($val)) {
+        return array_map('sani', $val);
+    }
+    return str_replace(['|', "\r", "\n"], '', $val);
+}
+
+function sani_nuntius($val) {
+    if (is_array($val)) {
+        return array_map('sani_nuntius', $val);
+    }
+    return str_replace(['|', "\r", "\n"], [' ', '', ' '], $val);
+}
+
+$action = sani($_GET['action'] ?? $_POST['action'] ?? '');
 
 function loqui_cum_daemonio($mandatum)
 {
@@ -41,28 +56,28 @@ function loqui_cum_aequilibrio($id_sessionis)
 
 // Public Actions (No Session Required)
 if ($action === 'login_anima' || $action === 'register_anima' || $action === 'forgot_anima') {
-    $fp_client = $_POST['fp'] ?? '';
+    $fp_client = sani($_POST['fp'] ?? '');
     if ($action === 'login_anima') {
-        $email = $_POST['email'] ?? '';
-        $pass = $_POST['pass'] ?? '';
+        $email = sani($_POST['email'] ?? '');
+        $pass = sani($_POST['pass'] ?? '');
         $resp = loqui_cum_daemonio("INTRARE_PLENUM|$email|$pass|$fp_client");
         $partes = explode("|", $resp);
         if ($partes[0] == "200") {
-            $_SESSION["usor"] = $partes[2];
+            $_SESSION["usor"] = sani($partes[2]);
             $_SESSION["fp"] = $fp_client;
             if (isset($_POST['remember'])) {
                 setcookie(session_name(), session_id(), time() + 86400 * 30, "/");
             }
-            echo json_encode(["status" => "ok", "usor" => $partes[2]]);
+            echo json_encode(["status" => "ok", "usor" => sani($partes[2])]);
         }
         else {
-            echo json_encode(["status" => "error", "message" => $partes[2]]);
+            echo json_encode(["status" => "error", "message" => sani($partes[2])]);
         }
     }
     else if ($action === 'register_anima') {
-        $nomen = $_POST['nomen'] ?? '';
-        $email = $_POST['email'] ?? '';
-        $pass = $_POST['pass'] ?? '';
+        $nomen = sani($_POST['nomen'] ?? '');
+        $email = sani($_POST['email'] ?? '');
+        $pass = sani($_POST['pass'] ?? '');
         $resp = loqui_cum_daemonio("CREARE_USOREM_PLENUM|$nomen|$email|$pass|$fp_client");
         $partes = explode("|", $resp);
         if ($partes[0] == "200") {
@@ -71,14 +86,14 @@ if ($action === 'login_anima' || $action === 'register_anima' || $action === 'fo
             echo json_encode(["status" => "ok"]);
         }
         else {
-            echo json_encode(["status" => "error", "message" => $partes[2]]);
+            echo json_encode(["status" => "error", "message" => sani($partes[2])]);
         }
     }
     else if ($action === 'forgot_anima') {
-        $email = $_POST['email'] ?? '';
+        $email = sani($_POST['email'] ?? '');
         $resp = loqui_cum_daemonio("PETERE_RECUPERATIONEM|$email");
         $partes = explode("|", $resp);
-        echo json_encode(["status" => ($partes[0] == "200" ? "ok" : "error"), "message" => $partes[2]]);
+        echo json_encode(["status" => ($partes[0] == "200" ? "ok" : "error"), "message" => sani($partes[2])]);
     }
     exit();
 }
@@ -126,6 +141,7 @@ if ($action === 'save_options') {
     $options_str = $_POST['options'] ?? '{}';
     $safe_options = json_encode(json_decode($options_str)); // Validate JSON
     if ($safe_options) {
+        $safe_options = str_replace(['|', "\r", "\n"], ['\\u007c', '', ''], $safe_options);
         $resp = loqui_cum_daemonio("SERVARE_OPTIONES|" . $usor . "|" . $safe_options . "|" . $user_fp);
         $partes = explode("|", $resp);
         if ($partes[0] == "200") {
@@ -155,7 +171,7 @@ function investigare_in_tela($query)
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
 
         // Use a cookie file to persist session if DDG requests it
-        $cookie_file = '/tmp/ddg_cookies.txt';
+        $cookie_file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ddg_cookies.txt';
         curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
         curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
 
@@ -208,8 +224,8 @@ function investigare_in_tela($query)
     return implode("\n---\n", $clean_snippets);
 }
 
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
-$cubiculum = $_GET['room'] ?? $_POST['room'] ?? 'default';
+$action = sani($_GET['action'] ?? $_POST['action'] ?? '');
+$cubiculum = sani($_GET['room'] ?? $_POST['room'] ?? 'default');
 
 if ($action === 'list') {
     $resp = loqui_cum_daemonio("INDEX_FABULATIONUM|" . $usor . "|" . $user_fp);
@@ -265,8 +281,8 @@ if ($action === 'renominare_usorem') {
 }
 
 if ($action === 'mutare_tessaram') {
-    $vetus_pass = $_POST['vetus_pass'] ?? '';
-    $nova_pass = $_POST['nova_pass'] ?? '';
+    $vetus_pass = sani($_POST['vetus_pass'] ?? '');
+    $nova_pass = sani($_POST['nova_pass'] ?? '');
 
     if (empty($vetus_pass) || empty($nova_pass)) {
         echo json_encode(["status" => "error", "message" => "Tessera vacua est"]);
@@ -327,6 +343,7 @@ if ($action === 'rename') {
 
 if ($action === 'send') {
     $nuntius = trim($_POST['nuntius'] ?? '');
+    $nuntius = sani_nuntius($nuntius);
     if (empty($nuntius))
         exit();
 
@@ -391,6 +408,7 @@ if ($action === 'send') {
     header('Content-Type: text/event-stream');
     header('Cache-Control: no-cache');
     header('Connection: keep-alive');
+    header('X-Accel-Buffering: no');
     while (ob_get_level() > 0)
         ob_end_flush();
 
@@ -416,7 +434,17 @@ if ($action === 'send') {
         flush();
     }
 
-    $system_role = "Tu es philosophus Romanus. Responde semper Latine.";
+    // Read LLM config
+    $llm_config_path = __DIR__ . '/../tabularium/llm_config.json';
+    $llm_config = ["max_tokens" => 4096, "temperature" => 1.0, "top_p" => 0.95];
+    if (file_exists($llm_config_path)) {
+        $json_config = json_decode(file_get_contents($llm_config_path), true);
+        if (is_array($json_config)) {
+            $llm_config = array_merge($llm_config, $json_config);
+        }
+    }
+
+    $system_role = "Tu es philosophus Romanus. Responde semper Latine. Te finibus strictis debes circumscribere: ad summum {{MAX_TOKENS}} indicia (tokens) tibi permittuntur.";
     if ($lingua_mode === 'auto') {
         $system_role = "You are an ancient Roman philosopher. 
         CRITICAL INSTRUCTION: You MUST speak in the EXACT SAME LANGUAGE that the user is speaking!
@@ -425,8 +453,11 @@ if ($action === 'send') {
         - NEVER reply in Latin unless the user explicitly speaks Latin to you.
         - Maintain your persona as a wise Roman philosopher, but express your thoughts natively in the user's language.
         - ALWAYS start your response with a greeting or acknowledgment in the user's language.
+        - You have a strict response length limit of {{MAX_TOKENS}} tokens. You MUST complete your thought and finish your narrative within this limit. Plan the length of your response accordingly.
         - Use the provided tools (search_web, search_knowledge_base) to find facts if needed.";
     }
+
+    $system_role = str_replace("{{MAX_TOKENS}}", $llm_config['max_tokens'], $system_role);
 
     // Reconstruct history to give LLM context (up to last 10 messages)
     $chat_history = [];
@@ -494,7 +525,9 @@ if ($action === 'send') {
         $data = [
             "model" => $model,
             "messages" => $messages,
-            "max_tokens" => 800,
+            "max_tokens" => $llm_config['max_tokens'],
+            "temperature" => (float)$llm_config['temperature'],
+            "top_p" => (float)$llm_config['top_p'],
             "stream" => true
         ];
 

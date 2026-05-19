@@ -580,6 +580,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         const sendBtn = document.getElementById("send-btn");
         const roomLabel = document.getElementById("current-room-label");
 
+        // Retro keystroke sound effects for the main input field
+        nuntiusInput.addEventListener('keydown', function(e) {
+            if (e.repeat) return;
+            if (typeof initHumSound === 'function') initHumSound();
+            if (typeof initWindSound === 'function') initWindSound();
+            if (typeof initMelody === 'function') initMelody();
+            if (document.body.classList.contains('mute-sounds')) return;
+            if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Enter') {
+                if (document.body.classList.contains('mech-clicks')) {
+                    if (typeof playMechClickSound === 'function') playMechClickSound();
+                } else {
+                    if (typeof playClickSound === 'function') playClickSound();
+                }
+            }
+        });
+
         // Welcome Animation Logic
         const welcomeText = "CONEXIO STABILITA...\nSALVE, <?php echo htmlspecialchars($usor); ?>.\nORACULUM TE EXSPECTAT.";
         const typeEl = document.getElementById("welcome-typewriter");
@@ -1339,7 +1355,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             });
             chatEl.appendChild(userMsg);
 
-            const oraclePrefix = document.createElement('div');
+            let oraclePrefix = document.createElement('div');
             oraclePrefix.className = 'msg-oracle';
             oraclePrefix.innerHTML = `<strong>Oraculum: </strong>`;
             chatEl.appendChild(oraclePrefix);
@@ -1364,6 +1380,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             }).then(response => {
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder('utf-8');
+                let sseBuffer = '';
 
                 function read() {
                     reader.read().then(({ done, value }) => {
@@ -1374,8 +1391,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                             loadChats(); // refresh list in case it was a new chat
                             return;
                         }
-                        const chunk = decoder.decode(value, {stream: true});
-                        const lines = chunk.split('\n');
+                        sseBuffer += decoder.decode(value, {stream: true});
+                        const lines = sseBuffer.split('\n');
+                        sseBuffer = lines.pop(); // Keep the last incomplete chunk in buffer
+                        
                         for (let line of lines) {
                             if (line.startsWith('data: ')) {
                                 const dataStr = line.substring(6).trim();
@@ -1724,9 +1743,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             initWindSound();
             initMelody();
             if (document.body.classList.contains('mute-sounds')) return;
-            if (e.target.tagName.toLowerCase() === 'button' || 
-                (e.target.tagName.toLowerCase() === 'input' && (e.target.type === 'submit' || e.target.type === 'checkbox')) || 
-                e.target.classList.contains('chat-item')) {
+            if (e.target.closest('button') || 
+                e.target.closest('input[type="submit"]') || 
+                e.target.closest('input[type="checkbox"]') || 
+                e.target.closest('.chat-item')) {
                 if (document.body.classList.contains('mech-clicks')) {
                     playMechClickSound();
                 } else {
