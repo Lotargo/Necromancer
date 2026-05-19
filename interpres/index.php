@@ -95,7 +95,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             width: 80%; max-width: 600px; position: relative;
             box-sizing: border-box; word-wrap: break-word; overflow-y: auto; max-height: 90vh;
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            border-radius: 4px;
+            border-radius: 0px !important;
         }
 
         h1 { font-size: 48px; text-shadow: 0 0 10px #1aff66; margin-bottom: 30px; margin-top: 0;}
@@ -193,7 +193,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border: 2px solid #1aff66; padding: 30px; background-color: #010501;
             width: 400px; text-align: center; box-shadow: 0 0 20px #1aff66;
             animation: small-modal-twitch 4s infinite linear;
-            border-radius: 6px;
+            border-radius: 0px !important;
         }
     </style>
 </head>

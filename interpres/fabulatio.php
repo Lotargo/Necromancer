@@ -228,7 +228,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             border: 1px dashed var(--dim-color);
             background: rgba(0, 0, 0, 0.5);
             font-family: 'Courier New', Courier, monospace;
-            border-radius: 4px;
+            border-radius: 0px !important;
         }
         .reasoning-details summary {
             cursor: pointer;
@@ -878,8 +878,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 <div class="widget-header">SYSTEM STATUS</div>
                 <div class="widget-tabs">
                     <button id="tab-btn-ritual" class="widget-tab-btn active" onclick="switchWidgetTab('ritual')">RITUAL_DATA</button>
-                    <button id="tab-btn-death" class="widget-tab-btn" onclick="switchWidgetTab('death')">DEATH_GRID</button>
-                    <button id="tab-btn-spectral" class="widget-tab-btn" onclick="switchWidgetTab('spectral')">SPECTRAL</button>
+                    <button id="tab-btn-death" class="widget-tab-btn" onclick="switchWidgetTab('death')">DEATH_GRID_STATUS</button>
+                    <button id="tab-btn-spectral" class="widget-tab-btn" onclick="switchWidgetTab('spectral')">SPECTRAL_ANALYSIS</button>
                 </div>
                 <div class="widget-content">
                     <!-- Ritual Data Pane -->
