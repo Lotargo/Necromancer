@@ -33,16 +33,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
         :root {
-            --main-color: #1aff66;
-            --bg-color: #010501;
-            --container-bg: rgba(2, 8, 2, 0.85);
-            --dim-color: #094d1f;
-            --dark-color: #03200b;
-            --hover-color: #063b15;
-            --danger-color: #ff3333;
-            --danger-bg: #330000;
-            --danger-hover: #ff0000;
-            --warn-color: #ffff00;
+            --main-color: #bcf7ca; /* блеклый, пастельный CRT фосфор */
+            --bg-color: #020803; /* глубокий темный фосфорный фон */
+            --container-bg: rgba(2, 8, 4, 0.85); /* полупрозрачные контейнеры */
+            --dim-color: #2b6b3e; /* приглушенный блеклый фосфор */
+            --dark-color: #051609;
+            --hover-color: #103318;
+            --danger-color: #ff5555;
+            --danger-bg: #440a0a;
+            --danger-hover: #ff2222;
+            --warn-color: #ffea75;
+        }
+
+        @keyframes crt-flicker {
+            0% { opacity: 0.985; }
+            50% { opacity: 1.0; }
+            100% { opacity: 0.99; }
         }
 
         html, body {
@@ -55,14 +61,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             font-family: 'VT323', "Courier New", Courier, monospace; 
             box-sizing: border-box; padding: 15px;
             display: flex; justify-content: center; align-items: center;
+            position: relative;
         }
 
+        /* CRT subpixel grid & scanlines & flicker */
+        body::before {
+            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
+            background: 
+                radial-gradient(circle, rgba(0, 0, 0, 0.2) 1px, transparent 1px),
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
+            background-size: 3px 3px, 100% 4px;
+            z-index: 9998;
+            pointer-events: none;
+        }
+
+        /* Glass lens vignette reflection */
         body::after {
             content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%), 
-                        radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.85) 100%);
-            z-index: 999; background-size: 100% 3px, 100% 100%; pointer-events: none;
-            opacity: 0.95;
+            background: 
+                radial-gradient(circle at center, transparent 40%, rgba(0, 10, 2, 0.5) 100%),
+                linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0) 30%);
+            z-index: 9999;
+            pointer-events: none;
+            animation: crt-flicker 0.15s infinite;
         }
 
         .layout-wrapper {
@@ -76,6 +97,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             box-sizing: border-box;
             position: relative;
             z-index: 10;
+            transform: perspective(1200px) rotateX(0.5deg) scale(0.98);
+            transform-style: preserve-3d;
         }
 
         /* Side Columns */
@@ -89,6 +112,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             height: 100%;
             box-sizing: border-box;
             padding: 10px 0;
+            z-index: 5;
         }
 
         .side-col-right {
@@ -101,6 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             height: 100%;
             box-sizing: border-box;
             padding: 10px 0;
+            z-index: 5;
         }
 
         .glyph-chain-left, .glyph-chain-right {
@@ -112,17 +137,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         @keyframes glyph-glow {
-            0% { filter: drop-shadow(0 0 1px var(--main-color)); opacity: 0.5; }
-            50% { filter: drop-shadow(0 0 8px var(--main-color)); opacity: 1.0; }
-            100% { filter: drop-shadow(0 0 1px var(--main-color)); opacity: 0.5; }
+            0% { 
+                filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 3px var(--main-color)) drop-shadow(0 0 8px var(--dim-color)); 
+                opacity: 0.7; 
+            }
+            50% { 
+                filter: drop-shadow(0 0 2px rgba(255, 255, 255, 1.0)) drop-shadow(0 0 8px var(--main-color)) drop-shadow(0 0 15px var(--dim-color)); 
+                opacity: 1.0; 
+            }
+            100% { 
+                filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.9)) drop-shadow(0 0 3px var(--main-color)) drop-shadow(0 0 8px var(--dim-color)); 
+                opacity: 0.7; 
+            }
         }
         .mystic-glyph {
             animation: glyph-glow 4s infinite ease-in-out;
-            margin: 20px 0;
+            margin: 15px 0;
+        }
+
+        @keyframes glyph-sway-simple {
+            0% { transform: translateY(0) rotate(-4deg); }
+            50% { transform: translateY(-6px) rotate(4deg); }
+            100% { transform: translateY(0) rotate(-4deg); }
+        }
+        @keyframes glyph-rotate-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .mystic-sway {
+            animation: glyph-glow 4s infinite ease-in-out, glyph-sway-simple 6s infinite ease-in-out;
+            margin: 15px 0;
+        }
+        .mystic-rotate {
+            animation: glyph-glow 4s infinite ease-in-out, glyph-rotate-slow 25s infinite linear;
+            margin: 15px 0;
         }
 
         .corner-canvas {
-            filter: drop-shadow(0 0 5px var(--main-color));
+            filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 8px var(--main-color));
             background: transparent;
         }
 
@@ -135,27 +188,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             gap: 15px;
             height: 100%;
             box-sizing: border-box;
+            position: relative;
+            z-index: 100;
+            transform: translate(-30px, 0);
+            width: calc(100% + 30px);
         }
 
-        .header-title {
-            border: 1px solid var(--main-color);
-            padding: 10px 20px;
+        .header-title-block {
+            border: 3px double var(--main-color);
+            padding: 12px 20px;
             text-align: center;
-            font-size: 26px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            text-shadow: 0 0 8px var(--main-color);
-            box-shadow: 0 0 10px rgba(26, 255, 102, 0.3), inset 0 0 5px rgba(26, 255, 102, 0.2);
             background-color: var(--container-bg);
-            font-weight: bold;
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.4), inset 0 0 8px rgba(46, 204, 113, 0.3);
             border-radius: 0px !important;
             backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .header-glyph-box {
+            border: 1px solid var(--dim-color);
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--container-bg);
+            box-shadow: 0 0 5px rgba(209, 255, 214, 0.25), inset 0 0 3px rgba(209, 255, 214, 0.15);
+            transition: all 0.2s ease-in-out;
+        }
+        .header-glyph-box:hover {
+            border-color: var(--main-color);
+            box-shadow: 0 0 8px var(--main-color), inset 0 0 4px var(--main-color);
+            transform: scale(1.08);
         }
 
         .chat-window {
-            border: 4px double var(--main-color);
+            border: 3px double var(--main-color);
             padding: 25px;
-            box-shadow: 0 0 15px rgba(26, 255, 102, 0.3), inset 0 0 15px rgba(26, 255, 102, 0.3);
+            box-shadow: 0 0 15px rgba(209, 255, 214, 0.25), inset 0 0 15px rgba(209, 255, 214, 0.25);
             background-color: var(--container-bg);
             backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             display: flex; flex-direction: column; overflow: hidden; height: 100%; box-sizing: border-box;
@@ -163,12 +237,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             border-radius: 0px !important;
         }
 
-        h1 { font-size: 32px; text-shadow: 0 0 8px var(--main-color); margin-top: 0; margin-bottom: 15px; border-bottom: 1px dotted var(--dim-color); padding-bottom: 10px;}
+        h1 { font-size: 32px; text-shadow: 0 0 2px #fff, 0 0 8px var(--main-color); margin-top: 0; margin-bottom: 15px; border-bottom: 1px dotted var(--dim-color); padding-bottom: 10px;}
         
         input[type="text"], input[type="submit"], button { 
             background-color: rgba(0, 0, 0, 0.8); color: var(--main-color); border: 1px solid var(--main-color); padding: 10px;
             font-family: 'VT323', "Courier New", Courier, monospace; font-size: 24px;
-            box-shadow: 0 0 8px rgba(26, 255, 102, 0.2), inset 0 0 5px rgba(26, 255, 102, 0.2);
+            box-shadow: 0 0 8px rgba(209, 255, 214, 0.2), inset 0 0 5px rgba(209, 255, 214, 0.2);
             transition: all 0.2s ease-in-out;
             border-radius: 0px !important;
         }
@@ -183,7 +257,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             width: 100%; flex-grow: 1; border: 1px solid var(--dim-color); overflow-y: auto; overflow-x: hidden;
             padding: 15px; margin-bottom: 15px;
             box-sizing: border-box; font-size: 24px;
-            box-shadow: inset 0 0 10px rgba(26, 255, 102, 0.1); scroll-behavior: smooth;
+            box-shadow: inset 0 0 10px rgba(209, 255, 214, 0.1); scroll-behavior: smooth;
             display: flex; flex-direction: column; min-height: 0;
             background: rgba(0, 0, 0, 0.6);
             border-radius: 0px !important;
@@ -195,11 +269,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             line-height: 1.4;
             word-wrap: break-word;
             overflow-wrap: break-word;
-            text-shadow: 0 0 4px rgba(26, 255, 102, 0.6);
+            text-shadow: 0 0 1px rgba(255, 255, 255, 0.8), 0 0 4px rgba(209, 255, 214, 0.6), 0 0 10px rgba(63, 122, 76, 0.3);
         }
         .terminal-row strong {
             color: #fff;
-            text-shadow: 0 0 8px var(--main-color);
+            text-shadow: 0 0 1px #fff, 0 0 8px var(--main-color), 0 0 16px var(--dim-color);
             margin-right: 8px;
         }
         .user-row {
@@ -800,82 +874,90 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
     <div class="layout-wrapper">
         <!-- Left Side Column -->
         <div class="side-col-left">
-            <canvas id="canvas-lt" class="corner-canvas" width="80" height="80"></canvas>
-            <div class="glyph-chain-left">
-                <!-- Pentagram -->
-                <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 2L15 9H22L16.5 14L18.5 21L12 17L5.5 21L7.5 14L2 9H9L12 2Z" />
-                </svg>
-                <!-- Skull -->
-                <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation-delay: 1s;">
-                    <path d="M12 2C7.58 2 4 5.58 4 10C4 13.39 6.13 16.27 9 17.39V20C9 21.1 9.9 22 11 22H13C14.1 22 15 21.1 15 20V17.39C17.87 16.27 20 13.39 20 10C20 5.58 16.42 2 12 2Z" />
-                    <circle cx="9" cy="10" r="1.5" fill="currentColor" />
-                    <circle cx="15" cy="10" r="1.5" fill="currentColor" />
-                    <path d="M11 14H13V16H11V14Z" fill="currentColor" />
-                    <path d="M9 19H15M10 21H14" />
-                </svg>
-                <!-- Mercury -->
-                <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation-delay: 2s;">
-                    <path d="M12 5A3 3 0 0 0 9 8A3 3 0 0 0 12 11A3 3 0 0 0 15 8A3 3 0 0 0 12 5Z" />
-                    <path d="M12 11V19M8 15H16M6 4C7.5 5 10.5 5 12 5C13.5 5 16.5 5 18 4" />
-                </svg>
+            <div style="position: relative; width: 120px; height: 120px; transform: translate(55px, -10px); z-index: 150;">
+                <canvas id="canvas-lt" class="corner-canvas" width="120" height="120" style="position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none;"></canvas>
+                <img class="mystic-rotate" src="assets/cyber_circle_lt.png" width="120" height="120" style="image-rendering: pixelated; position: absolute; left: 0; top: 0; filter: drop-shadow(0 0 5px var(--main-color));" />
             </div>
-            <canvas id="canvas-lb" class="corner-canvas" width="220" height="220"></canvas>
+            <div class="glyph-chain-left">
+                <!-- Occult Horned Glyph (Pixel Art) -->
+                <img class="mystic-sway" src="assets/cyber_horned_glyph.png" width="45" height="45" style="image-rendering: pixelated; filter: drop-shadow(0 0 5px var(--main-color));" />
+                <!-- Salt / Earth (Crisp Pixel-Art) -->
+                <img class="mystic-sway" src="assets/cyber_salt_glyph.png" width="35" height="35" style="image-rendering: pixelated; filter: drop-shadow(0 0 5px var(--main-color)); animation-delay: 0.5s;" />
+                <!-- Cyber Skull (Pixel Art) -->
+                <img class="mystic-sway" src="assets/cyber_skull.png" width="45" height="45" style="image-rendering: pixelated; filter: drop-shadow(0 0 5px var(--main-color)); animation-delay: 1.0s;" />
+                <!-- Dagaz / Infinite Square (Crisp Pixel-Art) -->
+                <img class="mystic-sway" src="assets/cyber_dagaz_glyph.png" width="35" height="35" style="image-rendering: pixelated; filter: drop-shadow(0 0 5px var(--main-color)); animation-delay: 1.5s;" />
+            </div>
+            <div style="position: relative; width: 220px; height: 220px; transform: translate(40px, -20px); z-index: 150;">
+                <canvas id="canvas-lb" class="corner-canvas" width="220" height="220" style="position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none;"></canvas>
+                <img class="mystic-rotate" src="assets/cyber_circle_lb.png" width="220" height="220" style="image-rendering: pixelated; position: absolute; left: 0; top: 0; filter: drop-shadow(0 0 8px var(--main-color));" />
+            </div>
         </div>
 
         <!-- Center Column -->
         <div class="col-center">
-            <div class="header-title">ORACLE INTERFACE v1.3 // CYBER-NECROMANCY PROTOCOL</div>
+            <div class="header-title-block">
+                <div style="font-size: 24px; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 0 2px #fff, 0 0 8px var(--main-color); text-align: center;">ORACLE INTERFACE v1.3 // CYBER-NECROMANCY PROTOCOL</div>
+                <div style="width: 100%; border-top: 1px dotted var(--main-color); margin: 8px 0; opacity: 0.7;"></div>
+                <div class="header-glyphs" style="display: flex; gap: 20px; justify-content: center; filter: drop-shadow(0 0 3px var(--main-color)); align-items: center;">
+                    <img src="assets/cyber_horned_glyph.png" width="24" height="24" style="image-rendering: pixelated; filter: drop-shadow(0 0 3px var(--main-color));" />
+                    <img src="assets/cyber_circle_rt.png" width="24" height="24" style="image-rendering: pixelated; filter: drop-shadow(0 0 3px var(--main-color));" />
+                    <img src="assets/cyber_salt_glyph.png" width="20" height="20" style="image-rendering: pixelated; filter: drop-shadow(0 0 3px var(--main-color));" />
+                    <img src="assets/cyber_dagaz_glyph.png" width="20" height="20" style="image-rendering: pixelated; filter: drop-shadow(0 0 3px var(--main-color));" />
+                    <img src="assets/cyber_mercury_glyph.png" width="24" height="24" style="image-rendering: pixelated; filter: drop-shadow(0 0 3px var(--main-color));" />
+                    <img src="assets/cyber_skull.png" width="24" height="24" style="image-rendering: pixelated; filter: drop-shadow(0 0 3px var(--main-color));" />
+                </div>
+            </div>
+
             <div class="chat-window">
                 <div id="chat">Eligere fabulationem e pluteo...</div>
 
-                <div class="toggles-bar">
+                <!-- Hidden inputs/toggles for seamless CLI integration -->
+                <div class="toggles-bar" style="position: absolute; left: -9999px; opacity: 0; pointer-events: none;">
                     <button id="toggle-lang" class="toggle-btn" onclick="toggleLanguage()">Lingua: Latina [L]</button>
                     <button id="toggle-search" class="toggle-btn" onclick="toggleSearch()">Investigatio: OFF [-]</button>
                     <span id="toggles-info" style="font-size: 14px; color: #006600; font-family: monospace; flex-grow: 1; text-align: right;">MODUS: TRADITIO</span>
                 </div>
 
-                <form id="chat-form" style="display: flex; gap: 10px;">
-                    <input type="text" id="nuntius" name="nuntius" style="flex-grow: 1;" autocomplete="off" placeholder="Dicent..." disabled>
+                <form id="chat-form" style="position: absolute; left: -9999px; opacity: 0; pointer-events: none;">
+                    <input type="text" id="nuntius" name="nuntius" autocomplete="off" placeholder="Dicent..." disabled>
                     <input type="submit" id="send-btn" value="Mittere" disabled>
                 </form>
             </div>
 
-            <!-- Bottom Panel under Chat -->
-            <div class="bottom-panel" style="display: flex; gap: 15px; height: 100%; box-sizing: border-box; align-items: center;">
-                <canvas id="canvas-mb" class="corner-canvas" width="120" height="120" style="flex-shrink: 0;"></canvas>
-                <div class="bottom-decor" style="flex-grow: 1; border: 1px solid var(--dim-color); height: 100%; display: flex; flex-direction: column; justify-content: center; padding: 15px; box-sizing: border-box; background: rgba(0, 0, 0, 0.4); text-shadow: 0 0 4px var(--main-color); overflow: hidden;">
-                    <div style="font-size: 18px; color: var(--main-color); margin-bottom: 5px;">RITUAL_GRID: SYNCHRONIZED</div>
-                    <div style="font-size: 14px; color: var(--dim-color); font-family: monospace; line-height: 1.2;">
-                        [SYSTEM LOG] RUNES CHARGED // ECTOPLASM LEVEL: NORMAL // DEATH GRID RUNTIME: 8472s<br>
-                        [ORACLE INT] SPECTRUM STABLE // ANOMALIES DETECTED: 0
-                    </div>
+            <!-- Bottom Panel under Chat (Free configuration without border logs) -->
+            <div class="bottom-panel" style="display: flex; gap: 40px; height: 100%; box-sizing: border-box; align-items: center; justify-content: center;">
+                <!-- Mercury Alchemy Symbol (Crisp Pixel-Art) -->
+                <img class="mystic-sway" src="assets/cyber_mercury_glyph.png" width="55" height="55" style="image-rendering: pixelated; filter: drop-shadow(0 0 5px var(--main-color));" />
+                
+                <div style="position: relative; width: 120px; height: 120px; flex-shrink: 0;">
+                    <canvas id="canvas-mb" class="corner-canvas" width="120" height="120" style="position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none;"></canvas>
+                    <img class="mystic-rotate" src="assets/cyber_circle_mb.png" width="120" height="120" style="image-rendering: pixelated; position: absolute; left: 0; top: 0; filter: drop-shadow(0 0 5px var(--main-color));" />
                 </div>
+                
+                <!-- Cyber Skull (Pixel Art) -->
+                <img class="mystic-sway" src="assets/cyber_skull.png" width="55" height="55" style="image-rendering: pixelated; filter: drop-shadow(0 0 5px var(--main-color));" />
             </div>
         </div>
 
         <!-- Right Side Column -->
         <div class="side-col-right">
-            <canvas id="canvas-rt" class="corner-canvas" width="80" height="80"></canvas>
+            <div style="position: relative; width: 120px; height: 120px; transform: translate(-55px, -10px); z-index: 150;">
+                <canvas id="canvas-rt" class="corner-canvas" width="120" height="120" style="position: absolute; left: 0; top: 0; opacity: 0; pointer-events: none;"></canvas>
+                <img class="mystic-rotate" src="assets/cyber_circle_rt.png" width="120" height="120" style="image-rendering: pixelated; position: absolute; left: 0; top: 0; filter: drop-shadow(0 0 5px var(--main-color)); animation-direction: reverse;" />
+            </div>
             <div class="glyph-chain-right">
-                <!-- Salt / Earth -->
-                <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation-delay: 0.5s;">
-                    <circle cx="12" cy="12" r="9" />
-                    <line x1="3" y1="12" x2="21" y2="12" />
-                    <line x1="12" y1="3" x2="12" y2="21" />
-                </svg>
-                <!-- Sulfur -->
-                <svg class="mystic-glyph" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation-delay: 1.5s;">
-                    <path d="M12 3L5 13H19L12 3Z" />
-                    <line x1="12" y1="13" x2="12" y2="21" />
-                    <line x1="8" y1="17" x2="16" y2="17" />
-                </svg>
+                <!-- Occult Staff Wand (Pixel Art) -->
+                <img class="mystic-sway" src="assets/cyber_wand.png" width="45" height="75" style="image-rendering: pixelated; filter: drop-shadow(0 0 5px var(--main-color));" />
             </div>
 
             <!-- Status Widget -->
             <div class="status-widget">
-                <div class="widget-header">SYSTEM STATUS</div>
+                <div class="widget-header" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 12px;">
+                    <span style="font-family: monospace; font-size: 16px; color: var(--main-color); opacity: 0.85;">■ ■ ■</span>
+                    <span>SYSTEM STATUS</span>
+                    <span style="width: 30px;"></span>
+                </div>
                 <div class="widget-tabs">
                     <button id="tab-btn-ritual" class="widget-tab-btn active" onclick="switchWidgetTab('ritual')">RITUAL_DATA</button>
                     <button id="tab-btn-death" class="widget-tab-btn" onclick="switchWidgetTab('death')">DEATH_GRID_STATUS</button>
@@ -927,6 +1009,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         const sendBtn = document.getElementById("send-btn");
         const roomLabel = document.getElementById("current-room-label");
 
+        // CLI row sync function
+        function updateCliRow() {
+            if (!currentRoom) return;
+            let cliContainer = document.getElementById('cli-input-container');
+            if (!cliContainer) {
+                cliContainer = document.createElement('div');
+                cliContainer.id = 'cli-input-container';
+                cliContainer.className = 'terminal-row user-row';
+                cliContainer.style.display = 'flex';
+                cliContainer.style.alignItems = 'center';
+                cliContainer.style.cursor = 'text';
+                cliContainer.style.marginTop = '15px';
+                cliContainer.onclick = function(e) {
+                    e.stopPropagation();
+                    nuntiusInput.focus();
+                };
+                cliContainer.innerHTML = `<strong>USER: &gt;</strong> <span id="cli-input-text" style="white-space: pre-wrap; margin-left: 5px;"></span><span class="blink-fast" style="color: var(--main-color); margin-left: 2px;">█</span>`;
+                chatEl.appendChild(cliContainer);
+            }
+            const cliText = document.getElementById('cli-input-text');
+            if (cliText) {
+                cliText.textContent = nuntiusInput.value;
+            }
+            chatEl.scrollTop = chatEl.scrollHeight;
+        }
+
+        // Automatic focus for terminal feel
+        chatEl.addEventListener('click', () => {
+            if (!nuntiusInput.disabled) {
+                nuntiusInput.focus();
+            }
+        });
+
         // Retro keystroke sound effects for the main input field
         nuntiusInput.addEventListener('keydown', function(e) {
             if (e.repeat) return;
@@ -942,6 +1057,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 }
             }
         });
+        nuntiusInput.addEventListener('input', updateCliRow);
 
         // Welcome Animation Logic
         const welcomeText = "CONEXIO STABILITA...\nSALVE, <?php echo htmlspecialchars($usor); ?>.\nORACULUM TE EXSPECTAT.";
@@ -1045,7 +1161,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 .then(r => r.text())
                 .then(text => {
                     if (!text || text.trim() === '') {
-                        chatEl.innerHTML = 'Nihil scriptum est...';
+                        chatEl.innerHTML = '';
+                        updateCliRow();
+                        nuntiusInput.focus();
                         return;
                     }
                     
@@ -1094,6 +1212,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                         chatEl.appendChild(msgDiv);
                     });
                     
+                    updateCliRow();
+                    nuntiusInput.focus();
                     chatEl.scrollTop = chatEl.scrollHeight;
                 })
                 .catch(err => console.error("Error loading chat:", err));
@@ -1938,6 +2058,84 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             e.preventDefault();
             const msg = nuntiusInput.value.trim();
             if (!msg || !currentRoom) return;
+
+            if (msg.startsWith('/')) {
+                const parts = msg.slice(1).trim().split(/\s+/);
+                const cmd = parts[0].toLowerCase();
+                const arg = parts[1] ? parts[1].toLowerCase() : '';
+
+                if (typeof playHDDSound === 'function') playHDDSound();
+
+                nuntiusInput.value = '';
+                updateCliRow();
+
+                if (chatEl.textContent === 'Nihil scriptum est...') {
+                    chatEl.innerHTML = '';
+                }
+
+                const cmdMsg = document.createElement('div');
+                cmdMsg.className = 'terminal-row user-row';
+                cmdMsg.innerHTML = `<strong>USER: </strong><div><code>${DOMPurify.sanitize(msg)}</code></div>`;
+                chatEl.appendChild(cmdMsg);
+
+                const sysMsg = document.createElement('div');
+                sysMsg.className = 'terminal-row oracle-row';
+                sysMsg.style.color = 'var(--main-color)';
+                sysMsg.style.textShadow = '0 0 5px var(--main-color)';
+                sysMsg.style.marginTop = '10px';
+                sysMsg.style.marginBottom = '10px';
+                sysMsg.style.padding = '8px 12px';
+                sysMsg.style.border = '1px dashed var(--main-color)';
+                sysMsg.style.background = 'rgba(0, 30, 0, 0.35)';
+                sysMsg.style.fontFamily = 'monospace';
+
+                let sysText = '';
+                if (cmd === 'lang') {
+                    if (arg === 'latin') {
+                        currentLangMode = 'latin';
+                        sessionStorage.setItem('lang_mode', 'latin');
+                        updateToggleUI();
+                        sysText = `[SYSTEM] MODUS LINGUAE MUTATUS: <strong>LATINA</strong>`;
+                    } else if (arg === 'vulgar' || arg === 'auto') {
+                        currentLangMode = 'auto';
+                        sessionStorage.setItem('lang_mode', 'auto');
+                        updateToggleUI();
+                        sysText = `[SYSTEM] MODUS LINGUAE MUTATUS: <strong>VULGARIS (AUTO)</strong>`;
+                    } else {
+                        sysText = `[SYSTEM ERROR] ARGUMENTUM INVALIDUM. INVOCATIO: <strong>/lang [latin | vulgar]</strong>`;
+                    }
+                } else if (cmd === 'search') {
+                    if (arg === 'on') {
+                        currentSearchMode = 'on';
+                        sessionStorage.setItem('search_mode', 'on');
+                        updateToggleUI();
+                        sysText = `[SYSTEM] INVESTIGATIO INTERRETIALIS: <strong>ON (ACTIVE)</strong>`;
+                    } else if (arg === 'off') {
+                        currentSearchMode = 'off';
+                        sessionStorage.setItem('search_mode', 'off');
+                        updateToggleUI();
+                        sysText = `[SYSTEM] INVESTIGATIO INTERRETIALIS: <strong>OFF (INACTIVE)</strong>`;
+                    } else {
+                        sysText = `[SYSTEM ERROR] ARGUMENTUM INVALIDUM. INVOCATIO: <strong>/search [on | off]</strong>`;
+                    }
+                } else if (cmd === 'help') {
+                    sysText = `[CONSOLE ASSISTANT v1.3]<br>
+                    ------------------------------------------------------------<br>
+                    <strong>/lang [latin/vulgar]</strong>  - Mutare linguam respondi (Latina aut Vulgaris)<br>
+                    <strong>/search [on/off]</strong>    - Includere vel excludere investigationem in web<br>
+                    <strong>/help</strong>               - Ostendere hanc tabulam auxilii<br>
+                    ------------------------------------------------------------`;
+                } else {
+                    sysText = `[SYSTEM ERROR] COMMANDUM INCOGNITUM: <strong>${DOMPurify.sanitize(cmd)}</strong>. SCRIBE <strong>/help</strong> AD AUXILIUM.`;
+                }
+
+                sysMsg.innerHTML = sysText;
+                chatEl.appendChild(sysMsg);
+                
+                chatEl.scrollTop = chatEl.scrollHeight;
+                updateCliRow();
+                return;
+            }
 
             if (typeof playHDDSound === 'function') playHDDSound();
 
