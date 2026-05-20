@@ -308,7 +308,7 @@ begin
   Query.Database := DBConn;
   Query.Transaction := DBTran;
   try
-    Query.SQL.Text := 'SELECT nomen, password_hash, fingerprint FROM usores WHERE email = :email';
+    Query.SQL.Text := 'SELECT nomen, password_hash, fingerprint FROM usores WHERE email = :email OR nomen = :email';
     Query.ParamByName('email').AsString := Email;
     Query.Open;
 
@@ -326,9 +326,15 @@ begin
       if RegPass = PassHash then
       begin
         if RegFP <> FP then
-          Result := FormareResponsum(403, 'Error', 'Fingerprint mismatch pro Anima')
-        else
-          Result := FormareResponsum(200, 'Successus', RegNomen);
+        begin
+          // Update the fingerprint in the database since the password is correct!
+          Query.SQL.Text := 'UPDATE usores SET fingerprint = :fp WHERE nomen = :nomen';
+          Query.ParamByName('fp').AsString := FP;
+          Query.ParamByName('nomen').AsString := RegNomen;
+          Query.ExecSQL;
+          DBTran.CommitRetaining;
+        end;
+        Result := FormareResponsum(200, 'Successus', RegNomen);
       end;
     end;
   except
