@@ -204,30 +204,38 @@ function Intrare(Nomen, FP: String): String;
 var
   Query: TSQLQuery;
   Invenitur: Boolean;
-  SavedFP: String;
+  RegType: String;
 begin
   Invenitur := False;
-  SavedFP := '';
+  RegType := '';
   Query := TSQLQuery.Create(DBConn);
   Query.Database := DBConn;
   Query.Transaction := DBTran;
   try
-    Query.SQL.Text := 'SELECT fingerprint FROM usores WHERE nomen = :nomen';
+    Query.SQL.Text := 'SELECT reg_type FROM usores WHERE nomen = :nomen';
     Query.ParamByName('nomen').AsString := Nomen;
     Query.Open;
     if not Query.EOF then
     begin
       Invenitur := True;
-      SavedFP := Query.FieldByName('fingerprint').AsString;
+      RegType := Query.FieldByName('reg_type').AsString;
     end;
     Query.Close;
 
     if Invenitur then
     begin
-      if SavedFP = FP then
-        Result := FormareResponsum(200, 'Successus', 'Introitus permissus')
+      if RegType = 'ANIMA' then
+        Result := FormareResponsum(403, 'Error', 'Usor passwordum requirit (Use ANIMA mode)')
       else
-        Result := FormareResponsum(403, 'Error', 'Fingerprint mismatch / Accessus negatus');
+      begin
+        // SPIRITUS: update fingerprint to current browser on every login
+        Query.SQL.Text := 'UPDATE usores SET fingerprint = :fp WHERE nomen = :nomen';
+        Query.ParamByName('fp').AsString := FP;
+        Query.ParamByName('nomen').AsString := Nomen;
+        Query.ExecSQL;
+        DBTran.CommitRetaining;
+        Result := FormareResponsum(200, 'Successus', 'Introitus permissus');
+      end;
     end
     else
       Result := FormareResponsum(404, 'Error', 'Usor non inventus');
@@ -242,23 +250,26 @@ function CreareUsoremPlenum(Nomen, Email, Password, FP: String): String;
 var
   Query: TSQLQuery;
   ExistensNomen, ExistensEmail: Boolean;
+  ExistensRegType: String;
   PassHash: String;
 begin
   ExistensNomen := False;
   ExistensEmail := False;
+  ExistensRegType := '';
   Query := TSQLQuery.Create(DBConn);
   Query.Database := DBConn;
   Query.Transaction := DBTran;
   try
-    // Check nickname
-    Query.SQL.Text := 'SELECT 1 FROM usores WHERE nomen = :nomen';
+    // Check nickname and its registration type
+    Query.SQL.Text := 'SELECT reg_type FROM usores WHERE nomen = :nomen';
     Query.ParamByName('nomen').AsString := Nomen;
     Query.Open;
-    ExistensNomen := not Query.EOF;
+    if not Query.EOF then
+    begin
+      ExistensNomen := True;
+      ExistensRegType := Query.FieldByName('reg_type').AsString;
+    end;
     Query.Close;
-
-    if ExistensNomen then
-      Exit(FormareResponsum(400, 'Error', 'Nomen iam occupatum'));
 
     // Check email
     Query.SQL.Text := 'SELECT 1 FROM usores WHERE email = :email';
@@ -271,6 +282,24 @@ begin
       Exit(FormareResponsum(400, 'Error', 'Email iam registratum'));
 
     PassHash := HashPassword(Password);
+
+    if ExistensNomen then
+    begin
+      if ExistensRegType = 'SPIRITUS' then
+      begin
+        // Upgrade temporary guest user to full ANIMA user!
+        Query.SQL.Text := 'UPDATE usores SET email = :email, password_hash = :pass, reg_type = ''ANIMA'', fingerprint = :fp WHERE nomen = :nomen';
+        Query.ParamByName('email').AsString := Email;
+        Query.ParamByName('pass').AsString := PassHash;
+        Query.ParamByName('fp').AsString := FP;
+        Query.ParamByName('nomen').AsString := Nomen;
+        Query.ExecSQL;
+        DBTran.CommitRetaining;
+        Exit(FormareResponsum(200, 'Successus', 'Anima creata est'));
+      end
+      else
+        Exit(FormareResponsum(400, 'Error', 'Nomen iam occupatum'));
+    end;
 
     // Save record
     Query.SQL.Text := 'INSERT INTO usores (nomen, email, password_hash, reg_type, fingerprint) ' +
@@ -825,6 +854,9 @@ begin
     if DataInput.Count > 1 then Parametrum1 := DataInput[1];
     if DataInput.Count > 2 then Parametrum2 := DataInput[2];
 
+    WriteLn('[REQ] Cmd: ', Mandatum, ' | Param1: ', Parametrum1, ' | Params: ', DataInput.Count);
+    Flush(StdOut);
+
     if Mandatum = 'CREARE_USOREM' then
       Responsum := CreareUsorem(Parametrum1, Parametrum2)
     else if Mandatum = 'CREARE_USOREM_PLENUM' then
@@ -966,6 +998,8 @@ begin
     else
       Responsum := FormareResponsum(400, 'Error', 'Mandatum incognitum');
 
+    WriteLn('[RESP] ', Trim(Responsum));
+    Flush(StdOut);
     fpSend(CliensSock, PChar(Responsum), Length(Responsum), 0);
   finally
     DataInput.Free;
