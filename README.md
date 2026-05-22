@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/logo.svg" width="300" alt="Necromancer Cyber-Occult Logo" />
+  <img src="assets/logo.svg" width="100%" alt="Necromancer Cyber-Occult Logo" />
 </div>
 
 <h1 align="center" style="color: #00FF00; text-shadow: 0 0 10px #00FF00;">
@@ -46,8 +46,8 @@ graph TD
 * **Language**: PHP 8.3 + Vanilla JS
 * **Role**: The visual gateway. It renders a classical CRT console interface with:
     * **SSE (Server-Sent Events)**: For real-time streamed responses from the Oracle.
-    * **Web Audio API**: Retro hardware sounds (HDD seek, mechanical keyboard clicks, forbidden lab ambient hum).
-    * **HTML5 Canvas**: Eldritch visual overlays (Matrix Rain, Blood Drips, Watching Eyes).
+    * **Advanced Audio Mixer**: A three-channel audio control center (Summa/Master, Sonus/SFX, Musica/Music) utilizing the **Web Audio API**. Boost volumes up to 200% with dynamic visual crimson overdrive glows above 100% and enjoy looped occult background scores.
+    * **HTML5 Canvas**: Eldritch visual overlays (Matrix Rain, Blood Drips, Watching Eyes, and Ignis Fatuus reactive embers).
     * **Sanitization**: Deep input parsing to prevent pipe injection attacks over TCP sockets.
 
 ### 3. ⚖️ Aequilibrium (The Load Balancer)
@@ -77,8 +77,16 @@ graph TD
 * **Nomina Automatica**: The Oracle automatically names new chat sessions with elegant Latin phrases based on the first message context.
 
 ### 🌌 Visus & Auditio (CRT Aesthetics)
-* **Screen Shaking & CRT Glitches**: Fluid scanlines and mechanical noise recreate terminal emulation.
-* **Occult Skins**: Six interactive backgrounds including *Imber Codicis* (Matrix rain), *Sanguis Stillans* (dripping blood), and *Nexus Fati* (web of fate).
+* **Screen Shaking & CRT Glitches**: Fluid scanlines, chromatic aberration, and simulated mechanical hardware noise recreate a classic terminal feel.
+* **Occult Skins**: Seven interactive full-screen HTML5 Canvas backgrounds including *Imber Codicis* (Matrix rain), *Sanguis Stillans* (dripping blood), *Nexus Fati* (web of fate), and *Ignis Fatuus* (Necromantic Embers - reactive floating particles that gather around your cursor).
+* **Eldritch Acoustics**: Highly immersive, layered acoustics utilizing the Web Audio API:
+  * **HDD Seek**: Realistic mechanical clicks and hard-drive seek noises synchronized with text generation.
+  * **Haptic Keyboard**: Physical mechanical clicks for every key pressed.
+  * **Laboratory Ambience**: Eerie, loopable white noise (wind, CRT hums, static electricity) to set a dark gothic atmosphere.
+
+### 📈 Progressio & Moderatio (Initiation & Account Control)
+* **User Levels**: Ascend through 13 secret levels of occult initiation based on the volume and depth of your interactions with the Oracle.
+* **Profile Management**: Safely rename your soul (cascading across the database), change password keys, or completely erase your registration and histories (with complete atomic database cleanup).
 
 ---
 
@@ -93,8 +101,33 @@ graph TD
 
   <h3>Eldritch Visual Overlays</h3>
   <img src="assets/effects.png" width="800" alt="Eldritch Effects Screenshot" />
-  <p><em>Advanced HTML5 canvas rendering - Matrix Rain (Imber Codicis) and Dripping Blood (Sanguis Stillans).</em></p>
+  <p><em>Advanced HTML5 canvas rendering - Dripping Blood (Sanguis Stillans) and Necromantic Embers (Ignis Fatuus) in Cruor theme.</em></p>
 </div>
+
+---
+
+## ⚙️ API Configuration (Quomodo API configurare)
+
+The Oraculum is compatible with all OpenAI-compliant API providers (such as OpenAI, Google Gemini, LocalAI, vLLM, or Ollama). You can configure your model and credentials inside the `.env` file:
+
+```ini
+# OpenAI or compatible LLM API endpoints
+OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+OPENAI_API_MODEL=gpt-4o-mini
+OPENAI_API_KEY=your_secret_api_key_here
+```
+
+To configure **Google Gemini** via their OpenAI-compatible endpoint:
+```ini
+OPENAI_API_URL=https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+OPENAI_API_MODEL=gemini-1.5-flash
+OPENAI_API_KEY=your_gemini_api_key_here
+```
+
+After modifying the `.env` file, simply rebuild your Docker containers:
+```bash
+docker-compose up --build -d
+```
 
 ---
 
