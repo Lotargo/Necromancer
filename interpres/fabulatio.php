@@ -30,19 +30,43 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=VT323&family=Orbitron:wght@400;500;700;900&family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
         :root {
-            --main-color: #1aff66;
-            --bg-color: #010501;
-            --container-bg: rgba(2, 8, 2, 0.85);
-            --dim-color: #094d1f;
-            --dark-color: #03200b;
-            --hover-color: #063b15;
-            --danger-color: #ff3333;
-            --danger-bg: #330000;
-            --danger-hover: #ff0000;
-            --warn-color: #ffff00;
+            --main-color: #00ff66; /* Vibrant radioactive neon emerald green */
+            --bg-color: #030804; /* Very dark deep emerald black */
+            --container-bg: rgba(4, 12, 6, 0.75); /* Dark semi-transparent glass background */
+            --dim-color: #008833; /* Darker vibrant green */
+            --dark-color: #01220a; /* Deep forest green */
+            --hover-color: rgba(0, 255, 102, 0.15); /* Glass highlight hover color */
+            --danger-color: #ff3355;
+            --danger-bg: rgba(51, 0, 10, 0.6);
+            --danger-hover: #ff1133;
+            --warn-color: #ffcc00;
+            
+            --title-font: 'Orbitron', 'VT323', sans-serif;
+            --body-font: 'Inter', sans-serif;
+            --terminal-font: 'Fira Code', 'Courier New', Courier, monospace;
+            --retro-font: 'VT323', monospace;
+        }
+
+        /* Elegant Custom Neon Scrollbars */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--dim-color);
+            border-radius: 3px;
+            box-shadow: 0 0 4px var(--main-color);
+            transition: all 0.2s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--main-color);
+            box-shadow: 0 0 8px var(--main-color);
         }
 
         html, body {
@@ -52,15 +76,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
         body { 
             background-color: var(--bg-color); color: var(--main-color);
-            font-family: 'VT323', "Courier New", Courier, monospace; 
+            font-family: var(--body-font); 
             box-sizing: border-box; padding: 15px;
             display: flex; justify-content: center; align-items: center;
         }
 
         body::after {
             content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%), 
-                        radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.85) 100%);
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.9) 100%);
             z-index: 999; background-size: 100% 3px, 100% 100%; pointer-events: none;
             opacity: 0.95;
         }
@@ -173,66 +197,153 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             border-radius: 6px;
         }
 
-        /* Message Styles: Pure Terminal Log */
-        .terminal-row {
-            margin-bottom: 14px;
-            line-height: 1.4;
+        /* Message Styles: Modern Dark-Mystic Glassmorphism Speech Bubbles */
+        .msg-user, .msg-oracle {
+            margin-bottom: 20px;
+            padding: 14px 18px;
+            border-radius: 8px;
+            font-family: var(--terminal-font);
+            font-size: 18px;
+            line-height: 1.5;
             word-wrap: break-word;
             overflow-wrap: break-word;
-            text-shadow: 0 0 4px rgba(26, 255, 102, 0.6);
-        }
-        .terminal-row strong {
-            color: #fff;
-            text-shadow: 0 0 8px var(--main-color);
-            margin-right: 8px;
-        }
-        .user-row {
-            color: var(--main-color);
-        }
-        .oracle-row {
-            color: #a3ffc2;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            animation: bubble-fade-in 0.3s ease-out;
+            min-width: 150px;
         }
 
-        #chat p { margin: 0 0 8px 0; display: inline; }
+        @keyframes bubble-fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .msg-user {
+            align-self: flex-end;
+            background: rgba(0, 35, 12, 0.5); /* Emerald glass tint */
+            border: 1px solid rgba(0, 255, 102, 0.25);
+            border-right: 4px solid var(--main-color);
+            color: #d8ffe2;
+            max-width: 80%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 255, 102, 0.05);
+        }
+
+        .msg-oracle {
+            align-self: flex-start;
+            background: rgba(6, 12, 8, 0.7); /* Deep graphite glass */
+            border: 1px solid rgba(0, 255, 102, 0.15);
+            border-left: 4px solid var(--dim-color);
+            color: #a3ffc2;
+            max-width: 85%;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(0, 255, 102, 0.03);
+        }
+
+        .msg-user strong, .msg-oracle strong {
+            display: block;
+            font-family: var(--title-font);
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+
+        .msg-user strong {
+            color: var(--main-color);
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
+            text-align: right;
+        }
+
+        .msg-oracle strong {
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+            text-align: left;
+        }
+
+        #chat p { margin: 0 0 8px 0; display: inline-block; width: 100%; }
         #chat pre {
             display: block;
-            background-color: var(--dark-color); border: 1px dotted var(--main-color);
-            padding: 10px; overflow-x: auto; margin-top: 10px;
-            font-family: inherit; font-size: inherit; text-shadow: none;
+            background-color: rgba(0, 10, 3, 0.85); 
+            border: 1px solid var(--dim-color);
+            border-radius: 6px;
+            padding: 12px; 
+            overflow-x: auto; 
+            margin-top: 10px;
+            margin-bottom: 10px;
+            font-family: var(--terminal-font); 
+            font-size: 0.95em; 
+            text-shadow: none;
+            box-shadow: inset 0 0 8px rgba(0, 255, 102, 0.1);
         }
         #chat code {
-            background-color: var(--dark-color); color: var(--warn-color);
-            padding: 2px 5px; font-family: inherit; font-size: 0.9em;
-        }
-        #chat ul, #chat ol { margin: 10px 0; padding-left: 25px; }
-
-        .reasoning-details {
-            margin: 8px 0;
-            padding: 8px 12px;
-            border: 1px dashed var(--dim-color);
-            background: rgba(0, 0, 0, 0.5);
-            font-family: 'Courier New', Courier, monospace;
+            background-color: rgba(0, 20, 5, 0.7); 
+            color: var(--warn-color);
+            padding: 3px 6px; 
+            font-family: var(--terminal-font); 
+            font-size: 0.9em;
             border-radius: 4px;
+            border: 1px solid rgba(0, 255, 102, 0.1);
+        }
+        #chat ul, #chat ol { margin: 8px 0; padding-left: 20px; }
+
+        /* Themed Thinking (Amethyst Oracle Ritual) Box */
+        .reasoning-details {
+            margin: 12px 0;
+            padding: 12px 16px;
+            border: 1px dashed rgba(163, 102, 255, 0.35);
+            background: rgba(18, 6, 30, 0.55); /* Deep purple background for high contrast */
+            border-radius: 6px;
+            font-family: var(--terminal-font);
+            box-shadow: inset 0 0 10px rgba(163, 102, 255, 0.05);
+            transition: all 0.3s ease;
         }
         .reasoning-details summary {
             cursor: pointer;
-            color: var(--dim-color);
-            font-style: italic;
-            font-size: 16px;
+            color: #b082ff;
+            font-family: var(--title-font);
+            font-size: 13px;
+            letter-spacing: 0.5px;
             outline: none;
             user-select: none;
+            text-transform: uppercase;
+            text-shadow: 0 0 5px rgba(176, 130, 255, 0.5);
         }
         .reasoning-details summary:hover {
-            color: var(--main-color);
-            text-shadow: 0 0 5px var(--main-color);
+            color: #d1b3ff;
+            text-shadow: 0 0 8px rgba(209, 179, 255, 0.8);
         }
         .reasoning-content {
             margin-top: 10px;
-            color: var(--dim-color);
+            color: #d8c2ff;
             opacity: 0.9;
-            font-size: 16px;
-            border-top: 1px dotted var(--dim-color);
+            font-size: 15px;
+            border-top: 1px dotted rgba(163, 102, 255, 0.3);
             padding-top: 8px;
+        }
+
+        /* Sleek retro copy code button */
+        .copy-code-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-family: var(--title-font);
+            font-size: 11px !important;
+            padding: 2px 8px !important;
+            background: rgba(0, 0, 0, 0.7) !important;
+            color: rgba(0, 255, 102, 0.7) !important;
+            border: 1px solid rgba(0, 255, 102, 0.3) !important;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: none !important;
+            z-index: 10;
+            letter-spacing: 0.5px;
+        }
+        .copy-code-btn:hover {
+            color: #000 !important;
+            background: var(--main-color) !important;
+            border-color: var(--main-color) !important;
+            box-shadow: 0 0 6px var(--main-color) !important;
         }
 
         .tool-text {
@@ -242,19 +353,131 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         .toggles-bar {
-            display: flex; gap: 15px; margin-bottom: 10px; align-items: center;
-            border-top: 1px dotted var(--dim-color); padding-top: 10px;
+            display: flex;
+            gap: 12px;
+            margin-bottom: 15px;
+            align-items: center;
+            border-top: 1px solid rgba(0, 255, 102, 0.1);
+            padding-top: 15px;
+            justify-content: flex-start;
         }
         .toggle-btn {
-            font-size: 18px; padding: 5px 12px; min-width: 140px; text-align: center;
+            font-family: var(--title-font);
+            font-size: 11px;
+            letter-spacing: 1px;
+            padding: 8px 16px;
+            min-width: 150px;
+            text-align: center;
+            text-transform: uppercase;
+            border-radius: 20px;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 255, 102, 0.2);
+            transition: all 0.3s ease;
+        }
+        .toggle-btn::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ff3333;
+            box-shadow: 0 0 6px #ff3333;
+            transition: all 0.3s ease;
         }
         .toggle-active {
-            background-color: var(--main-color) !important; color: var(--bg-color) !important;
-            box-shadow: 0 0 10px var(--main-color);
+            background-color: rgba(0, 255, 102, 0.1) !important;
+            color: var(--main-color) !important;
+            border-color: var(--main-color) !important;
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+        }
+        .toggle-active::before {
+            background: var(--main-color);
+            box-shadow: 0 0 8px var(--main-color);
         }
         .toggle-inactive {
-            color: var(--dim-color); border-color: var(--dim-color);
+            color: var(--dim-color);
+            border-color: rgba(0, 255, 102, 0.15);
         }
+        .toggle-inactive::before {
+            background: #555;
+            box-shadow: none;
+        }
+        
+        #toggles-info {
+            font-size: 11px !important;
+            color: var(--dim-color) !important;
+            font-family: var(--title-font) !important;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            text-shadow: 0 0 4px rgba(0, 255, 102, 0.2);
+        }
+
+        #chat-form {
+            display: flex;
+            gap: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px;
+            border: 1px solid rgba(0, 255, 102, 0.15);
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+        #chat-form:focus-within {
+            border-color: var(--main-color);
+            box-shadow: 0 0 12px rgba(0, 255, 102, 0.2);
+        }
+        
+        #nuntius {
+            flex-grow: 1;
+            background: transparent !important;
+            border: none !important;
+            color: #d8ffe2 !important;
+            font-family: var(--terminal-font) !important;
+            font-size: 16px !important;
+            padding: 10px 15px !important;
+            box-shadow: none !important;
+        }
+        #nuntius::placeholder {
+            color: var(--dim-color);
+            opacity: 0.6;
+        }
+        #nuntius:focus {
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        
+        #send-btn {
+            background: var(--main-color) !important;
+            color: #000 !important;
+            border: none !important;
+            font-family: var(--title-font) !important;
+            font-size: 14px !important;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 10px 24px !important;
+            border-radius: 6px !important;
+            box-shadow: 0 0 10px var(--main-color) !important;
+            cursor: pointer;
+            transition: all 0.3s ease !important;
+        }
+        #send-btn:hover {
+            background: #fff !important;
+            box-shadow: 0 0 18px #fff !important;
+        }
+        #send-btn:disabled {
+            background: rgba(0, 255, 102, 0.1) !important;
+            color: var(--dim-color) !important;
+            box-shadow: none !important;
+            cursor: not-allowed;
+        }
+
         
         .blink { animation: blink-animation 1s steps(5, start) infinite; }
         .blink-fast { animation: blink-animation 0.5s steps(5, start) infinite; }
@@ -368,29 +591,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         .chat-list {
             list-style: none;
-            padding: 0;
+            padding: 5px;
             margin: 0;
             flex-grow: 1;
             overflow-y: auto;
         }
 
         .chat-item {
-            padding: 6px 10px;
-            border: 1px dashed var(--dim-color);
-            margin-bottom: 8px;
+            padding: 10px 14px;
+            border: 1px solid rgba(0, 255, 102, 0.15);
+            margin-bottom: 10px;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 18px;
-            border-radius: 4px;
-            background-color: rgba(0, 0, 0, 0.4);
+            font-size: 20px;
+            font-family: var(--title-font);
+            border-radius: 6px;
+            background-color: rgba(0, 0, 0, 0.5);
+            transition: all 0.25s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .chat-item::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 0px;
+            background: var(--main-color);
+            box-shadow: 0 0 10px var(--main-color);
+            transition: width 0.2s ease;
+        }
+        .chat-item.active::before {
+            width: 3px;
         }
         .chat-item:hover, .chat-item.active {
             background-color: var(--hover-color);
-            border-style: solid;
             border-color: var(--main-color);
-            box-shadow: 0 0 8px rgba(26, 255, 102, 0.2);
+            box-shadow: 0 0 12px rgba(0, 255, 102, 0.15), inset 0 0 5px rgba(0, 255, 102, 0.1);
         }
 
         .chat-item-name {
@@ -398,43 +638,52 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            letter-spacing: 0.5px;
         }
 
         .action-btns {
             display: flex;
-            gap: 5px;
+            gap: 8px;
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all 0.25s ease;
+        }
+        .chat-item:hover .action-btns {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .ren-btn, .del-btn {
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: rgba(0,0,0,0.6);
+            font-family: var(--title-font);
+            font-size: 13px;
+            padding: 4px 8px !important;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            box-shadow: none !important;
+            text-shadow: none !important;
         }
         .ren-btn {
-            color: #ffff33;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-family: inherit;
-            font-size: 16px;
-            text-shadow: 0 0 2px yellow;
-            padding: 2px !important;
-            box-shadow: none !important;
+            color: var(--warn-color);
+            border-color: rgba(255, 204, 0, 0.3);
         }
         .ren-btn:hover {
-            color: #ffff00;
-            font-weight: bold;
-            background: #333300;
+            color: #000 !important;
+            background: var(--warn-color) !important;
+            border-color: var(--warn-color);
+            box-shadow: 0 0 8px var(--warn-color) !important;
         }
         .del-btn {
             color: var(--danger-color);
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-family: inherit;
-            font-size: 16px;
-            text-shadow: 0 0 2px red;
-            padding: 2px !important;
-            box-shadow: none !important;
+            border-color: rgba(255, 51, 85, 0.3);
         }
         .del-btn:hover {
-            color: var(--danger-hover);
-            font-weight: bold;
-            background: var(--danger-bg);
+            color: #fff !important;
+            background: var(--danger-color) !important;
+            border-color: var(--danger-color);
+            box-shadow: 0 0 8px var(--danger-color) !important;
         }
 
         #widget-telemetry-short {
@@ -481,67 +730,214 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             box-sizing: border-box;
         }
 
-        /* Config Modal Styles */
+        /* Config Modal Redesign */
         #config-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.85); z-index: 9999;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 9999;
             display: none; justify-content: center; align-items: center;
+            transition: all 0.3s ease;
         }
         .config-content {
-            border: 2px solid var(--main-color); padding: 30px; text-align: left;
-            background-color: var(--container-bg); box-shadow: 0 0 20px var(--main-color);
-            width: 80%; max-width: 600px;
-            max-height: 90vh; overflow-y: auto;
+            border: 1px solid rgba(0, 255, 102, 0.25);
+            border-top: 4px solid var(--main-color);
+            padding: 35px;
+            border-radius: 12px;
+            background: rgba(8, 15, 10, 0.92);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 255, 102, 0.15);
+            width: 90%; max-width: 680px;
+            max-height: 85vh; overflow-y: auto;
+            backdrop-filter: blur(20px);
+        }
+        .config-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .config-content::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .config-content::-webkit-scrollbar-thumb {
+            background: var(--dim-color);
+            border-radius: 3px;
+        }
+        .config-content::-webkit-scrollbar-thumb:hover {
+            background: var(--main-color);
         }
         .config-section {
-            margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px dotted var(--main-color);
+            margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(0, 255, 102, 0.1);
         }
-        .config-section:last-child {
-            border-bottom: none; margin-bottom: 0; padding-bottom: 0;
+        .config-section h3 {
+            font-family: var(--title-font);
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--main-color);
+            margin-top: 0;
+            margin-bottom: 15px;
+            text-shadow: 0 0 6px rgba(0, 255, 102, 0.3);
         }
         .config-input, .config-select {
-            width: 100%; margin-bottom: 10px; margin-top: 5px; box-sizing: border-box;
-            background-color: var(--container-bg); color: var(--main-color); border: 1px solid var(--main-color); padding: 10px;
-            font-family: inherit; font-size: 20px;
+            width: 100%; margin-bottom: 12px; margin-top: 6px; box-sizing: border-box;
+            background-color: rgba(0, 0, 0, 0.4);
+            color: #d8ffe2;
+            border: 1px solid rgba(0, 255, 102, 0.2);
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: var(--terminal-font);
+            font-size: 16px;
+            transition: all 0.3s ease;
         }
-        .config-btn { margin-top: 10px; }
-        .danger-btn { background-color: var(--danger-bg); color: var(--danger-color); border-color: var(--danger-color); }
-        .danger-btn:hover { background-color: var(--danger-hover); color: #fff; }
+        .config-input:focus, .config-select:focus {
+            outline: none;
+            border-color: var(--main-color);
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+        }
+        .config-btn {
+            margin-top: 10px;
+            font-family: var(--title-font);
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            padding: 10px 20px;
+            border-radius: 6px;
+            background: rgba(0, 255, 102, 0.1);
+            color: var(--main-color);
+            border: 1px solid var(--main-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .config-btn:hover {
+            background: var(--main-color);
+            color: #000;
+            box-shadow: 0 0 12px var(--main-color);
+        }
+        .danger-btn {
+            background-color: rgba(255, 51, 51, 0.1) !important;
+            color: #ff5555 !important;
+            border-color: #ff3333 !important;
+        }
+        .danger-btn:hover {
+            background-color: #ff3333 !important;
+            color: #000 !important;
+            box-shadow: 0 0 15px #ff3333 !important;
+        }
 
-        /* New Chat Modal Styles */
-        #new-chat-modal {
+        /* Modals Glassmorphism center cards */
+        #rename-chat-modal, #delete-chat-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.85); z-index: 9998;
-            display: none; justify-content: center; align-items: center;
-        }
-        .new-chat-content {
-            border: 2px solid var(--main-color); padding: 30px; text-align: center;
-            background-color: var(--container-bg); box-shadow: 0 0 20px var(--main-color);
-        }
-        #new-chat-input, #rename-chat-input { width: 80%; margin-bottom: 20px; text-align: center; }
-        .cancel-btn { background-color: var(--danger-bg); color: var(--danger-color); border-color: var(--danger-color); }
-        .cancel-btn:hover { background-color: var(--danger-color); color: #fff; }
-
-        /* Rename Chat Modal Styles */
-        #rename-chat-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.85); z-index: 9998;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 9999;
             display: none; justify-content: center; align-items: center;
         }
         .rename-chat-content {
-            border: 2px solid var(--main-color); padding: 30px; text-align: center;
-            background-color: var(--container-bg); box-shadow: 0 0 20px var(--main-color);
+            border: 1px solid rgba(0, 255, 102, 0.25);
+            border-top: 4px solid var(--main-color);
+            padding: 35px;
+            border-radius: 12px;
+            background: rgba(8, 15, 10, 0.92);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 255, 102, 0.15);
+            text-align: center;
+            width: 90%; max-width: 480px;
+            backdrop-filter: blur(20px);
+        }
+        .rename-chat-content h2 {
+            font-family: var(--title-font);
+            font-size: 20px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--main-color);
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        #rename-chat-input {
+            width: 100% !important;
+            box-sizing: border-box;
+            background-color: rgba(0, 0, 0, 0.4);
+            color: #d8ffe2;
+            border: 1px solid rgba(0, 255, 102, 0.2);
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-family: var(--terminal-font);
+            font-size: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        #rename-chat-input:focus {
+            outline: none;
+            border-color: var(--main-color);
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+        }
+        
+        .delete-chat-content {
+            border: 1px solid rgba(255, 51, 51, 0.25);
+            border-top: 4px solid #ff3333;
+            padding: 35px;
+            border-radius: 12px;
+            background: rgba(18, 5, 5, 0.92);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 51, 51, 0.15);
+            text-align: center;
+            width: 90%; max-width: 480px;
+            backdrop-filter: blur(20px);
+        }
+        .delete-chat-content h2 {
+            font-family: var(--title-font);
+            font-size: 20px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #ff3333;
+            margin-top: 0;
+            margin-bottom: 15px;
         }
 
-        /* Delete Chat Modal Styles */
-        #delete-chat-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.85); z-index: 9998;
-            display: none; justify-content: center; align-items: center;
+        #glitches-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
         }
-        .delete-chat-content {
-            border: 2px solid #ff0000; padding: 30px; text-align: center;
-            background-color: #000; box-shadow: 0 0 20px #ff0000;
+        #glitches-container hr {
+            grid-column: 1 / -1;
+            border: 0;
+            border-top: 1px solid rgba(0, 255, 102, 0.15);
+            margin: 10px 0;
+        }
+        #glitches-container h4 {
+            grid-column: 1 / -1;
+            margin: 5px 0;
+            color: var(--dim-color);
+            font-family: var(--title-font);
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 1.5px;
+        }
+        #glitches-container label {
+            display: flex !important;
+            align-items: center;
+            gap: 10px;
+            margin: 0 !important;
+            padding: 8px 12px;
+            background: rgba(0, 255, 102, 0.03);
+            border: 1px solid rgba(0, 255, 102, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: var(--terminal-font);
+            color: var(--warn-color) !important;
+            transition: all 0.2s ease;
+        }
+        #glitches-container label:hover {
+            background: rgba(0, 255, 102, 0.08);
+            border-color: rgba(0, 255, 102, 0.3);
+            box-shadow: 0 0 8px rgba(0, 255, 102, 0.15);
+        }
+        #glitches-container input[type="checkbox"] {
+            accent-color: var(--main-color);
+            width: 16px;
+            height: 16px;
+            margin: 0;
+            cursor: pointer;
         }
 
         /* Glitches - Applied conditionally */
@@ -600,7 +996,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             top: 50%; left: 50%; width: 100vw; height: 100vw;
             margin-top: -50vw; margin-left: -50vw;
             background: radial-gradient(circle, var(--main-color) 0%, rgba(0,0,0,0) 60%);
-            border-radius: 50%; opacity: 0; pointer-events: none; z-index: -3;
+            border-radius: 50%; opacity: 0; pointer-events: none; z-index: 3;
             animation: pulse-infernal 6s ease-out infinite; mix-blend-mode: screen;
         }
         @keyframes pulse-infernal {
@@ -612,7 +1008,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         .fog-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.1" fill="%2300ff00" /></svg>');
-            opacity: 0.15; z-index: -1; pointer-events: none;
+            opacity: 0.15; z-index: 4; pointer-events: none;
             animation: fog-move 20s linear infinite;
         }
         @keyframes fog-move {
@@ -622,7 +1018,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         #matrixCanvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -2; display: none; pointer-events: none;
+            z-index: 1; display: none; pointer-events: none;
         }
         body.glitch-matrix #matrixCanvas { display: block; }
 
@@ -686,7 +1082,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         #advCanvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; pointer-events: none;
+            z-index: 2; pointer-events: none;
         }
 
         /* Welcome Modal */
@@ -796,7 +1192,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-36" onchange="previewGlitches()"> Ventus Obscurus (Ambient Wind)</label>
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-37" onchange="previewGlitches()"> Murmur Antiquum (50Hz Hum)</label>
                 </div>
-                <button class="config-btn" onclick="saveVisualOptions()" style="margin-top: 15px;">Servare (Save)</button>
             </div>
 
             <div class="config-section">
@@ -867,6 +1262,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         const nuntiusInput = document.getElementById("nuntius");
         const sendBtn = document.getElementById("send-btn");
         const roomLabel = document.getElementById("current-room-label");
+
+        // Inject copy buttons to all code pre blocks
+        function addCopyButtons(container) {
+            if (!container) return;
+            const pres = container.querySelectorAll('pre');
+            pres.forEach(pre => {
+                if (pre.querySelector('.copy-code-btn')) return;
+                pre.style.position = 'relative';
+                const btn = document.createElement('button');
+                btn.className = 'copy-code-btn';
+                btn.type = 'button';
+                btn.innerHTML = 'Copy';
+                btn.onclick = function(e) {
+                    e.stopPropagation();
+                    const code = pre.querySelector('code');
+                    const textToCopy = code ? code.innerText : pre.innerText.replace(/Copy$/, '');
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        btn.innerHTML = 'Copied!';
+                        btn.style.borderColor = 'var(--main-color)';
+                        btn.style.color = 'var(--main-color)';
+                        setTimeout(() => {
+                            btn.innerHTML = 'Copy';
+                            btn.style.borderColor = 'rgba(0, 255, 102, 0.3)';
+                            btn.style.color = 'rgba(0, 255, 102, 0.7)';
+                        }, 2000);
+                    });
+                };
+                pre.appendChild(btn);
+            });
+        }
 
         // Retro keystroke sound effects for the main input field
         nuntiusInput.addEventListener('keydown', function(e) {
@@ -1032,6 +1457,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                             ],
                             throwOnError: false
                         });
+                        addCopyButtons(msgDiv);
                         chatEl.appendChild(msgDiv);
                     });
                     
@@ -1352,6 +1778,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         function previewTheme() {
             applyTheme(parseInt(document.getElementById('config-theme').value));
+            saveVisualOptions(true);
         }
 
         function previewGlitches() {
@@ -1375,6 +1802,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             document.body.classList.toggle('mech-clicks', document.getElementById('glitch-35') && document.getElementById('glitch-35').checked);
             document.body.classList.toggle('ambient-wind', document.getElementById('glitch-36') && document.getElementById('glitch-36').checked);
             document.body.classList.toggle('hum-sound', document.getElementById('glitch-37') && document.getElementById('glitch-37').checked);
+            saveVisualOptions(true);
         }
 
         function applyOptionsToDOM() {
@@ -1402,7 +1830,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             document.body.classList.toggle('hum-sound', g.includes(37));
         }
 
-        function saveVisualOptions() {
+        function saveVisualOptions(silent = false) {
             const theme = parseInt(document.getElementById('config-theme').value);
             const glitches = [];
             if (document.getElementById('glitch-10').checked) glitches.push(10);
@@ -1436,7 +1864,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 .then(r => r.json())
                 .then(data => {
                     if (data.status === 'ok') {
-                        configAlert("Optiones servatae sunt. (Options saved)");
+                        if (!silent) {
+                            configAlert("Optiones servatae sunt. (Options saved)");
+                        }
                         applyOptionsToDOM();
                     } else {
                         configAlert(data.message, true);
@@ -1504,8 +1934,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
         spawnEye();
 
-        const pBlood = [];
-        for(let i=0; i<30; i++) pBlood.push({x: Math.random()*window.innerWidth, y: -Math.random()*window.innerHeight, speed: 1 + Math.random()*3, radius: 2 + Math.random()*4});
+        const bloodStreams = [];
+        const bloodDrops = [];
+        const PIXEL_SIZE = 6;
+
+        function initBlood() {
+            bloodStreams.length = 0;
+            bloodDrops.length = 0;
+            const cols = Math.ceil(window.innerWidth / (PIXEL_SIZE * 3));
+            for(let i = 0; i < cols; i++) {
+                bloodStreams.push({
+                    x: i * PIXEL_SIZE * 3,
+                    height: -Math.random() * 200,
+                    speed: 0.5 + Math.random() * 2.0,
+                    width: PIXEL_SIZE * (2 + Math.floor(Math.random() * 2)),
+                    maxHeight: window.innerHeight * (0.2 + Math.random() * 0.6)
+                });
+            }
+        }
+        initBlood();
+        window.addEventListener('resize', () => {
+            advCanvas.width = window.innerWidth;
+            advCanvas.height = window.innerHeight;
+            initBlood();
+        });
 
         let occultAngle = 0;
         
@@ -1627,27 +2079,76 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             }
 
             if (isBlood) {
-                advCtx.fillStyle = '#8A0303';
-                pBlood.forEach(b => {
-                    b.y += b.speed;
-                    if (b.y > h + 50) { b.y = -50; b.x = Math.random()*w; b.speed = 1 + Math.random()*2; }
-                    
-                    // Visceral drop shape
-                    advCtx.beginPath();
-                    advCtx.arc(b.x, b.y, b.radius, 0, Math.PI);
-                    advCtx.lineTo(b.x + b.radius * 0.5, b.y - b.speed * 5);
-                    advCtx.lineTo(b.x - b.radius * 0.5, b.y - b.speed * 5);
-                    advCtx.fill();
+                // 1. Draw Streams dripping from top of the screen
+                bloodStreams.forEach(s => {
+                    if (s.height < s.maxHeight) {
+                        s.height += s.speed;
+                        // Splash drops occasionally from the tip
+                        if (Math.random() < 0.015 && s.height > 0) {
+                            bloodDrops.push({
+                                x: s.x + s.width / 2,
+                                y: s.height,
+                                vy: s.speed + 0.5 + Math.random() * 1.5,
+                                size: PIXEL_SIZE
+                            });
+                        }
+                    } else {
+                        // Slowly reset or recede streams occasionally to make dynamic
+                        if (Math.random() < 0.001) {
+                            s.height = -Math.random() * 150;
+                            s.maxHeight = h * (0.15 + Math.random() * 0.5);
+                        }
+                    }
 
-                    // Trail / Smear effect
-                    advCtx.globalAlpha = 0.3;
-                    advCtx.beginPath();
-                    advCtx.moveTo(b.x - b.radius*0.7, b.y);
-                    advCtx.lineTo(b.x + b.radius*0.7, b.y);
-                    advCtx.lineTo(b.x, b.y - b.speed * 15 - Math.random()*20);
-                    advCtx.fill();
-                    advCtx.globalAlpha = 1.0;
+                    const curH = Math.floor(s.height / PIXEL_SIZE) * PIXEL_SIZE;
+                    if (curH <= 0) return;
+
+                    const curX = s.x;
+                    const curW = s.width;
+
+                    // Volumetric 3D pixel effect
+                    // 1. Shadow background (Dark Maroon) - 1px wider on each side
+                    advCtx.fillStyle = '#4A0000';
+                    advCtx.fillRect(curX - PIXEL_SIZE, 0, curW + PIXEL_SIZE * 2, curH);
+                    // Stream Tip
+                    advCtx.fillRect(curX, curH, curW, PIXEL_SIZE);
+
+                    // 2. Base Blood Red Color
+                    advCtx.fillStyle = '#800000';
+                    advCtx.fillRect(curX, 0, curW, curH);
+
+                    // 3. Bright Red Highlights (wet glare)
+                    advCtx.fillStyle = '#D00000';
+                    advCtx.fillRect(curX, 0, PIXEL_SIZE, curH - PIXEL_SIZE);
                 });
+
+                // 2. Draw Falling Pixels (Splatter Drops with gravity)
+                for (let i = bloodDrops.length - 1; i >= 0; i--) {
+                    const d = bloodDrops[i];
+                    d.y += d.vy;
+                    d.vy += 0.15; // Gravity acceleration
+
+                    if (d.y > h) {
+                        bloodDrops.splice(i, 1);
+                        continue;
+                    }
+
+                    const px = Math.floor(d.x / PIXEL_SIZE) * PIXEL_SIZE;
+                    const py = Math.floor(d.y / PIXEL_SIZE) * PIXEL_SIZE;
+
+                    // 3D Pixel Droplet
+                    // Shadow / Border
+                    advCtx.fillStyle = '#4A0000';
+                    advCtx.fillRect(px - PIXEL_SIZE, py - PIXEL_SIZE, d.size + PIXEL_SIZE * 2, d.size + PIXEL_SIZE * 2);
+
+                    // Drop Core
+                    advCtx.fillStyle = '#800000';
+                    advCtx.fillRect(px, py, d.size, d.size);
+
+                    // Drop Highlights
+                    advCtx.fillStyle = '#D00000';
+                    advCtx.fillRect(px, py, PIXEL_SIZE, PIXEL_SIZE);
+                }
             }
 
             if (isEyes) {
@@ -1724,6 +2225,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     {left: '\\(', right: '\\)', display: false}
                 ], throwOnError: false
             });
+            addCopyButtons(userMsg);
             chatEl.appendChild(userMsg);
 
             let oraclePrefix = document.createElement('div');
@@ -1760,6 +2262,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                             sendBtn.disabled = false;
                             nuntiusInput.focus();
                             loadChats(); // refresh list in case it was a new chat
+                            if (reasoningSpan) addCopyButtons(reasoningSpan);
+                            if (normalTextSpan) addCopyButtons(normalTextSpan);
                             return;
                         }
                         sseBuffer += decoder.decode(value, {stream: true});
