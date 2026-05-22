@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS usores (
 #### Fields Description:
 * **`nomen`**: *Primary Key*. Unique alphanumeric user nickname.
 * **`email`**: *Unique*. User's email address (mandatory for Anima registrations). Nullable for Spiritus users.
-* **`password_hash`**: Stores the cryptographically secure **salted SHA-1 hash** of the user's password. Nullable for Spiritus users.
+* **`password_hash`**: Stores the cryptographically secure password hash. New users and migrated accounts use **Argon2id** (64 characters in Hex). Unmigrated legacy accounts use **salted SHA-1** (40 characters) and are transparently migrated upon their next successful login. Nullable for Spiritus users.
 * **`reg_type`**: Type of registration. Restricted to `'ANIMA'` or `'SPIRITUS'`.
 * **`fingerprint`**: Browser/Client hardware fingerprint, used to authenticate Spiritus profiles and bind sessions.
 * **`created_at`**: Creation timestamp.
@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS llm_key_status (
 
 #### Fields Description:
 * **`provider`**: Provider name such as `gemini`, `groq`, or `cerebras`.
-* **`key_hash`**: Salted SHA-1 hash of the real key. The plaintext key is not stored in PostgreSQL.
+* **`key_hash`**: Lightweight Argon2id hash of the real key (64 characters in Hex). The plaintext key is not stored in PostgreSQL.
 * **`key_hint`**: Short masked hint used for logs and debugging.
 * **`status`**: Current lifecycle state, such as `active`, `resting`, or `disabled`.
 * **`quarantine_until`**: TTL timestamp used for temporary cooldowns after rate limits or regional restrictions.

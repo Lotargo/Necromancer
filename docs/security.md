@@ -4,25 +4,48 @@ This document details the security posture, cryptographic designs, and sanitizat
 
 ---
 
-## 🔐 1. Salted Password Cryptography
+## 🔐 1. Password Cryptography & Hashing (SHA-1 to Argon2id)
 
 Legacy versions of the core backend saved user credentials in plaintext within flat scroll files, creating a significant security risk.
 
-In the modernized stack, we have implemented cryptographically secure, salted hashing using FreePascal’s built-in `sha1` unit.
+Initially, we modernized the stack by implementing cryptographically secure, salted hashing using FreePascal’s built-in `sha1` unit with a static secret salt (`'NecromancerSalt1337'`).
 
-### Implementation Blueprint (`daemonium.pas`):
-```pascal
-function HashPassword(Pass: String): String;
-begin
-  // Cryptographically secure hashing with a static salt
-  Result := SHA1Print(SHA1String(Pass + 'NecromancerSalt1337'));
-end;
-```
+### 🚀 The Ultimate Standard: Argon2id Hashing
 
-### Security Properties:
-* **Preimage Resistance**: The one-way nature of SHA-1 makes it computationally infeasible to reconstruct the original plaintext password from the stored hash.
-* **Salt Protection**: Appending a static secret salt (`'NecromancerSalt1337'`) to the password before hashing changes the target digest. This protects the credentials against **Rainbow Table** pre-computation attacks, where attackers use pre-calculated hashes of common words.
-* **Database Breach Mitigations**: In the event that the PostgreSQL storage layer is compromised, the attacker only gains access to salted digests. They cannot authenticate without knowing the salt and brute-forcing the password.
+To meet modern security standards (ASVS 4.0), we upgraded the password hashing algorithm to **Argon2id** (via the native `HashLib4Pascal` library). This represents the highest industry standard for password protection against both GPU/ASIC-accelerated brute-force attacks and side-channel analysis.
+
+#### Hashing Properties & Parameters:
+* **Algorithm**: Argon2id (combines memory-hard Argon2d and time-hard Argon2i properties).
+* **Work Factors**:
+  * **Time Cost (Iterations)**: `2` iterations (passes).
+  * **Memory Cost**: `65536 KB` (64 MB) RAM, enforcing memory-hardness.
+  * **Parallelism**: `2` independent execution threads.
+  * **Output Length**: `32` bytes (represented as a 64-character lowercase hexadecimal string).
+* **Dynamic Salting**: Instead of a static system-wide salt, Argon2id hashes are generated using the user's unique nickname (`nomen`) as the dynamic salt. This ensures that even if two users choose identical passwords, their hashes in the database will be completely different.
+* **LLM Key Protection**: In addition to user passwords, API provider credentials stored in `llm_key_status` are protected using a lightweight, fast variant of Argon2id (`Iterations = 1`, `Memory = 4 MB`, `Parallelism = 1`).
+
+### 🔄 Seamless Legacy SHA-1 Migration Blueprint
+
+To prevent user disruption (forcing password resets), we built a transparent migration mechanism into the authentication lifecycle inside the `Usores` module:
+
+1. **Hash Length Discrimination**: 
+   When a user attempts to log in using the `INTRARE_PLENUM` socket command, the system retrieves their stored `password_hash` from the database and checks its length:
+   - **40 Characters**: Indicates a legacy **SHA-1** hash.
+   - **64 Characters**: Indicates a modern **Argon2id** hash.
+
+2. **Automated Re-hashing**:
+   If the stored hash is 40 characters long:
+   - The system verifies the submitted password against the legacy SHA-1 hash (`LegacySHA1(Password)` using the static `'NecromancerSalt1337'` salt).
+   - If verification succeeds, the user is authorized.
+   - Immediately in the same execution cycle, the system generates a new **Argon2id** hash of the verified password using the user's nickname as the salt:
+     ```pascal
+     NovusPassHash := HashPassword(Password, RegNomen);
+     ```
+   - The new hash is committed back to PostgreSQL in a secure transaction.
+   - The system outputs a `[MIGRATION]` notice to the daemon logs for auditing purposes.
+
+3. **Subsequent Logins**:
+   For all future authentication cycles, the stored hash length is 64 characters, and the system bypasses legacy paths, executing Argon2id verification directly.
 
 ---
 

@@ -44,18 +44,27 @@ The system operates as a distributed microservice stack composed of four primary
 
 Compiled inside the Docker container using FreePascal (`fpc`), the `daemonium` executable is a high-performance, single-threaded socket server that handles all stateful transactions of the chat.
 
-* **Core Responsibilities**:
-  * Binding to port `8080` and listening for raw TCP socket connections.
-  * Parsing custom text-based commands sent by `Interpres`.
-  * Communicating with the `PostgreSQL` instance to store/load users, options, and histories.
-  * Running RAG search queries against the local knowledge base (`tabularium/scientia/`).
-* **Connection Lifecycle**:
-  1. Opens a listening socket using the FPC `sockets` unit.
-  2. Blocks waiting for incoming connection requests via `accept()`.
-  3. Spawns an execution frame that reads the buffer until `\n`.
-  4. Parses the incoming pipe-separated string and executes the corresponding database transaction.
-  5. Formats the return payload using `FormareResponsum(Codex, Nuntius, Data)` and writes it back to the client socket.
-  6. Closes the socket immediately (stateless TCP communication).
+### 🏛️ Modular Unit Architecture
+
+To ensure high maintainability, the codebase is cleanly modularized into several dedicated Object Pascal units:
+* **[Auxilia.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Auxilia.pas)**: Shared helpers, response string formation (`FormareResponsum`), file reader utilities, and fast SHA-1 legacy/lightweight Argon2id API key hashes.
+* **[Cryptographia.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Cryptographia.pas)**: High-security cryptography module driving **Argon2id** password hashing using the native `HashLib4Pascal` engine.
+* **[Database.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Database.pas)**: Handles database connections (`InitDatabase`), query states, and automatic schema initialization for PostgreSQL.
+* **[ClavesLlm.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/ClavesLlm.pas)**: API key synchronizer, status checker, and rate-limit quarantine logger.
+* **[Usores.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Usores.pas)**: Manages full authentication lifecycles (guest Spiritus and credential-backed Anima profiles), session fingerprint checks, profile deletion, and seamless password migration.
+* **[Fabulatio.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Fabulatio.pas)**: Drives chat room lists, message history loading, and JSON settings serialization.
+* **[Scientia.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Scientia.pas)**: High-speed keyword index scanner providing local RAG knowledge context.
+* **[daemonium.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/daemonium.pas)**: The central main loop and listener. Coordinates socket bindings, listens on port `8080`, reads string buffers, and routes incoming commands to corresponding modular controllers.
+
+### 🔌 Connection Lifecycle:
+1. Opens a listening socket using the FPC `sockets` unit.
+2. Blocks waiting for incoming connection requests via `accept()`.
+3. Spawns an execution frame that reads the buffer until `\n`.
+4. Parses the incoming pipe-separated string and executes the corresponding database transaction.
+5. Formats the return payload using `FormareResponsum(Codex, Nuntius, Data)` and writes it back to the client socket.
+6. Closes the socket immediately (stateless TCP communication).
+
+---
 
 ---
 
@@ -118,15 +127,16 @@ All communication between `Interpres` and `Daemonium` occurs over raw TCP socket
 | :--- | :--- | :--- | :--- |
 | `CREARE_USOREM` | `nomen, fingerprint` | `200 / 400` | Creates a Spiritus (guest) user. |
 | `INTRARE` | `nomen, fingerprint` | `200 / 403` | Guest login with fingerprint verification. |
-| `CREARE_USOREM_PLENUM` | `nomen, email, pass, fp` | `200 / 400` | Registers Anima user with SHA-1 hashed password. |
-| `INTRARE_PLENUM` | `email, pass, fp` | `200 / 403` | Full secure authentication with SHA-1 matching. |
+| `CREARE_USOREM_PLENUM` | `nomen, email, pass, fp` | `200 / 400` | Registers Anima user with Argon2id hashed password (dynamic salt). |
+| `INTRARE_PLENUM` | `email, pass, fp` | `200 / 403` | Full secure authentication with Argon2id matching and legacy SHA-1 migration. |
 | `INDEX_FABULATIONUM` | `nomen, fp` | `200` | Lists user's rooms (comma separated). |
 | `ADDERE_NUNTIUM` | `nomen, room, message` | `200` | Appends a chat message to the DB. |
 | `LEGENDE_NUNTIOS` | `nomen, room, fp` | `200` | Fetches full message history in flat text format. |
 | `SERVARE_OPTIONES` | `nomen, options_json, fp` | `200` | Stores persistent JSON UI configurations. |
 | `LEGERE_OPTIONES` | `nomen, fp` | `200` | Reads persistent JSON UI configurations. |
 | `RENOMINARE_USOREM` | `vetus_nomen, novum_nomen` | `200` | Renames a user (cascades automatically in DB). |
-| `DELERE_RATIONEM` | `nomen` | `200` | Erases user profile, options, and chat logs. |
+| `MUTARE_TESSARAM` | `nomen, vetus_pass, nova_pass, fp` | `200 / 401 / 403` | Safely changes user password (verifies and stores as Argon2id). |
+| `DELERE_RATIONEM` | `nomen, fp` | `200 / 403` | Erases user profile, options, and chat logs. |
 | `STATUM_CLAVIS_LLM` | `provider, key` | `200` | Returns the current PostgreSQL-backed key state. |
 | `NOTARE_EVENTUM_CLAVIS_LLM` | `provider, key, model, event_type, http_code, error_kind, detail` | `200` | Persists a key event and updates the key state. |
 | `SYNC_CLAVES_LLM` | `provider` | `200` | Forces a provider key sync from `tabularium/provisores`. |
