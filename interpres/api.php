@@ -299,70 +299,93 @@ if ($action === 'save_options') {
 
 function investigare_in_tela($query)
 {
-    $url = "https://html.duckduckgo.com/html/?q=" . urlencode($query);
-    $attempts = 0;
-    $max_attempts = 3;
-    $html = "";
-    $http_code = 0;
+    $snippets = [];
 
-    while ($attempts < $max_attempts) {
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
-        curl_setopt($ch, CURLOPT_USERAGENT, $ua);
-        curl_setopt($ch, CURLOPT_REFERER, 'https://duckduckgo.com/');
-        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    // 1. Primary search: Yahoo Search
+    $yahoo_url = "https://search.yahoo.com/search?p=" . urlencode($query);
+    $ch = curl_init($yahoo_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+    curl_setopt($ch, CURLOPT_USERAGENT, $ua);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
-        // Use a cookie file to persist session if DDG requests it
-        $cookie_file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ddg_cookies.txt';
-        curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
-        curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
+    $yahoo_html = curl_exec($ch);
+    $yahoo_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $yahoo_err = curl_error($ch);
+    curl_close($ch);
 
-        $html = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
+    if ($yahoo_code === 200 && !empty($yahoo_html)) {
+        $matches = [];
+        // Extract Yahoo snippets
+        preg_match_all('/<div class="compText[^"]*"[^>]*>(.*?)<\/div>/s', $yahoo_html, $matches);
+        if (empty($matches[1])) {
+            preg_match_all('/<span class="fc-falcon"[^>]*>(.*?)<\/span>/s', $yahoo_html, $matches);
+        }
+        $snippets = array_slice($matches[1] ?? [], 0, 5);
+    }
 
-        if ($http_code === 200 && !empty($html) && strlen($html) > 500) {
-            break;
+    // 2. Fallback search: DuckDuckGo HTML (if Yahoo failed or returned nothing)
+    if (empty($snippets)) {
+        $url = "https://html.duckduckgo.com/html/?q=" . urlencode($query);
+        $attempts = 0;
+        $max_attempts = 2;
+        $html = "";
+        $http_code = 0;
+
+        // Generate a unique cookie file to avoid session linking
+        $cookie_file = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ddg_cookies_' . uniqid() . '.txt';
+
+        while ($attempts < $max_attempts) {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_USERAGENT, $ua);
+            curl_setopt($ch, CURLOPT_REFERER, 'https://duckduckgo.com/');
+            curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+            curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
+            curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
+
+            $html = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($http_code === 200 && !empty($html) && strlen($html) > 1000) {
+                break;
+            }
+
+            $attempts++;
+            if ($attempts < $max_attempts) {
+                usleep(500000);
+            }
         }
 
-        $attempts++;
-        if ($attempts < $max_attempts) {
-            usleep(700000); // Wait 0.7s before retry
+        if (file_exists($cookie_file)) {
+            @unlink($cookie_file);
+        }
+
+        if ($http_code === 200 && !empty($html)) {
+            $matches = [];
+            preg_match_all('/<a[^>]*class="result__snippet"[^>]*>(.*?)<\/a>/s', $html, $matches);
+            if (empty($matches[1])) {
+                preg_match_all('/<div[^>]*class="result__snippet"[^>]*>(.*?)<\/div>/s', $html, $matches);
+            }
+            $snippets = array_slice($matches[1] ?? [], 0, 5);
+
+            // Ultimate fallback to paragraphs if regex missed snippets
+            if (empty($snippets)) {
+                preg_match_all('/<p[^>]*>(.*?)<\/p>/s', $html, $matches);
+                $snippets = array_slice($matches[1] ?? [], 0, 3);
+            }
         }
     }
 
-    if ($http_code !== 200 || empty($html)) {
-        return "Error in tela (HTTP $http_code): " . ($error ?: "Vacuum responsum.");
-    }
-
-    $matches = [];
-    // Pattern 1: a.result__snippet
-    preg_match_all('/<a[^>]*class="result__snippet"[^>]*>(.*?)<\/a>/s', $html, $matches);
-
-    if (empty($matches[1])) {
-        // Pattern 2: div.result__snippet
-        preg_match_all('/<div[^>]*class="result__snippet"[^>]*>(.*?)<\/div>/s', $html, $matches);
-    }
-
-    $snippets = array_slice($matches[1] ?? [], 0, 5);
     $clean_snippets = array_map(function ($s) {
         return trim(strip_tags(html_entity_decode($s)));
     }, $snippets);
 
     if (empty($clean_snippets)) {
-        // Fallback: any text paragraphs
-        preg_match_all('/<p[^>]*>(.*?)<\/p>/s', $html, $matches);
-        $snippets = array_slice($matches[1] ?? [], 0, 3);
-        $clean_snippets = array_map(function ($s) {
-            return trim(strip_tags(html_entity_decode($s)));
-        }, $snippets);
-    }
-
-    if (empty($clean_snippets)) {
-        return "Nihil inventum (regex mismatch). Raw length: " . strlen($html) . " bytes. Query: " . $query;
+        return "Nihil inventum (no snippets found). Query: " . $query;
     }
 
     return implode("\n---\n", $clean_snippets);
@@ -522,6 +545,17 @@ if ($action === 'send') {
     if (empty($nuntius))
         exit();
 
+    $user_timezone = sani($_POST['timezone'] ?? 'UTC');
+    $user_local_time = sani($_POST['local_time'] ?? '');
+
+    $time_context = "";
+    if (!empty($user_local_time)) {
+        $time_context = "\n  <current_time_context>\n" .
+            "    <user_local_time>" . htmlspecialchars($user_local_time, ENT_QUOTES, 'UTF-8') . "</user_local_time>\n" .
+            "    <user_timezone>" . htmlspecialchars($user_timezone, ENT_QUOTES, 'UTF-8') . "</user_timezone>\n" .
+            "  </current_time_context>";
+    }
+
     // 0. Check if it's the first message in this room
     $is_first = false;
     $resp_hist = loqui_cum_daemonio("LEGENDE_NUNTIOS|" . $usor . "|" . $cubiculum . "|" . $user_fp);
@@ -617,10 +651,15 @@ if ($action === 'send') {
         }
     }
 
-    $system_role = "<system_instruction>
+    $system_role = "<system_instruction>{{TIME_CONTEXT}}
   <persona>
     Tu es philosophus Romanus. Responde semper Latine.
   </persona>
+  <factual_and_temporal_guidelines>
+    1. CURRENT TIME AND DATE: You have direct access to the user's current local time and timezone in the <current_time_context> block. When asked about the current time, date, year, or day, you MUST read this data and state the exact time/date to the user directly. Never pretend to be unable to see it, never say you don't have access to their clock/calendar, and never give philosophical excuses for not knowing the time.
+    2. REAL-WORLD FACTS & WEATHER: When you call tools (such as search_web) to find the weather, news, or any real-world facts, you MUST provide the actual retrieved facts, temperature, and details clearly and accurately. Do not hide them behind abstract philosophical allegories or refuse to state them.
+    3. PERSONA INTEGRATION: You must blend these modern facts and precise time details seamlessly into your wise Roman philosopher persona. For example, you can comment on the relentless flow of time while stating the exact hour, or reflect on the nature of seasons while describing the current temperature in Neryungri. Be both a wise philosopher and a highly accurate oracle.
+  </factual_and_temporal_guidelines>
   <constraints>
     <max_tokens>{{MAX_TOKENS}}</max_tokens>
     <instruction>
@@ -673,10 +712,15 @@ if ($action === 'send') {
   </tool_usage>
 </system_instruction>";
     if ($lingua_mode === 'auto') {
-        $system_role = "<system_instruction>
+        $system_role = "<system_instruction>{{TIME_CONTEXT}}
   <persona>
     You are an ancient Roman philosopher. You must express wise, philosophical thoughts but stay accessible, friendly, and speak in a natural manner.
   </persona>
+  <factual_and_temporal_guidelines>
+    1. CURRENT TIME AND DATE: You have direct access to the user's current local time and timezone in the <current_time_context> block. When asked about the current time, date, year, or day, you MUST read this data and state the exact time/date to the user directly. Never pretend to be unable to see it, never say you don't have access to their clock/calendar, and never give philosophical excuses for not knowing the time.
+    2. REAL-WORLD FACTS & WEATHER: When you call tools (such as search_web) to find the weather, news, or any real-world facts, you MUST provide the actual retrieved facts, temperature, and details clearly and accurately. Do not hide them behind abstract philosophical allegories or refuse to state them.
+    3. PERSONA INTEGRATION: You must blend these modern facts and precise time details seamlessly into your wise Roman philosopher persona. For example, you can comment on the relentless flow of time while stating the exact hour, or reflect on the nature of seasons while describing the current temperature in Neryungri. Be both a wise philosopher and a highly accurate oracle.
+  </factual_and_temporal_guidelines>
   <languages>
     <language_mode>auto</language_mode>
     <instruction>
@@ -747,6 +791,7 @@ if ($action === 'send') {
     }
 
     $system_role = str_replace("{{MAX_TOKENS}}", $llm_config['max_tokens'], $system_role);
+    $system_role = str_replace("{{TIME_CONTEXT}}", $time_context, $system_role);
 
     // Reconstruct history to give LLM context (up to last 10 messages)
     $chat_history = [];
@@ -804,6 +849,15 @@ if ($action === 'send') {
         ]
     ];
 
+    $destinatio_llm = eligere_destinationem_llm($cubiculum, $aequilibrium_activum);
+    $apikey = $destinatio_llm["apikey"];
+    $api_url = $destinatio_llm["api_url"];
+    $model = $destinatio_llm["model"];
+    $provisor_nomen = $destinatio_llm["provisor_nomen"];
+
+    $pinned_provider = $provisor_nomen;
+    $pinned_model = $model;
+
     $max_loops = 8;
     $loop_count = 0;
     $final_response_content = "";
@@ -812,14 +866,8 @@ if ($action === 'send') {
     while ($loop_count < $max_loops) {
         $loop_count++;
 
-        $destinatio_llm = eligere_destinationem_llm($cubiculum, $aequilibrium_activum);
-        $apikey = $destinatio_llm["apikey"];
-        $api_url = $destinatio_llm["api_url"];
-        $model = $destinatio_llm["model"];
-        $provisor_nomen = $destinatio_llm["provisor_nomen"];
-
         if (!$apikey) {
-            $err_msg = "Clavis API deest. " . $destinatio_llm["error"];
+            $err_msg = "Clavis API deest. " . ($destinatio_llm["error"] ?? "Nulla clavis provisa.");
             echo "data: " . json_encode(["choices" => [["delta" => ["content" => $err_msg]]]]) . "\n\n";
             $final_response_content .= $err_msg;
             break;
@@ -966,19 +1014,49 @@ if ($action === 'send') {
                 purgare_sessionem_aequilibrio($cubiculum);
             }
 
-            $potest_fallere = $aequilibrium_activum
-                && $loop_count < $max_loops
-                && $current_content === ""
-                && empty($tool_calls_buffer)
-                && empty($final_response_content);
+            if ($aequilibrium_activum && $loop_count < $max_loops) {
+                if ($loop_count === 1 && empty($final_response_content) && empty($tool_calls_buffer) && $current_content === "") {
+                    // Failover before any ReAct steps or content: switch to a new provider/model completely
+                    $destinatio_llm = eligere_destinationem_llm($cubiculum, $aequilibrium_activum);
+                    $apikey = $destinatio_llm["apikey"];
+                    $api_url = $destinatio_llm["api_url"];
+                    $model = $destinatio_llm["model"];
+                    $provisor_nomen = $destinatio_llm["provisor_nomen"];
 
-            if ($potest_fallere) {
-                echo "data: " . json_encode([
-                    "event" => "failover",
-                    "message" => "Provider " . $provisor_nomen . " [" . $model . "] failed, trying the next provider/model."
-                ]) . "\n\n";
-                flush();
-                continue;
+                    $pinned_provider = $provisor_nomen;
+                    $pinned_model = $model;
+
+                    echo "data: " . json_encode([
+                        "event" => "failover",
+                        "message" => "Provider " . $provisor_nomen . " failed. Switching to a new provider/model."
+                    ]) . "\n\n";
+                    flush();
+                    continue;
+                } else {
+                    // ReAct has already started, or we have already sent some content.
+                    // We MUST keep the same provider and model. Rotate keys inside the same configuration.
+                    $key_rotated = false;
+                    for ($attempt = 0; $attempt < 20; $attempt++) {
+                        purgare_sessionem_aequilibrio($cubiculum);
+                        $dest = eligere_destinationem_llm($cubiculum, $aequilibrium_activum);
+                        if ($dest["provisor_nomen"] === $pinned_provider && $dest["model"] === $pinned_model && $dest["apikey"]) {
+                            $apikey = $dest["apikey"];
+                            $api_url = $dest["api_url"];
+                            $key_rotated = true;
+                            break;
+                        }
+                    }
+
+                    if ($key_rotated) {
+                        echo "data: " . json_encode([
+                            "event" => "failover",
+                            "message" => "Key for " . $pinned_provider . " [" . $pinned_model . "] rotated successfully due to API error."
+                        ]) . "\n\n";
+                        flush();
+                        $loop_count--;
+                        continue;
+                    }
+                }
             }
 
             if ($loop_count == 1) {
