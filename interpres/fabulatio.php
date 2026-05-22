@@ -347,9 +347,107 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         .tool-text {
-            color: var(--warn-color); font-weight: bold; font-style: italic;
-            background-color: var(--hover-color); padding: 2px 5px; margin: 2px 0;
-            border: 1px dashed var(--warn-color); display: inline-block;
+            font-family: var(--title-font), monospace;
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: #ff3333;
+            background-color: rgba(20, 2, 2, 0.85);
+            padding: 12px 20px;
+            margin: 15px 0;
+            border: 1px solid rgba(255, 51, 51, 0.4);
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.3), inset 0 0 10px rgba(255, 51, 51, 0.15);
+            border-radius: 4px;
+            display: block;
+            text-align: center;
+            text-transform: uppercase;
+            position: relative;
+            animation: pulse-mystic-red 2.5s infinite ease-in-out;
+            transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 1;
+            filter: none;
+            overflow: hidden;
+        }
+
+        /* Псевдоэлементы для жуткого глитча (хроматическая аберрация и сдвиг слоев) */
+        .tool-text::before,
+        .tool-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+            font-size: inherit;
+            letter-spacing: inherit;
+            text-transform: inherit;
+            pointer-events: none;
+            padding: inherit;
+        }
+
+        .tool-text::before {
+            left: 2px;
+            text-shadow: -2px 0 #ff0055, 0 0 10px rgba(255, 0, 85, 0.5);
+            animation: glitch-anim-1 2s infinite linear alternate-reverse;
+        }
+
+        .tool-text::after {
+            left: -2px;
+            text-shadow: -2px 0 #00e5ff, 2px 2px #ff00c8, 0 0 10px rgba(0, 229, 255, 0.5);
+            animation: glitch-anim-2 2.5s infinite linear alternate-reverse;
+        }
+
+        /* Отключение глитча и затухание при завершении */
+        .tool-text.completed {
+            opacity: 0.12;
+            color: #881111;
+            border-color: rgba(136, 17, 17, 0.2);
+            box-shadow: 0 0 4px rgba(136, 17, 17, 0.1), inset 0 0 4px rgba(136, 17, 17, 0.05);
+            animation: none;
+            filter: grayscale(80%) contrast(70%);
+        }
+
+        .tool-text.completed::before,
+        .tool-text.completed::after {
+            display: none !important;
+        }
+
+        @keyframes pulse-mystic-red {
+            0% { 
+                box-shadow: 0 0 8px rgba(255, 51, 51, 0.2), inset 0 0 6px rgba(255, 51, 51, 0.05); 
+                border-color: rgba(255, 51, 51, 0.3); 
+            }
+            50% { 
+                box-shadow: 0 0 22px rgba(255, 51, 51, 0.6), inset 0 0 14px rgba(255, 51, 51, 0.25); 
+                border-color: rgba(255, 51, 51, 0.8); 
+            }
+            100% { 
+                box-shadow: 0 0 8px rgba(255, 51, 51, 0.2), inset 0 0 6px rgba(255, 51, 51, 0.05); 
+                border-color: rgba(255, 51, 51, 0.3); 
+            }
+        }
+
+        /* Анимации сдвига маски (clip-path) для жуткого цифрового разрыва */
+        @keyframes glitch-anim-1 {
+            0% { clip-path: inset(40% 0 61% 0); }
+            20% { clip-path: inset(92% 0 1% 0); }
+            40% { clip-path: inset(15% 0 80% 0); }
+            60% { clip-path: inset(80% 0 5% 0); }
+            80% { clip-path: inset(5% 0 92% 0); }
+            100% { clip-path: inset(60% 0 15% 0); }
+        }
+
+        @keyframes glitch-anim-2 {
+            0% { clip-path: inset(12% 0 85% 0); }
+            20% { clip-path: inset(65% 0 20% 0); }
+            40% { clip-path: inset(5% 0 92% 0); }
+            60% { clip-path: inset(85% 0 10% 0); }
+            80% { clip-path: inset(30% 0 55% 0); }
+            100% { clip-path: inset(70% 0 15% 0); }
         }
 
         .toggles-bar {
@@ -2562,17 +2660,62 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                         virtualRooms = virtualRooms.filter(r => r !== currentRoom);
                                         loadChats();
                                     } else if (dataNode.event === 'tool_call') {
+                                        // 1. Принудительный синхронный рендеринг накопленного контента Шага 1 перед переходом к инструменту
+                                        if (window.streamingState) {
+                                            const s = window.streamingState;
+                                            if (s.rid) {
+                                                cancelAnimationFrame(s.rid);
+                                                s.rid = 0;
+                                            }
+                                            // Рендерим накопленный текст в СТАРЫЙ normalTextSpan
+                                            if (s.content && normalTextSpan) {
+                                                normalTextSpan.innerHTML = DOMPurify.sanitize(marked.parse(s.content));
+                                                if (typeof renderMathInElement === 'function') {
+                                                    renderMathInElement(normalTextSpan, {
+                                                        delimiters: [
+                                                            {left: '$$', right: '$$', display: true}, {left: '\\[', right: '\\]', display: true},
+                                                            {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}
+                                                        ], throwOnError: false
+                                                    });
+                                                }
+                                            }
+                                            if (s.reasoning && reasoningSpan) {
+                                                const contentDiv = reasoningSpan.querySelector('.reasoning-content');
+                                                if (contentDiv) {
+                                                    contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(s.reasoning));
+                                                }
+                                            }
+                                        }
+
+                                        let latinToolName = `[EVOCATIO: ${dataNode.name.toUpperCase()}]`;
+                                        if (dataNode.name === 'search_web') {
+                                            latinToolName = `[EVOCATIO: Investigatio in Tela]`;
+                                        } else if (dataNode.name === 'search_knowledge_base') {
+                                            latinToolName = `[EVOCATIO: Scripturae Necronomiconis]`;
+                                        }
+
                                         const toolSpan = document.createElement('div');
                                         toolSpan.className = 'tool-text';
-                                        toolSpan.textContent = `[Instrumentum: ${dataNode.name}]`;
+                                        toolSpan.textContent = latinToolName;
+                                        toolSpan.setAttribute('data-text', latinToolName);
                                         chatEl.appendChild(toolSpan);
                                         
                                         oraclePrefix = document.createElement('div');
+                                        oraclePrefix.className = 'msg-oracle';
                                         oraclePrefix.innerHTML = `<strong>Oraculum: </strong>`;
                                         chatEl.appendChild(oraclePrefix);
                                         
                                         normalTextSpan = document.createElement('span');
                                         oraclePrefix.appendChild(normalTextSpan);
+                                        
+                                        if (window.streamingState) {
+                                             window.streamingState.content = "";
+                                             window.streamingState.reasoning = "";
+                                             window.streamingState.activeToolSpan = toolSpan;
+                                        } else {
+                                             window.streamingState = { reasoning: "", content: "", inThought: false, rid: 0, activeToolSpan: toolSpan };
+                                        }
+                                        
                                         chatEl.scrollTop = chatEl.scrollHeight;
                                      } else if (dataNode.choices && dataNode.choices[0].delta) {
                                          const delta = dataNode.choices[0].delta;
@@ -2581,6 +2724,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                                  window.streamingState = { reasoning: "", content: "", inThought: false, rid: 0 };
                                              }
                                              const s = window.streamingState;
+                                              if (s.activeToolSpan) {
+                                                  s.activeToolSpan.classList.add('completed');
+                                                  s.activeToolSpan = null;
+                                              }
                                              if (delta.reasoning_content) s.reasoning += delta.reasoning_content;
                                              if (delta.content) {
                                                  let c = delta.content;
