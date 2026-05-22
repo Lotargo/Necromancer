@@ -1186,6 +1186,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-32" onchange="previewGlitches()"> Hospes: Toasty (MK2 pop-up guy)</label>
                     <hr style="border-color: var(--dim-color); margin: 10px 0;">
                     <h4 style="margin: 5px 0; color: #aaa;">Soni (Sounds)</h4>
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 6px 12px; border: 1px solid var(--dim-color); border-radius: 4px; background: rgba(0,0,0,0.3); box-shadow: inset 0 0 5px rgba(0,0,0,0.5);">
+                        <span style="color: var(--warn-color); font-size: 14px; font-family: 'Orbitron', sans-serif;">Volumen (Volume): <span id="volume-val" style="color: #fff; font-weight: bold;">80%</span></span>
+                        <input type="range" id="sound-volume" min="0" max="100" value="80" style="width: 55%; cursor: pointer; accent-color: var(--main-color);" oninput="updateVolumeLabel(this.value)" onchange="previewGlitches()">
+                    </div>
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-33" onchange="previewGlitches()"> Soni Extincti (Mute Clicks)</label>
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-34" onchange="previewGlitches()"> Melodia Octo-Bit (8-Bit Melody)</label>
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-35" onchange="previewGlitches()"> Claves Mechanicae (Mechanical Keyboard)</label>
@@ -1712,7 +1716,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             { name: "Tenebrae (Pitch Black)", colors: { main: '#333333', bg: '#000', cont: '#000', dim: '#111111', dark: '#050505', hov: '#050505' } }
         ];
 
-        let userState = { level: 1, messages: 0, options: { theme: 0, glitches: [] } };
+        let userState = { level: 1, messages: 0, options: { theme: 0, glitches: [], volume: 80 } };
+
+        function updateVolumeLabel(val) {
+            document.getElementById('volume-val').textContent = val + '%';
+            if (typeof userState !== 'undefined' && userState.options) {
+                userState.options.volume = parseInt(val);
+                if (typeof updateHumSound === 'function') {
+                    updateHumSound();
+                }
+            }
+        }
 
         function loadUserState() {
             fetch('api.php?action=get_user_state')
@@ -1747,6 +1761,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             document.getElementById('glitch-13').parentElement.style.display = 'block';
 
             const g = userState.options.glitches || [];
+            const vol = (typeof userState.options.volume !== 'undefined') ? userState.options.volume : 80;
+            const volSlider = document.getElementById('sound-volume');
+            if (volSlider) volSlider.value = vol;
+            const volText = document.getElementById('volume-val');
+            if (volText) volText.textContent = vol + '%';
+
             document.getElementById('glitch-10').checked = g.includes(10);
             document.getElementById('glitch-11').checked = g.includes(11);
             document.getElementById('glitch-12').checked = g.includes(12);
@@ -1854,7 +1874,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             if (document.getElementById('glitch-36') && document.getElementById('glitch-36').checked) glitches.push(36);
             if (document.getElementById('glitch-37') && document.getElementById('glitch-37').checked) glitches.push(37);
 
-            userState.options = { theme, glitches };
+            const volSlider = document.getElementById('sound-volume');
+            const volume = volSlider ? parseInt(volSlider.value) : 80;
+
+            userState.options = { theme, glitches, volume };
 
             const formData = new URLSearchParams();
             formData.append('action', 'save_options');
@@ -1945,10 +1968,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             for(let i = 0; i < cols; i++) {
                 bloodStreams.push({
                     x: i * PIXEL_SIZE * 3,
-                    height: -Math.random() * 200,
+                    yStart: 0,
+                    yEnd: -Math.random() * 200,
                     speed: 0.5 + Math.random() * 2.0,
                     width: PIXEL_SIZE * (2 + Math.floor(Math.random() * 2)),
-                    maxHeight: window.innerHeight * (0.2 + Math.random() * 0.6)
+                    maxHeight: window.innerHeight * (0.2 + Math.random() * 0.6),
+                    state: 'growing'
                 });
             }
         }
@@ -2081,26 +2106,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             if (isBlood) {
                 // 1. Draw Streams dripping from top of the screen
                 bloodStreams.forEach(s => {
-                    if (s.height < s.maxHeight) {
-                        s.height += s.speed;
+                    if (s.state === 'growing') {
+                        s.yEnd += s.speed;
                         // Splash drops occasionally from the tip
-                        if (Math.random() < 0.015 && s.height > 0) {
+                        if (Math.random() < 0.015 && s.yEnd > 0) {
                             bloodDrops.push({
                                 x: s.x + s.width / 2,
-                                y: s.height,
+                                y: s.yEnd,
                                 vy: s.speed + 0.5 + Math.random() * 1.5,
                                 size: PIXEL_SIZE
                             });
                         }
-                    } else {
-                        // Slowly reset or recede streams occasionally to make dynamic
-                        if (Math.random() < 0.001) {
-                            s.height = -Math.random() * 150;
-                            s.maxHeight = h * (0.15 + Math.random() * 0.5);
+                        if (s.yEnd >= s.maxHeight) {
+                            s.state = 'drying';
+                        }
+                    } else if (s.state === 'drying') {
+                        s.yStart += s.speed * 1.3;
+                        s.yEnd += s.speed * 0.15; // Slow sliding downwards (inertia)
+
+                        if (s.yStart >= s.yEnd) {
+                            // Reset stream
+                            s.state = 'growing';
+                            s.yStart = 0;
+                            s.yEnd = -Math.random() * 150;
+                            s.speed = 0.5 + Math.random() * 2.0;
+                            s.width = PIXEL_SIZE * (2 + Math.floor(Math.random() * 2));
+                            s.maxHeight = h * (0.2 + Math.random() * 0.6);
                         }
                     }
 
-                    const curH = Math.floor(s.height / PIXEL_SIZE) * PIXEL_SIZE;
+                    const curYStart = Math.floor(s.yStart / PIXEL_SIZE) * PIXEL_SIZE;
+                    const curYEnd = Math.floor(s.yEnd / PIXEL_SIZE) * PIXEL_SIZE;
+                    const curH = curYEnd - curYStart;
                     if (curH <= 0) return;
 
                     const curX = s.x;
@@ -2109,17 +2146,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     // Volumetric 3D pixel effect
                     // 1. Shadow background (Dark Maroon) - 1px wider on each side
                     advCtx.fillStyle = '#4A0000';
-                    advCtx.fillRect(curX - PIXEL_SIZE, 0, curW + PIXEL_SIZE * 2, curH);
+                    advCtx.fillRect(curX - PIXEL_SIZE, curYStart, curW + PIXEL_SIZE * 2, curH);
                     // Stream Tip
-                    advCtx.fillRect(curX, curH, curW, PIXEL_SIZE);
+                    advCtx.fillRect(curX, curYEnd, curW, PIXEL_SIZE);
 
                     // 2. Base Blood Red Color
                     advCtx.fillStyle = '#800000';
-                    advCtx.fillRect(curX, 0, curW, curH);
+                    advCtx.fillRect(curX, curYStart, curW, curH);
 
                     // 3. Bright Red Highlights (wet glare)
                     advCtx.fillStyle = '#D00000';
-                    advCtx.fillRect(curX, 0, PIXEL_SIZE, curH - PIXEL_SIZE);
+                    advCtx.fillRect(curX, curYStart, PIXEL_SIZE, curH - PIXEL_SIZE);
                 });
 
                 // 2. Draw Falling Pixels (Splatter Drops with gravity)
@@ -2359,6 +2396,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
     <!-- Web Audio API for retro interaction sounds -->
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function getVolCoeff() {
+            if (typeof userState !== 'undefined' && userState.options && typeof userState.options.volume !== 'undefined') {
+                return userState.options.volume / 100;
+            }
+            return 0.8;
+        }
+
         function playClickSound() {
             if (audioCtx.state === 'suspended') { audioCtx.resume(); }
             const oscillator = audioCtx.createOscillator();
@@ -2368,7 +2412,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
             oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
             
-            gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            const volCoeff = getVolCoeff();
+            gainNode.gain.setValueAtTime(0.08 * volCoeff, audioCtx.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
             
             oscillator.connect(gainNode);
@@ -2389,7 +2434,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             
             if (humGain) {
                 if (isHumEnabled && !isMuted) {
-                    humGain.gain.setTargetAtTime(0.015, audioCtx.currentTime, 0.1);
+                    const volCoeff = getVolCoeff();
+                    humGain.gain.setTargetAtTime(0.015 * volCoeff, audioCtx.currentTime, 0.1);
                 } else {
                     humGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
                 }
@@ -2412,7 +2458,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             
             const isHumEnabled = document.body.classList.contains('hum-sound');
             const isMuted = document.body.classList.contains('mute-sounds');
-            humGain.gain.setValueAtTime((isHumEnabled && !isMuted) ? 0.015 : 0, audioCtx.currentTime);
+            const volCoeff = getVolCoeff();
+            humGain.gain.setValueAtTime((isHumEnabled && !isMuted) ? 0.015 * volCoeff : 0, audioCtx.currentTime);
             
             humOscillator.connect(filter);
             filter.connect(humGain);
@@ -2429,6 +2476,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             if (audioCtx.state === 'suspended') { audioCtx.resume(); }
 
             let t = audioCtx.currentTime;
+            const volCoeff = getVolCoeff();
             
             // Low spindle rumble
             let rumbleOsc = audioCtx.createOscillator();
@@ -2437,8 +2485,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             rumbleOsc.frequency.setValueAtTime(20, t);
             rumbleOsc.frequency.linearRampToValueAtTime(70, t + 1.5);
             rumbleOsc.frequency.linearRampToValueAtTime(75, t + 3.0);
-            rumbleGain.gain.setValueAtTime(0.01, t);
-            rumbleGain.gain.linearRampToValueAtTime(0.05, t + 1.5);
+            rumbleGain.gain.setValueAtTime(0.01 * volCoeff, t);
+            rumbleGain.gain.linearRampToValueAtTime(0.05 * volCoeff, t + 1.5);
             rumbleGain.gain.setTargetAtTime(0, t + 2.5, 0.5);
             
             // High motor whine
@@ -2448,8 +2496,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             whineOsc.frequency.setValueAtTime(80, t);
             whineOsc.frequency.exponentialRampToValueAtTime(1200, t + 1.5);
             whineOsc.frequency.linearRampToValueAtTime(1250, t + 3.0);
-            whineGain.gain.setValueAtTime(0.001, t);
-            whineGain.gain.linearRampToValueAtTime(0.02, t + 1.5);
+            whineGain.gain.setValueAtTime(0.001 * volCoeff, t);
+            whineGain.gain.linearRampToValueAtTime(0.02 * volCoeff, t + 1.5);
             whineGain.gain.setTargetAtTime(0, t + 2.5, 0.5);
             
             let filter = audioCtx.createBiquadFilter();
@@ -2477,7 +2525,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 let clickGain = audioCtx.createGain();
                 clickOsc.type = 'square';
                 clickOsc.frequency.setValueAtTime(600 + Math.random() * 600, cTime);
-                clickGain.gain.setValueAtTime(0.015 + Math.random() * 0.015, cTime);
+                
+                const seekVolCoeff = getVolCoeff();
+                clickGain.gain.setValueAtTime((0.015 + Math.random() * 0.015) * seekVolCoeff, cTime);
                 clickGain.gain.exponentialRampToValueAtTime(0.001, cTime + 0.015);
                 
                 let clickFilter = audioCtx.createBiquadFilter();
@@ -2498,6 +2548,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         function playMechClickSound() {
             if (audioCtx.state === 'suspended') { audioCtx.resume(); }
             let t = audioCtx.currentTime;
+            const volCoeff = getVolCoeff();
             
             // "Thock" sound (low frequency)
             let osc = audioCtx.createOscillator();
@@ -2505,7 +2556,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(150, t);
             osc.frequency.exponentialRampToValueAtTime(40, t + 0.05);
-            gain.gain.setValueAtTime(0.3, t);
+            gain.gain.setValueAtTime(0.3 * volCoeff, t);
             gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
@@ -2518,7 +2569,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             osc2.type = 'square';
             osc2.frequency.setValueAtTime(800, t);
             osc2.frequency.exponentialRampToValueAtTime(200, t + 0.02);
-            gain2.gain.setValueAtTime(0.05, t);
+            gain2.gain.setValueAtTime(0.05 * volCoeff, t);
             gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.02);
             
             let filter = audioCtx.createBiquadFilter();
@@ -2575,7 +2626,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             setInterval(() => {
                 const isWindy = document.body.classList.contains('ambient-wind');
                 const isMuted = document.body.classList.contains('mute-sounds');
-                let targetGain = (isWindy && !isMuted) ? 0.06 : 0;
+                const volCoeff = getVolCoeff();
+                let targetGain = (isWindy && !isMuted) ? 0.06 * volCoeff : 0;
                 windGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 1.0);
             }, 1000);
         }
@@ -2602,7 +2654,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     osc.type = 'square';
                     osc.frequency.setValueAtTime(freq / 2, t);
                     
-                    gain.gain.setValueAtTime(0.015, t);
+                    const volCoeff = getVolCoeff();
+                    gain.gain.setValueAtTime(0.015 * volCoeff, t);
                     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
                     
                     osc.connect(gain);
