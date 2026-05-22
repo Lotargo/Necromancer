@@ -108,7 +108,18 @@ graph TD
 
 ## ⚙️ API Configuration (Quomodo API configurare)
 
-The Oraculum is compatible with all OpenAI-compliant API providers (such as OpenAI, Google Gemini, LocalAI, vLLM, or Ollama). You can configure your model and credentials inside the `.env` file:
+The Oraculum supports two explicit LLM connection modes:
+
+1. **Aequilibrium enabled**: requests use the Lua balancer and provider data from `tabularium/provisores/`.
+2. **Aequilibrium disabled**: requests use a single custom OpenAI-compatible provider from `.env`.
+
+Create `config.env` from `config.env.example` and choose the mode:
+
+```ini
+AEQUILIBRIUM_ENABLED=true
+```
+
+When `AEQUILIBRIUM_ENABLED=false`, configure your OpenAI-compatible provider inside `.env`:
 
 ```ini
 # OpenAI or compatible LLM API endpoints
@@ -117,14 +128,16 @@ OPENAI_API_MODEL=gpt-5.4
 OPENAI_API_KEY=your_secret_api_key_here
 ```
 
-To configure **Google Gemini** via their OpenAI-compatible endpoint:
+To configure **Google Gemini** via its OpenAI-compatible endpoint:
 ```ini
 OPENAI_API_URL=https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
 OPENAI_API_MODEL=gemini-3.5-flash
 OPENAI_API_KEY=your_gemini_api_key_here
 ```
 
-After modifying the `.env` file, simply rebuild your Docker containers:
+When `AEQUILIBRIUM_ENABLED=true`, the `.env` OpenAI values are ignored and the active providers are loaded from `tabularium/provisores/`.
+
+After modifying `.env` or `config.env`, rebuild your Docker containers:
 ```bash
 docker-compose up --build -d
 ```
@@ -136,9 +149,10 @@ docker-compose up --build -d
 The easiest way to summon the entire stack is through the containerization arts.
 
 1. **Prepare the Incantation**:
-   Copy `.env.example` to `.env` and fill in your API configuration.
+   Copy `.env.example` to `.env`, copy `config.env.example` to `config.env`, then choose your LLM mode.
    ```bash
    cp .env.example .env
+   cp config.env.example config.env
    ```
 
 2. **Cast the Spell**:

@@ -15,14 +15,23 @@ cd Necromancer
 ```
 
 ### Step 2: Establish the Mystical Environment
-Copy the example environment file and configure your API credentials and database secrets:
+Copy the example environment files, choose the LLM mode in `config.env`, and configure your custom OpenAI-compatible provider in `.env`:
 ```bash
 cp .env.example .env
+cp config.env.example config.env
 ```
 
-#### Configuration Blueprint (`.env`):
+#### Runtime Mode Blueprint (`config.env`):
 ```ini
-# --- AI Providers & API Balancer Configuration ---
+AEQUILIBRIUM_ENABLED=true
+```
+
+* `true`: use the Lua balancer and ignore the OpenAI values from `.env`.
+* `false`: use only the `.env` OpenAI-compatible provider values.
+
+#### Custom Provider Blueprint (`.env`):
+```ini
+# --- Custom OpenAI-Compatible Provider ---
 OPENAI_API_URL=https://api.openai.com/v1/chat/completions
 OPENAI_API_MODEL=gpt-4o-mini
 OPENAI_API_KEY=your_secret_openai_key_here
