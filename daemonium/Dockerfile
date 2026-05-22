@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app/daemonium
 
 # Copy the pascal source code
-COPY daemonium.pas .
+COPY *.pas ./
 
 # Compile the daemonium
 RUN fpc daemonium.pas
