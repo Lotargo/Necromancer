@@ -4,13 +4,16 @@ session_start();
 function loqui_cum_daemonio($mandatum)
 {
     $daemonium_host = getenv("DAEMONIUM_HOST") ?: "127.0.0.1";
-    $fp = fsockopen($daemonium_host, 8080, $errno, $errstr, 10);
+    $fp = @fsockopen($daemonium_host, 8080, $errno, $errstr, 10);
     if (!$fp) {
+        error_log("[ERR] Daemonium connection failed: $errstr ($errno)");
         return "500|Error|Daemonium non respondet";
     }
     fwrite($fp, $mandatum . "\n");
     $responsum = fgets($fp, 4096);
     fclose($fp);
+    error_log("[DAEMON REQ] " . $mandatum);
+    error_log("[DAEMON RESP] " . trim($responsum));
     return trim($responsum);
 }
 function sani($val) {
@@ -38,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit();
             }
             else {
-                $error = "Nomen vel Fingerprint mismatch! Accessus negatus.";
+                $error = !empty($partes[2]) ? $partes[2] : "Nomen vel Fingerprint mismatch! Accessus negatus.";
             }
         }
         elseif ($actio == "creare") {
@@ -51,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 exit();
             }
             else {
-                $error = "Nomen iam exstat.";
+                $error = !empty($partes[2]) ? $partes[2] : "Nomen iam exstat.";
             }
         }
     }
@@ -303,23 +306,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             return btoa(navigator.userAgent + screen.width + "x" + screen.height + navigator.language + new Date().getTimezoneOffset());
         }
 
-        function setMode(mode) {
+        function setMode(mode, clearErrors = true) {
             document.getElementById('tab-spiritus').classList.toggle('active', mode === 'spiritus');
             document.getElementById('tab-anima').classList.toggle('active', mode === 'anima');
             document.getElementById('form-spiritus').classList.toggle('hidden', mode === 'anima');
             document.getElementById('form-anima').classList.toggle('hidden', mode === 'spiritus');
             localStorage.setItem('login_mode', mode);
             
-            const errorBox = document.getElementById('error-box');
-            if (errorBox) {
-                errorBox.textContent = '';
-                errorBox.classList.add('hidden');
+            if (clearErrors) {
+                const errorBox = document.getElementById('error-box');
+                if (errorBox) {
+                    errorBox.textContent = '';
+                    errorBox.classList.add('hidden');
+                }
             }
         }
 
         // Restore mode
         const savedMode = localStorage.getItem('login_mode') || 'spiritus';
-        setMode(savedMode);
+        setMode(savedMode, false);
 
         // Sync FP inputs
         document.querySelectorAll('form').forEach(form => {
@@ -343,6 +348,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             if (!email || !pass || (action === 'register_anima' && !nomen)) {
                 showError("Vade Retro! Data desunt (Incomplete data).");
+                console.error("Anima Login/Register error: Missing data", { email, pass, nomen, action });
                 return;
             }
 
@@ -354,16 +360,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             formData.append('fp', fp);
             if (remember) formData.append('remember', '1');
 
+            console.log(`Sending API request: ${action} for ${email || nomen}`);
+
             fetch('api.php', { method: 'POST', body: formData })
-                .then(r => r.json())
+                .then(r => {
+                    if (!r.ok) {
+                        throw new Error(`HTTP error! status: ${r.status}`);
+                    }
+                    return r.json();
+                })
                 .then(data => {
+                    console.log("API response data:", data);
                     if (data.status === 'ok') {
                         location.href = 'fabulatio.php';
                     } else {
                         showError(data.message);
+                        console.error("API error response:", data.message);
                     }
                 })
-                .catch(err => showError("Daemonium non respondet. Try again later."));
+                .catch(err => {
+                    console.error("Fetch request failed:", err);
+                    showError("Daemonium non respondet. Try again later.");
+                });
         }
 
         function showError(msg) {

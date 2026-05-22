@@ -67,7 +67,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         .layout-wrapper {
             display: grid;
-            grid-template-columns: 80px 1fr 260px;
+            grid-template-columns: 260px 1fr;
             gap: 15px;
             width: 98vw;
             height: 96vh;
@@ -453,9 +453,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             display: none !important;
         }
 
-        /* Bookshelf Sidebar - legacy compatibility */
-        .sidebar { display: none !important; }
-        .main-chat { display: none !important; }
+        /* Bookshelf Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            border: 2px solid var(--main-color);
+            padding: 15px;
+            box-shadow: 0 0 10px rgba(26, 255, 102, 0.3), inset 0 0 8px rgba(26, 255, 102, 0.3);
+            background-color: var(--container-bg);
+            backdrop-filter: blur(5px);
+            border-radius: 6px;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .sidebar h2 {
+            font-size: 22px;
+            text-shadow: 0 0 6px var(--main-color);
+            margin-top: 0;
+            margin-bottom: 10px;
+            border-bottom: 1px dotted var(--dim-color);
+            padding-bottom: 8px;
+        }
+        .main-chat {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
 
         /* Config Modal Styles */
         #config-modal {
@@ -664,6 +688,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1; pointer-events: none;
         }
+
+        /* Welcome Modal */
+        #welcome-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color); z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 1; transition: opacity 0.5s ease;
+        }
+        .welcome-content {
+            border: 4px double var(--main-color); padding: 40px; text-align: center;
+            background-color: #020802; max-width: 800px;
+            box-shadow: 0 0 25px var(--main-color) inset;
+        }
+        .welcome-text {
+            font-size: 32px; font-weight: bold; text-transform: uppercase;
+            overflow: hidden; white-space: pre-wrap; margin: 0 auto;
+            border-right: .15em solid var(--main-color);
+            animation: blink-caret .75s step-end infinite;
+            text-align: left;
+        }
+        @keyframes blink-caret { from, to { border-color: transparent } 50% { border-color: var(--main-color); } }
     </style>
 </head>
 <body>
