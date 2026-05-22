@@ -1398,10 +1398,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
                     if (rooms.length > 0) {
                         rooms.forEach(room => {
+                            let displayName = room;
+                            if (userState.options && userState.options.chat_names && userState.options.chat_names[room]) {
+                                displayName = userState.options.chat_names[room];
+                            } else if (room.startsWith('fabulatio_')) {
+                                displayName = 'Nova Fabulatio';
+                            }
+                            
                             const li = document.createElement('li');
                             li.className = 'chat-item' + (room === currentRoom ? ' active' : '');
                             li.onclick = () => selectRoom(room);
-                            li.innerHTML = `<span class="chat-item-name" title="${room}">${room}</span> 
+                            li.innerHTML = `<span class="chat-item-name" data-room="${room}" title="${displayName}">${displayName}</span> 
                                           <div class="action-btns">
                                               <button class="ren-btn" onclick="renameRoom('${room}', event)" title="Renominare">[R]</button>
                                               <button class="del-btn" onclick="deleteRoom('${room}', event)" title="Delere">[X]</button>
@@ -1419,7 +1426,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         function selectRoom(room, refreshSidebar = true) {
             if (currentRoom === room && !refreshSidebar) return; 
             currentRoom = room;
-            roomLabel.textContent = `[${room}]`;
+            
+            let displayName = room;
+            if (userState.options && userState.options.chat_names && userState.options.chat_names[room]) {
+                displayName = userState.options.chat_names[room];
+            } else if (room.startsWith('fabulatio_')) {
+                displayName = 'Nova Fabulatio';
+            }
+            roomLabel.textContent = `[${displayName}]`;
+            
             nuntiusInput.disabled = false;
             sendBtn.disabled = false;
             
@@ -1427,7 +1442,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             Array.from(chatListEl.children).forEach(li => {
                 const nameEl = li.querySelector('.chat-item-name');
                 if (nameEl) {
-                    li.classList.toggle('active', nameEl.textContent === room);
+                    li.classList.toggle('active', nameEl.getAttribute('data-room') === room);
                 }
             });
 
@@ -1496,17 +1511,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         function createNewChat() {
-            let tempName = "Nova_Fabulatio";
-            let counter = 1;
-            while (virtualRooms.includes(tempName) || Array.from(chatListEl.children).some(li => {
-                const nameEl = li.querySelector('.chat-item-name');
-                return nameEl && nameEl.textContent === tempName;
-            })) {
-                tempName = "Nova_Fabulatio_" + counter;
-                counter++;
-            }
-            virtualRooms.push(tempName);
-            selectRoom(tempName);
+            const tempRoomId = 'fabulatio_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            virtualRooms.push(tempRoomId);
+            selectRoom(tempRoomId);
         }
 
         let roomToRename = '';
@@ -1514,9 +1521,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         function renameRoom(room, event) {
             event.stopPropagation();
             roomToRename = room;
-            document.getElementById('rename-room-name').textContent = room;
+            
+            let displayName = room;
+            if (userState.options && userState.options.chat_names && userState.options.chat_names[room]) {
+                displayName = userState.options.chat_names[room];
+            } else if (room.startsWith('fabulatio_')) {
+                displayName = 'Nova Fabulatio';
+            }
+            
+            document.getElementById('rename-room-name').textContent = displayName;
             document.getElementById('rename-chat-modal').style.display = 'flex';
-            document.getElementById('rename-chat-input').value = room;
+            document.getElementById('rename-chat-input').value = displayName;
             document.getElementById('rename-chat-input').select();
         }
 
@@ -1526,24 +1541,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         function submitRenameChat() {
             const newName = document.getElementById('rename-chat-input').value.trim();
-            if (newName && newName !== roomToRename) {
-                const safeName = newName.replace(/[^a-zA-Z0-9_-]/g, '');
-                if (safeName) {
-                    const formData = new URLSearchParams();
-                    formData.append('action', 'rename');
-                    formData.append('room', roomToRename);
-                    formData.append('new_room', safeName);
-                    
-                    fetch('api.php', { method: 'POST', body: formData })
-                        .then(() => {
+            
+            let currentDisplayName = roomToRename;
+            if (userState.options && userState.options.chat_names && userState.options.chat_names[roomToRename]) {
+                currentDisplayName = userState.options.chat_names[roomToRename];
+            } else if (roomToRename.startsWith('fabulatio_')) {
+                currentDisplayName = 'Nova Fabulatio';
+            }
+
+            if (newName && newName !== currentDisplayName) {
+                const formData = new URLSearchParams();
+                formData.append('action', 'rename');
+                formData.append('room', roomToRename);
+                formData.append('new_room', newName);
+                
+                fetch('api.php', { method: 'POST', body: formData })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'ok') {
+                            if (!userState.options) {
+                                userState.options = {};
+                            }
+                            if (!userState.options.chat_names) {
+                                userState.options.chat_names = {};
+                            }
+                            userState.options.chat_names[roomToRename] = newName;
                             if (currentRoom === roomToRename) {
-                                currentRoom = safeName;
-                                roomLabel.textContent = `[${currentRoom}]`;
+                                roomLabel.textContent = `[${newName}]`;
                             }
                             loadChats();
                             closeRenameModal();
-                        });
-                }
+                        } else {
+                            configAlert("Error renaming: " + data.message, true);
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        configAlert("Rename failed", true);
+                    });
             } else {
                 closeRenameModal();
             }
@@ -1554,8 +1589,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         function deleteRoom(room, event) {
             event.stopPropagation();
             roomToDelete = room;
+            
+            let displayName = room;
+            if (userState.options && userState.options.chat_names && userState.options.chat_names[room]) {
+                displayName = userState.options.chat_names[room];
+            } else if (room.startsWith('fabulatio_')) {
+                displayName = 'Nova Fabulatio';
+            }
+            
             const roomSpan = document.getElementById('delete-room-name');
-            if (roomSpan) roomSpan.textContent = room;
+            if (roomSpan) roomSpan.textContent = displayName;
             const modal = document.getElementById('delete-chat-modal');
             if (modal) modal.style.display = 'flex';
         }
@@ -1575,6 +1618,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     .then(() => {
                         // Also remove from virtualRooms if it was just drafted
                         virtualRooms = virtualRooms.filter(r => r !== roomToDelete);
+                        if (userState.options && userState.options.chat_names && userState.options.chat_names[roomToDelete]) {
+                            delete userState.options.chat_names[roomToDelete];
+                        }
                         if (currentRoom === roomToDelete) {
                             chatEl.textContent = "Eligere fabulationem e pluteo...";
                             currentRoom = '';
@@ -1745,7 +1791,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
 
 
-        function loadUserState() {
+        function loadUserState(refreshChats = false) {
             fetch('api.php?action=get_user_state')
                 .then(r => r.json())
                 .then(data => {
@@ -1757,6 +1803,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                         }
                         updateOptionsUI();
                         applyOptionsToDOM();
+                        if (refreshChats) {
+                            loadChats(true);
+                        }
                     }
                 });
         }
@@ -1989,8 +2038,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         // Initial UI Update
         updateToggleUI();
-        loadChats(true, true);
-        loadUserState();
+        loadUserState(true);
         
         // Matrix Rain Implementation
         const canvas = document.getElementById('matrixCanvas');
@@ -2501,10 +2549,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                 try {
                                     const dataNode = JSON.parse(dataStr);
                                     if (dataNode.event === 'renamed') {
-                                        const oldRoom = currentRoom;
-                                        currentRoom = dataNode.new_room;
-                                        roomLabel.textContent = `[${currentRoom}]`;
-                                        virtualRooms = virtualRooms.filter(r => r !== oldRoom);
+                                        if (!userState.options) {
+                                            userState.options = {};
+                                        }
+                                        if (!userState.options.chat_names) {
+                                            userState.options.chat_names = {};
+                                        }
+                                        userState.options.chat_names[currentRoom] = dataNode.new_name;
+                                        roomLabel.textContent = `[${dataNode.new_name}]`;
+                                        virtualRooms = virtualRooms.filter(r => r !== currentRoom);
                                         loadChats();
                                     } else if (dataNode.event === 'tool_call') {
                                         const toolSpan = document.createElement('div');
