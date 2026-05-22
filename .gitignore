@@ -2,4 +2,8 @@ daemonium/*.o
 daemonium/daemonium
 tabularium/fabulatio_*.txt
 tabularium/usores.txt
+tabularium/spiritus_mail.log
+*.log
+**/*.log
+tabularium/provisores/*/claves.txt
 .env*
