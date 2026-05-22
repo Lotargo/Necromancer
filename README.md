@@ -113,14 +113,14 @@ The Oraculum is compatible with all OpenAI-compliant API providers (such as Open
 ```ini
 # OpenAI or compatible LLM API endpoints
 OPENAI_API_URL=https://api.openai.com/v1/chat/completions
-OPENAI_API_MODEL=gpt-4o-mini
+OPENAI_API_MODEL=gpt-5.4
 OPENAI_API_KEY=your_secret_api_key_here
 ```
 
 To configure **Google Gemini** via their OpenAI-compatible endpoint:
 ```ini
 OPENAI_API_URL=https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
-OPENAI_API_MODEL=gemini-1.5-flash
+OPENAI_API_MODEL=gemini-3.5-flash
 OPENAI_API_KEY=your_gemini_api_key_here
 ```
 
