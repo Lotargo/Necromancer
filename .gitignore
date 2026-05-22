@@ -7,3 +7,5 @@ tabularium/spiritus_mail.log
 **/*.log
 tabularium/provisores/*/claves.txt
 .env*
+tmp/
+
