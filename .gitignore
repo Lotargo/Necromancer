@@ -8,6 +8,7 @@ tabularium/spiritus_mail.log
 tabularium/provisores/*/claves.txt
 .env*
 config.env
+interpres/tmp_payload.txt
 tmp/
 .agent/
 

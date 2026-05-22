@@ -48,7 +48,7 @@ local PORTUS = 8081
 
 -- Tabularium (Database) ubi provisores habitant
 local VIA_PROVISORUM = "../tabularium/provisores/"
-local NOMINA_PROVISORUM = {"gemini", "groq", "cerebras", "sambanova"}
+local NOMINA_PROVISORUM = {"gemini", "groq", "cerebras"}
 
 -- Structurae Datorum (Data Structures)
 -- Indices pro Round-Robin (Servantur in memoria perenniter)

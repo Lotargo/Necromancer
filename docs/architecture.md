@@ -26,7 +26,7 @@ The system operates as a distributed microservice stack composed of four primary
                v                     v
    +-----------+-----------+   +-----+-----------+
    |      chat_daemonium   |   |   AI Providers  |
-   |    (FreePascal Core)  |   | (Gemini/OpenAI) |
+   |    (FreePascal Core)  |   | (Gemini/Groq/Cerebras) |
    +-----------+-----------+   +-----------------+
                |
                | libpq (SQL connection)
@@ -72,7 +72,9 @@ Built on top of PHP 8.3 and Vanilla HTML5/CSS3/Javascript, `Interpres` acts as b
   * Intercepts AJAX requests from the browser.
   * Validates session data (`$_SESSION['usor']` and `$_SESSION['fp']`).
   * Establishes brief TCP socket connections to `chat_daemonium` to synchronize state (e.g. validating password hashes or pulling options).
-  * Fetches API keys from the Lua balancer (`Aequilibrium`) on port `8081`.
+  * Chooses between a single custom OpenAI-compatible provider from `.env` or the Lua balancer (`Aequilibrium`) depending on `AEQUILIBRIUM_ENABLED`.
+  * Fetches rotated provider/key/model candidates from `Aequilibrium` on port `8081` when balancing is enabled.
+  * Logs key outcomes back to `Daemonium`, which persists key health in PostgreSQL.
   * Sends requests to external LLM providers and streams the raw response back to the client using PHP's `event-stream` interface.
 
 ---
@@ -82,8 +84,9 @@ Built on top of PHP 8.3 and Vanilla HTML5/CSS3/Javascript, `Interpres` acts as b
 Written in pure **Lua** and executed via **LuaJIT**, `Aequilibrium` is an extremely lightweight proxy service that rotates API credentials and LLM endpoints.
 
 * **Key Features**:
-  * Rotates API keys using a stateful Round-Robin index mapped per user session.
-  * Decouples the frontend from directly accessing keys or knowing backend endpoints.
+  * Rotates providers, API keys, and models using stateful Round-Robin indices.
+  * Pins a session to one provider/key/model until `Interpres` explicitly unpins it.
+  * Works together with PostgreSQL-backed key status from `Daemonium`, so resting or disabled keys can be skipped before use.
   * Employs LuaJIT's FFI (Foreign Function Interface) library to perform high-speed socket binds (`bind()`, `listen()`, `accept()`, `recv()`, `send()`).
   * Secured against system crashes using a globally wrapped `pcall` (protected call) framework, ensuring file descriptor auto-closure under heavy load.
 
@@ -97,6 +100,7 @@ In modernizing the system, we migrated the storage layer from linear flat files 
   * **Thread Safety**: Eliminates file locking and data corruption when multiple requests access the backend.
   * **Performance**: Replaces slow $O(N)$ and $O(N^2)$ sequential disk-scanning loops with high-speed indexes ($O(\log N)$ searches).
   * **Data Integrity**: Enforces strict primary keys, foreign key constraints, and relational cascades (`ON DELETE CASCADE`).
+  * **LLM Key State**: Stores key lifecycle information such as active, resting, disabled, recent HTTP result, and key event history.
 
 ---
 
@@ -123,3 +127,6 @@ All communication between `Interpres` and `Daemonium` occurs over raw TCP socket
 | `LEGERE_OPTIONES` | `nomen, fp` | `200` | Reads persistent JSON UI configurations. |
 | `RENOMINARE_USOREM` | `vetus_nomen, novum_nomen` | `200` | Renames a user (cascades automatically in DB). |
 | `DELERE_RATIONEM` | `nomen` | `200` | Erases user profile, options, and chat logs. |
+| `STATUM_CLAVIS_LLM` | `provider, key` | `200` | Returns the current PostgreSQL-backed key state. |
+| `NOTARE_EVENTUM_CLAVIS_LLM` | `provider, key, model, event_type, http_code, error_kind, detail` | `200` | Persists a key event and updates the key state. |
+| `SYNC_CLAVES_LLM` | `provider` | `200` | Forces a provider key sync from `tabularium/provisores`. |

@@ -1,104 +1,165 @@
-# ⚙️ LLM Providers & Load Balancing Guide - Necromancer
+# LLM Providers & Load Balancing Guide - Necromancer
 
 This guide explains how the LLM load-balancing architecture works, how to configure API providers, add models, rotate keys, and secure configurations.
 
 > [!IMPORTANT]
 > The load balancer is used only when `AEQUILIBRIUM_ENABLED=true` in `config.env`.
 > If `AEQUILIBRIUM_ENABLED=false`, `Interpres` skips the Lua balancer entirely and uses the single OpenAI-compatible provider defined in `.env`.
+> The currently maintained balancer providers in this repository are `gemini`, `groq`, and `cerebras`.
 
 ---
 
-## 🏛️ Load Balancer Architecture (`Aequilibrium`)
+## Load Balancer Architecture (`Aequilibrium`)
 
-The **Aequilibrium** balancer (`aequilibrium/aequilibrium.lua`) is a high-performance socket microservice written in LuaJIT. It runs natively on port `8081` and performs two key tasks:
-1. **Round-Robin Provider Rotation**: It cycles through the list of active API providers to balance traffic.
-2. **Round-Robin Key Rotation**: For each active provider, it automatically rotates through their list of configured API keys (avoiding rate limits).
-3. **Session Anchoring**: For conversations utilizing multi-step reasoning (ReAct/CoT), it anchors the session ID to the selected provider and key to prevent context-switching errors.
+The **Aequilibrium** balancer (`aequilibrium/aequilibrium.lua`) is a lightweight LuaJIT socket microservice running on port `8081`.
 
----
+It currently provides:
 
-## 🔌 Zero-Config Active Provider Filtering
-
-The balancer implements smart, zero-config active provider filtering. It dynamically scans the subdirectories inside `tabularium/provisores/` on startup and every 60 seconds (hot-reload).
-
-### How it works:
-A provider is considered **active** and added to the balancing pool only if:
-1. `claves.txt` exists and contains **at least one** API key.
-2. `modela.txt` exists and contains **at least one** model identifier.
-3. `url.txt` exists and contains the valid API endpoint.
-
-> [!IMPORTANT]  
-> If any of these files are empty, missing, or contain no valid lines, the load balancer **automatically skips the provider** without throwing any errors. The balancer will seamlessly distribute requests among the remaining active providers.
-> 
-> If **no** providers have keys configured, the balancer will return a clean error code (`500`) to `Interpres` indicating that no active providers are available.
+1. **Round-Robin Provider Rotation**: cycles across active providers.
+2. **Round-Robin Key Rotation**: rotates keys within each provider.
+3. **Session Anchoring**: pins a conversation session to one provider/key/model during a multi-step interaction.
+4. **Early Failure Failover**: if a provider/model fails before streaming starts, `Interpres` unpins the session and requests the next candidate.
+5. **PostgreSQL-backed Key State**: key health is tracked in PostgreSQL.
+6. **Automatic Key Sync**: PostgreSQL key-state records are synchronized from `tabularium/provisores/*/claves.txt`, so newly added keys appear automatically and removed keys do not remain as zombie records.
 
 ---
 
-## 📂 Directory Structure for Providers
+## Active Provider Rules
 
-All provider configurations are stored under `tabularium/provisores/`. Each provider must have its own subdirectory:
+The balancer reads provider configuration from `tabularium/provisores/`.
 
-```
+A provider is considered active only if:
+
+1. `claves.txt` exists and contains at least one key.
+2. `modela.txt` exists and contains at least one model.
+3. `url.txt` exists and contains a valid endpoint.
+
+If any of these are missing or empty, that provider is skipped automatically.
+If no providers are active, `Interpres` receives a clean `500` response indicating that no providers are available.
+
+---
+
+## Directory Layout
+
+```text
 tabularium/provisores/
-├── gemini/
-│   ├── claves.txt         <-- Real API keys (one per line, Git-ignored)
-│   ├── claves.txt.example <-- Example template
-│   ├── modela.txt         <-- Model names to rotate (one per line)
-│   └── url.txt            <-- Provider API base URL
-├── groq/
-│   ├── claves.txt
-│   ├── claves.txt.example
-│   ├── modela.txt
-│   └── url.txt
-...
+|-- gemini/
+|   |-- claves.txt
+|   |-- claves.txt.example
+|   |-- modela.txt
+|   `-- url.txt
+|-- groq/
+|   |-- claves.txt
+|   |-- claves.txt.example
+|   |-- modela.txt
+|   `-- url.txt
+`-- cerebras/
+    |-- claves.txt
+    |-- claves.txt.example
+    |-- modela.txt
+    `-- url.txt
 ```
 
 ---
 
-## 🛠️ Step-by-Step Configuration Guide
+## Recommended Models
 
-To add or update keys and models for a provider, follow these simple steps:
+These are the current repository defaults for inexpensive usage and relatively friendly free-tier limits:
 
-### Step 1: Copy and populate keys
-Locate the provider's folder under `tabularium/provisores/<name>/`. Copy the example file to create your active keys file:
+* `gemini-2.5-flash-lite`
+* `gemini-2.0-flash-lite`
+* `llama-3.1-8b-instant` (Groq)
+* `openai/gpt-oss-20b` (Groq)
+* `llama3.1-8b` (Cerebras)
+
+At the time of this update, `sambanova` is intentionally excluded from active balancing in this repository because its credit model no longer fits the project's free-tier rotation strategy.
+
+---
+
+## Key State And Quarantine
+
+Key state is tracked in PostgreSQL through `llm_key_status` and `llm_key_events`.
+
+The current runtime behavior is:
+
+* `429` or repeated rate-limit behavior: the key is placed into a 30-minute rest period.
+* Region or location restrictions: treated as temporary rest, not permanent disable.
+* `401`, `402`, or non-region `403`: treated as invalid/auth/billing failures and the key is disabled.
+* `400` / `404`: treated as request/model errors, not as permanent key failures.
+* `5xx` and transport failures: treated as transient provider-side issues.
+
+Because the key registry is synced from the on-disk `claves.txt` files, adding or removing keys from those files automatically updates the PostgreSQL view of the pool.
+
+---
+
+## Step-by-Step Configuration
+
+### Step 1: Populate keys
+
+Copy the template for your provider and create a real `claves.txt`:
+
 ```bash
 cp tabularium/provisores/gemini/claves.txt.example tabularium/provisores/gemini/claves.txt
 ```
-Open `claves.txt` and paste your real API keys, **one key per line**.
 
-### Step 2: Configure models to rotate
-Open `modela.txt` in the same directory and write the models you want to use, **one model per line**. The balancer will rotate requests among these models:
-* Example `gemini/modela.txt`:
-  ```text
-  gemini-1.5-flash
-  gemini-1.5-pro
-  ```
+Put one real API key per line.
 
-### Step 3: Verify the API URL
-Check `url.txt` to ensure it points to the correct endpoint.
-* Example `gemini/url.txt`:
-  ```text
-  https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
-  ```
+### Step 2: Configure models
+
+Write one model per line into `modela.txt`.
+
+Example `gemini/modela.txt`:
+
+```text
+gemini-2.5-flash-lite
+gemini-2.0-flash-lite
+```
+
+### Step 3: Verify endpoint
+
+Check `url.txt` and make sure it points to the provider's OpenAI-compatible endpoint.
+
+Example `gemini/url.txt`:
+
+```text
+https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
+```
 
 ---
 
-## 🛡️ Security & Git Safeguards
+## Security And Git Hygiene
 
-All real API keys (**`claves.txt`**) are strictly ignored in `.gitignore` to prevent any credentials leak:
+Real key files are ignored by Git:
+
 ```ini
-# Ignored secrets inside .gitignore
 tabularium/provisores/*/claves.txt
 ```
-* **Always commit `.example` templates** instead of the real `claves.txt` files.
-* **If a key was tracked by Git previously**, untrack it immediately from the Git index while keeping it on your local disk:
-  ```bash
-  git rm --cached tabularium/provisores/<provider>/claves.txt
-  ```
+
+Rules:
+
+* Commit only `.example` templates.
+* Do not commit real keys.
+* If a real key file was ever staged, remove it from the index with:
+
+```bash
+git rm --cached tabularium/provisores/<provider>/claves.txt
+```
 
 ---
 
-## 🔄 Live Configuration Reloading (Hot-Reload)
+## Live Reload
 
-You do **not** need to restart or rebuild your Docker containers when adding, removing, or modifying API keys or models!
-The balancer (`Aequilibrium`) automatically checks for file modifications **every 60 seconds** and re-builds its internal active provider cache. You can modify keys live on your production server.
+You do not need to rebuild containers when changing provider files.
+
+* `Aequilibrium` re-reads provider configuration on its refresh cycle.
+* `Daemonium` synchronizes PostgreSQL key-state records from the same files during runtime.
+
+This keeps:
+
+* active keys
+* disabled keys
+* resting keys
+* newly added keys
+* removed keys
+
+consistent between disk and database.

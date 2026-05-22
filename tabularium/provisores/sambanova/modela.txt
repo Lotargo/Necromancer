@@ -1,4 +1,2 @@
-DeepSeek-V3.1
-Qwen3-235B
-DeepSeek-V3.1-Terminus
 gpt-oss-120b
+Meta-Llama-3.3-70B-Instruct

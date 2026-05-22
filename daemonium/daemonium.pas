@@ -9,10 +9,13 @@ const
   PORTUS = 8080;
   TABULARIUM_SCIENTIA = '../tabularium/scientia/scientia.txt';
   SPIRITUS_MAIL_LOG = '../tabularium/spiritus_mail.log';
+  TABULARIUM_PROVISORES = '../tabularium/provisores/';
+  LLM_SYNC_INTERVAL_MINUTES = 1.0 / 1440.0;
 
 var
   DBConn: TPQConnection;
   DBTran: TSQLTransaction;
+  UltimaSyncClavium: TStringList;
 
 type
   TResponsum = record
@@ -30,6 +33,163 @@ function HashPassword(Pass: String): String;
 begin
   // Cryptographically secure hashing with a static salt
   Result := SHA1Print(SHA1String(Pass + 'NecromancerSalt1337'));
+end;
+
+function HashClavisLLM(Clavis: String): String;
+begin
+  Result := SHA1Print(SHA1String('LLMKeySalt1337::' + Clavis));
+end;
+
+function BrevisClavisLLM(Clavis: String): String;
+begin
+  if Length(Clavis) <= 8 then
+    Result := Clavis
+  else
+    Result := Copy(Clavis, 1, 4) + '...' + RightStr(Clavis, 4);
+end;
+
+function LegereLineasNonVacuas(Via: String): TStringList;
+var
+  F: TextFile;
+  Linea: String;
+begin
+  Result := TStringList.Create;
+  if not FileExists(Via) then
+    Exit;
+
+  AssignFile(F, Via);
+  Reset(F);
+  try
+    while not EOF(F) do
+    begin
+      ReadLn(F, Linea);
+      Linea := Trim(Linea);
+      if Linea <> '' then
+        Result.Add(Linea);
+    end;
+  finally
+    CloseFile(F);
+  end;
+end;
+
+function IndexUltimaSyncProvider(Provider: String): Integer;
+begin
+  Result := UltimaSyncClavium.IndexOfName(Provider);
+end;
+
+function DebetSynchronizareProvider(Provider: String): Boolean;
+var
+  Idx: Integer;
+  Ultima: TDateTime;
+begin
+  Result := True;
+  Idx := IndexUltimaSyncProvider(Provider);
+  if Idx <> -1 then
+  begin
+    Ultima := StrToFloatDef(UltimaSyncClavium.ValueFromIndex[Idx], 0);
+    if (Ultima > 0) and ((Now - Ultima) < LLM_SYNC_INTERVAL_MINUTES) then
+      Result := False;
+  end;
+end;
+
+procedure MemorareSyncProvider(Provider: String);
+var
+  Idx: Integer;
+begin
+  Idx := IndexUltimaSyncProvider(Provider);
+  if Idx = -1 then
+    UltimaSyncClavium.Add(Provider + '=' + FloatToStr(Now))
+  else
+    UltimaSyncClavium.ValueFromIndex[Idx] := FloatToStr(Now);
+end;
+
+function SynchronizareClavesLLMProvider(Provider: String; ForceSync: Boolean = False): String;
+var
+  Query: TSQLQuery;
+  Claves, Hashes, Hints: TStringList;
+  I: Integer;
+  KeyHash, KeyHint, ProviderDir, ClavesPath, InClause: String;
+begin
+  if (not ForceSync) and (not DebetSynchronizareProvider(Provider)) then
+    Exit(FormareResponsum(200, 'Successus', 'Synchronizatio recens iam facta est'));
+
+  ProviderDir := TABULARIUM_PROVISORES + Provider + '/';
+  ClavesPath := ProviderDir + 'claves.txt';
+
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  Claves := LegereLineasNonVacuas(ClavesPath);
+  Hashes := TStringList.Create;
+  Hints := TStringList.Create;
+  try
+    for I := 0 to Claves.Count - 1 do
+    begin
+      KeyHash := HashClavisLLM(Claves[I]);
+      KeyHint := BrevisClavisLLM(Claves[I]);
+      Hashes.Add(KeyHash);
+      Hints.Add(KeyHint);
+
+      Query.SQL.Text :=
+        'INSERT INTO llm_key_status (provider, key_hash, key_hint, status, updated_at) ' +
+        'VALUES (:provider, :key_hash, :key_hint, ''active'', CURRENT_TIMESTAMP) ' +
+        'ON CONFLICT (provider, key_hash) DO UPDATE SET key_hint = EXCLUDED.key_hint, updated_at = CURRENT_TIMESTAMP';
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ParamByName('key_hash').AsString := KeyHash;
+      Query.ParamByName('key_hint').AsString := KeyHint;
+      Query.ExecSQL;
+    end;
+
+    if Hashes.Count > 0 then
+    begin
+      InClause := '';
+      for I := 0 to Hashes.Count - 1 do
+      begin
+        if InClause <> '' then
+          InClause := InClause + ',';
+        InClause := InClause + QuotedStr(Hashes[I]);
+      end;
+
+      Query.SQL.Text := 'DELETE FROM llm_key_events WHERE provider = :provider AND key_hash NOT IN (' + InClause + ')';
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ExecSQL;
+
+      Query.SQL.Text := 'DELETE FROM llm_key_status WHERE provider = :provider AND key_hash NOT IN (' + InClause + ')';
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ExecSQL;
+    end
+    else
+    begin
+      Query.SQL.Text := 'DELETE FROM llm_key_events WHERE provider = :provider';
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ExecSQL;
+
+      Query.SQL.Text := 'DELETE FROM llm_key_status WHERE provider = :provider';
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ExecSQL;
+    end;
+
+    DBTran.CommitRetaining;
+    MemorareSyncProvider(Provider);
+    Result := FormareResponsum(200, 'Successus', IntToStr(Claves.Count) + ' claves synchronizatae sunt');
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
+  end;
+  Hints.Free;
+  Hashes.Free;
+  Claves.Free;
+  Query.Free;
+end;
+
+procedure SynchronizareOmnesClavesLLM;
+begin
+  SynchronizareClavesLLMProvider('gemini', True);
+  SynchronizareClavesLLMProvider('groq', True);
+  SynchronizareClavesLLMProvider('cerebras', True);
 end;
 
 procedure InitDatabase;
@@ -129,8 +289,46 @@ begin
     Query.SQL.Text := 'CREATE INDEX IF NOT EXISTS idx_fabulatio_nomen_cubiculum ON fabulatio(nomen, cubiculum);';
     Query.ExecSQL;
 
+    Query.SQL.Text :=
+      'CREATE TABLE IF NOT EXISTS llm_key_status (' +
+      '  provider VARCHAR(128) NOT NULL,' +
+      '  key_hash VARCHAR(64) NOT NULL,' +
+      '  key_hint VARCHAR(32) NOT NULL,' +
+      '  status VARCHAR(32) NOT NULL DEFAULT ''active'',' +
+      '  quarantine_until TIMESTAMP NULL,' +
+      '  disabled_reason TEXT,' +
+      '  last_http_code INTEGER,' +
+      '  last_error_kind VARCHAR(128),' +
+      '  success_count INTEGER NOT NULL DEFAULT 0,' +
+      '  failure_count INTEGER NOT NULL DEFAULT 0,' +
+      '  last_success_at TIMESTAMP NULL,' +
+      '  last_failure_at TIMESTAMP NULL,' +
+      '  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,' +
+      '  PRIMARY KEY (provider, key_hash)' +
+      ');';
+    Query.ExecSQL;
+
+    Query.SQL.Text :=
+      'CREATE TABLE IF NOT EXISTS llm_key_events (' +
+      '  id SERIAL PRIMARY KEY,' +
+      '  provider VARCHAR(128) NOT NULL,' +
+      '  key_hash VARCHAR(64) NOT NULL,' +
+      '  key_hint VARCHAR(32) NOT NULL,' +
+      '  model VARCHAR(255),' +
+      '  event_type VARCHAR(64) NOT NULL,' +
+      '  http_code INTEGER,' +
+      '  error_kind VARCHAR(128),' +
+      '  detail TEXT,' +
+      '  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP' +
+      ');';
+    Query.ExecSQL;
+
+    Query.SQL.Text := 'CREATE INDEX IF NOT EXISTS idx_llm_key_events_lookup ON llm_key_events(provider, key_hash, created_at);';
+    Query.ExecSQL;
+
     DBTran.Commit;
     Query.Free;
+    SynchronizareOmnesClavesLLM;
     WriteLn('[!] Database tables and schema successfully verified/created.');
   except
     on E: Exception do
@@ -139,6 +337,191 @@ begin
       Halt(1);
     end;
   end;
+end;
+
+function StatumClavisLLM(Provider, Clavis: String): String;
+var
+  Query: TSQLQuery;
+  KeyHash: String;
+  StatusValue: String;
+begin
+  Result := FormareResponsum(200, 'Successus', 'active');
+  SynchronizareClavesLLMProvider(Provider);
+  KeyHash := HashClavisLLM(Clavis);
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text :=
+      'UPDATE llm_key_status ' +
+      'SET status = ''active'', quarantine_until = NULL, disabled_reason = NULL, updated_at = CURRENT_TIMESTAMP ' +
+      'WHERE provider = :provider AND key_hash = :key_hash AND status = ''resting'' AND quarantine_until IS NOT NULL AND quarantine_until <= CURRENT_TIMESTAMP';
+    Query.ParamByName('provider').AsString := Provider;
+    Query.ParamByName('key_hash').AsString := KeyHash;
+    Query.ExecSQL;
+    DBTran.CommitRetaining;
+
+    Query.SQL.Text :=
+      'SELECT status FROM llm_key_status WHERE provider = :provider AND key_hash = :key_hash';
+    Query.ParamByName('provider').AsString := Provider;
+    Query.ParamByName('key_hash').AsString := KeyHash;
+    Query.Open;
+    if not Query.EOF then
+    begin
+      StatusValue := Query.FieldByName('status').AsString;
+      Result := FormareResponsum(200, 'Successus', StatusValue);
+    end;
+    Query.Close;
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
+  end;
+  Query.Free;
+end;
+
+function NotareEventumClavisLLM(Provider, Clavis, Model, EventType, HttpCodeText, ErrorKind, Detail: String): String;
+var
+  Query: TSQLQuery;
+  KeyHash, KeyHint: String;
+  HttpCodeValue: Integer;
+  RateLimitRecentCount: Integer;
+begin
+  Result := FormareResponsum(200, 'Successus', 'Eventum notatum est');
+  SynchronizareClavesLLMProvider(Provider);
+  KeyHash := HashClavisLLM(Clavis);
+  KeyHint := BrevisClavisLLM(Clavis);
+  HttpCodeValue := StrToIntDef(HttpCodeText, 0);
+
+  Query := TSQLQuery.Create(DBConn);
+  Query.Database := DBConn;
+  Query.Transaction := DBTran;
+  try
+    Query.SQL.Text :=
+      'INSERT INTO llm_key_status (provider, key_hash, key_hint) VALUES (:provider, :key_hash, :key_hint) ' +
+      'ON CONFLICT (provider, key_hash) DO NOTHING';
+    Query.ParamByName('provider').AsString := Provider;
+    Query.ParamByName('key_hash').AsString := KeyHash;
+    Query.ParamByName('key_hint').AsString := KeyHint;
+    Query.ExecSQL;
+
+    Query.SQL.Text :=
+      'INSERT INTO llm_key_events (provider, key_hash, key_hint, model, event_type, http_code, error_kind, detail) ' +
+      'VALUES (:provider, :key_hash, :key_hint, :model, :event_type, :http_code, :error_kind, :detail)';
+    Query.ParamByName('provider').AsString := Provider;
+    Query.ParamByName('key_hash').AsString := KeyHash;
+    Query.ParamByName('key_hint').AsString := KeyHint;
+    Query.ParamByName('model').AsString := Model;
+    Query.ParamByName('event_type').AsString := EventType;
+    Query.ParamByName('http_code').AsInteger := HttpCodeValue;
+    Query.ParamByName('error_kind').AsString := ErrorKind;
+    Query.ParamByName('detail').AsString := Detail;
+    Query.ExecSQL;
+
+    if EventType = 'SUCCESS' then
+    begin
+      Query.SQL.Text :=
+        'UPDATE llm_key_status SET ' +
+        'status = ''active'', quarantine_until = NULL, disabled_reason = NULL, last_http_code = :http_code, ' +
+        'last_error_kind = NULL, success_count = success_count + 1, last_success_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP ' +
+        'WHERE provider = :provider AND key_hash = :key_hash';
+      Query.ParamByName('http_code').AsInteger := HttpCodeValue;
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ParamByName('key_hash').AsString := KeyHash;
+      Query.ExecSQL;
+    end
+    else if EventType = 'RATE_LIMIT' then
+    begin
+      Query.SQL.Text :=
+        'SELECT COUNT(*) AS cnt FROM llm_key_events ' +
+        'WHERE provider = :provider AND key_hash = :key_hash AND event_type = ''RATE_LIMIT'' ' +
+        'AND created_at >= (CURRENT_TIMESTAMP - INTERVAL ''30 minutes'')';
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ParamByName('key_hash').AsString := KeyHash;
+      Query.Open;
+      RateLimitRecentCount := Query.FieldByName('cnt').AsInteger;
+      Query.Close;
+
+      if RateLimitRecentCount >= 2 then
+      begin
+        Query.SQL.Text :=
+          'UPDATE llm_key_status SET ' +
+          'status = ''resting'', quarantine_until = (CURRENT_TIMESTAMP + INTERVAL ''30 minutes''), disabled_reason = :disabled_reason, ' +
+          'last_http_code = :http_code, last_error_kind = :error_kind, failure_count = failure_count + 1, ' +
+          'last_failure_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP ' +
+          'WHERE provider = :provider AND key_hash = :key_hash';
+      end
+      else
+      begin
+        Query.SQL.Text :=
+          'UPDATE llm_key_status SET ' +
+          'last_http_code = :http_code, last_error_kind = :error_kind, failure_count = failure_count + 1, ' +
+          'last_failure_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP ' +
+          'WHERE provider = :provider AND key_hash = :key_hash';
+      end;
+      Query.ParamByName('disabled_reason').AsString := 'rate_limit_rest';
+      Query.ParamByName('http_code').AsInteger := HttpCodeValue;
+      Query.ParamByName('error_kind').AsString := ErrorKind;
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ParamByName('key_hash').AsString := KeyHash;
+      Query.ExecSQL;
+    end
+    else if EventType = 'REGION_BLOCKED' then
+    begin
+      Query.SQL.Text :=
+        'UPDATE llm_key_status SET ' +
+        'status = ''resting'', quarantine_until = (CURRENT_TIMESTAMP + INTERVAL ''30 minutes''), disabled_reason = :disabled_reason, ' +
+        'last_http_code = :http_code, last_error_kind = :error_kind, failure_count = failure_count + 1, ' +
+        'last_failure_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP ' +
+        'WHERE provider = :provider AND key_hash = :key_hash';
+      Query.ParamByName('disabled_reason').AsString := 'region_blocked';
+      Query.ParamByName('http_code').AsInteger := HttpCodeValue;
+      Query.ParamByName('error_kind').AsString := ErrorKind;
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ParamByName('key_hash').AsString := KeyHash;
+      Query.ExecSQL;
+    end
+    else if EventType = 'DISABLE' then
+    begin
+      Query.SQL.Text :=
+        'UPDATE llm_key_status SET ' +
+        'status = ''disabled'', quarantine_until = NULL, disabled_reason = :disabled_reason, ' +
+        'last_http_code = :http_code, last_error_kind = :error_kind, failure_count = failure_count + 1, ' +
+        'last_failure_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP ' +
+        'WHERE provider = :provider AND key_hash = :key_hash';
+      Query.ParamByName('disabled_reason').AsString := ErrorKind;
+      Query.ParamByName('http_code').AsInteger := HttpCodeValue;
+      Query.ParamByName('error_kind').AsString := ErrorKind;
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ParamByName('key_hash').AsString := KeyHash;
+      Query.ExecSQL;
+    end
+    else
+    begin
+      Query.SQL.Text :=
+        'UPDATE llm_key_status SET ' +
+        'last_http_code = :http_code, last_error_kind = :error_kind, failure_count = failure_count + 1, ' +
+        'last_failure_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP ' +
+        'WHERE provider = :provider AND key_hash = :key_hash';
+      Query.ParamByName('http_code').AsInteger := HttpCodeValue;
+      Query.ParamByName('error_kind').AsString := ErrorKind;
+      Query.ParamByName('provider').AsString := Provider;
+      Query.ParamByName('key_hash').AsString := KeyHash;
+      Query.ExecSQL;
+    end;
+
+    DBTran.CommitRetaining;
+    WriteLn('[LLM KEY] provider=', Provider, ' key=', KeyHint, ' event=', EventType, ' http=', HttpCodeValue, ' kind=', ErrorKind);
+  except
+    on E: Exception do
+    begin
+      DBTran.RollbackRetaining;
+      Result := FormareResponsum(500, 'Error', E.Message);
+    end;
+  end;
+  Query.Free;
 end;
 
 function VerificareFingerprint(Nomen, FP: String): Boolean;
@@ -995,6 +1378,31 @@ begin
           Responsum := FormareResponsum(403, 'Error', 'FP mismatch');
       end;
     end
+    else if Mandatum = 'STATUM_CLAVIS_LLM' then
+    begin
+      if DataInput.Count > 2 then
+        Responsum := StatumClavisLLM(Parametrum1, Parametrum2);
+    end
+    else if Mandatum = 'NOTARE_EVENTUM_CLAVIS_LLM' then
+    begin
+      if DataInput.Count > 6 then
+      begin
+        if DataInput.Count > 7 then
+          Responsum := NotareEventumClavisLLM(Parametrum1, Parametrum2, DataInput[3], DataInput[4], DataInput[5], DataInput[6], DataInput[7])
+        else
+          Responsum := NotareEventumClavisLLM(Parametrum1, Parametrum2, DataInput[3], DataInput[4], DataInput[5], DataInput[6], '');
+      end;
+    end
+    else if Mandatum = 'SYNC_CLAVES_LLM' then
+    begin
+      if Parametrum1 <> '' then
+        Responsum := SynchronizareClavesLLMProvider(Parametrum1, True)
+      else
+      begin
+        SynchronizareOmnesClavesLLM;
+        Responsum := FormareResponsum(200, 'Successus', 'Omnes claves LLM synchronizatae sunt');
+      end;
+    end
     else
       Responsum := FormareResponsum(400, 'Error', 'Mandatum incognitum');
 
@@ -1014,6 +1422,7 @@ var
   Len: longint;
   OptVal: longint;
 begin
+  UltimaSyncClavium := TStringList.Create;
   WriteLn('------------------------------------------------');
   WriteLn(' [!] ДЕМОН ПРОБУДИЛСЯ / DAEMON AWAKENED (Process #', fpgetpid, ')');
   WriteLn(' [!] ВНИМАНИЕ: Если ты это читаешь, значит ты полез в логи докера. Зачем?');
