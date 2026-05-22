@@ -1,5 +1,5 @@
 # Navis pro Daemonio (FreePascal)
-FROM public.ecr.aws/debian/debian:bullseye-slim
+FROM public.ecr.aws/debian/debian:bookworm-slim
 
 RUN apt-get update && apt-get install -y \
     fpc \
@@ -11,9 +11,11 @@ WORKDIR /app/daemonium
 
 # Copy the pascal source code
 COPY *.pas ./
+COPY hashlib.cfg ./
+COPY HashLib4Pascal/ ./HashLib4Pascal/
 
 # Compile the daemonium
-RUN fpc daemonium.pas
+RUN fpc @hashlib.cfg daemonium.pas
 
 # Expose the socket port
 EXPOSE 8080

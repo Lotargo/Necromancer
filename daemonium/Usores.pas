@@ -159,7 +159,7 @@ begin
     if ExistensEmail then
       Exit(FormareResponsum(400, 'Error', 'Email iam registratum'));
 
-    PassHash := HashPassword(Password);
+    PassHash := HashPassword(Password, Nomen);
 
     if ExistensNomen then
     begin
@@ -206,10 +206,11 @@ var
   PassHash: String;
   RegNomen, RegFP, RegPass: String;
   Invenitur: Boolean;
+  Valido: Boolean;
+  NovusPassHash: String;
 begin
   Result := FormareResponsum(401, 'Error', 'Email vel Password non recte');
   Invenitur := False;
-  PassHash := HashPassword(Password);
 
   Query := TSQLQuery.Create(DBConn);
   Query.Database := DBConn;
@@ -230,7 +231,34 @@ begin
 
     if Invenitur then
     begin
-      if RegPass = PassHash then
+      Valido := False;
+
+      // Проверка формата хеша
+      if Length(RegPass) = 40 then
+      begin
+        // Legacy SHA-1
+        if RegPass = LegacySHA1(Password) then
+        begin
+          Valido := True;
+          // Автоматическая миграция на Argon2id с солью в виде RegNomen
+          NovusPassHash := HashPassword(Password, RegNomen);
+          Query.SQL.Text := 'UPDATE usores SET password_hash = :pass WHERE nomen = :nomen';
+          Query.ParamByName('pass').AsString := NovusPassHash;
+          Query.ParamByName('nomen').AsString := RegNomen;
+          Query.ExecSQL;
+          DBTran.CommitRetaining;
+          WriteLn('[MIGRATION] Usor "', RegNomen, '" password hash migrated from SHA-1 to Argon2id.');
+        end;
+      end
+      else if Length(RegPass) = 64 then
+      begin
+        // Argon2id
+        PassHash := HashPassword(Password, RegNomen);
+        if RegPass = PassHash then
+          Valido := True;
+      end;
+
+      if Valido then
       begin
         if RegFP <> FP then
         begin
@@ -308,14 +336,13 @@ end;
 function MutareTessellam(Nomen, VetusPass, NovaPass: String): String;
 var
   Query: TSQLQuery;
-  VetusPassHash, NovaPassHash: String;
+  NovaPassHash: String;
   SavedHash: String;
   Invenitur: Boolean;
+  Valido: Boolean;
 begin
   if NovaPass = '' then Exit(FormareResponsum(400, 'Error', 'Nova tessera vacua est'));
   Invenitur := False;
-  VetusPassHash := HashPassword(VetusPass);
-  NovaPassHash := HashPassword(NovaPass);
 
   Query := TSQLQuery.Create(DBConn);
   Query.Database := DBConn;
@@ -331,17 +358,35 @@ begin
     end;
     Query.Close;
 
-    if Invenitur and (SavedHash = VetusPassHash) then
+    if Invenitur then
     begin
-      Query.SQL.Text := 'UPDATE usores SET password_hash = :novum WHERE nomen = :nomen';
-      Query.ParamByName('novum').AsString := NovaPassHash;
-      Query.ParamByName('nomen').AsString := Nomen;
-      Query.ExecSQL;
-      DBTran.CommitRetaining;
-      Result := FormareResponsum(200, 'Successus', 'Tessera mutata est');
+      Valido := False;
+      if Length(SavedHash) = 40 then
+      begin
+        if SavedHash = LegacySHA1(VetusPass) then
+          Valido := True;
+      end
+      else if Length(SavedHash) = 64 then
+      begin
+        if SavedHash = HashPassword(VetusPass, Nomen) then
+          Valido := True;
+      end;
+
+      if Valido then
+      begin
+        NovaPassHash := HashPassword(NovaPass, Nomen);
+        Query.SQL.Text := 'UPDATE usores SET password_hash = :novum WHERE nomen = :nomen';
+        Query.ParamByName('novum').AsString := NovaPassHash;
+        Query.ParamByName('nomen').AsString := Nomen;
+        Query.ExecSQL;
+        DBTran.CommitRetaining;
+        Result := FormareResponsum(200, 'Successus', 'Tessera mutata est');
+      end
+      else
+        Result := FormareResponsum(401, 'Error', 'Vetus tessera non est recta');
     end
     else
-      Result := FormareResponsum(401, 'Error', 'Vetus tessera non est recta vel usor non inventus');
+      Result := FormareResponsum(404, 'Error', 'Usor non inventus');
   except
     on E: Exception do
     begin

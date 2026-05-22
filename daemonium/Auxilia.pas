@@ -5,7 +5,7 @@ unit Auxilia;
 interface
 
 uses
-  Classes, SysUtils, sha1, strutils;
+  Classes, SysUtils, sha1, strutils, Cryptographia;
 
 const
   SPIRITUS_MAIL_LOG = '../tabularium/spiritus_mail.log';
@@ -13,8 +13,9 @@ const
   LLM_SYNC_INTERVAL_MINUTES = 1.0 / 1440.0;
 
 function FormareResponsum(Codex: Integer; Nuntius, Data: String): String;
-function HashPassword(Pass: String): String;
-function HashClavisLLM(Clavis: String): String;
+function HashPassword(const Pass, Salt: String): String;
+function HashClavisLLM(const Clavis: String): String;
+function LegacySHA1(const Pass: String): String;
 function BrevisClavisLLM(Clavis: String): String;
 function LegereLineasNonVacuas(Via: String): TStringList;
 
@@ -25,15 +26,22 @@ begin
   Result := IntToStr(Codex) + '|' + Nuntius + '|' + Data + sLineBreak;
 end;
 
-function HashPassword(Pass: String): String;
+function HashPassword(const Pass, Salt: String): String;
 begin
-  // Cryptographically secure hashing with a static salt
-  Result := SHA1Print(SHA1String(Pass + 'NecromancerSalt1337'));
+  // Cryptographically secure hashing with Argon2id using dynamic salt (username or email)
+  Result := HashPasswordArgon2(Pass, Salt);
 end;
 
-function HashClavisLLM(Clavis: String): String;
+function HashClavisLLM(const Clavis: String): String;
 begin
-  Result := SHA1Print(SHA1String('LLMKeySalt1337::' + Clavis));
+  // Fast Argon2id hashing for LLM provider keys in database
+  Result := HashPasswordArgon2('LLMKeySalt1337::' + Clavis, 'LLMKeySalt', 1, 4096, 1);
+end;
+
+function LegacySHA1(const Pass: String): String;
+begin
+  // Legacy SHA1 with static salt for backwards compatibility during migration
+  Result := SHA1Print(SHA1String(Pass + 'NecromancerSalt1337'));
 end;
 
 function BrevisClavisLLM(Clavis: String): String;

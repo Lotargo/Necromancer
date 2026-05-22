@@ -19,7 +19,7 @@
 
 **Necromancer** is an arcane chat interface and local backend system wrapped in the aesthetics of a retro CRT terminal and the lore of dark magic. It acts as a gateway to interact with an AI **Oraculum** (Oracle), using Latin incantations, occult themes, and ancient Roman personas.
 
-While the project preserves its **retro CRT shell** and immersive mechanical soundscape, we have evolved its underlying architecture. The backend has migrated from fragile flat-text scroll files to a robust **PostgreSQL** database, coupled with **cryptographically secure SHA-1 salted hashing** for user credentials. This ensures transactional integrity and security without losing a single drop of its gothic visual and auditory atmosphere.
+While the project preserves its **retro CRT shell** and immersive mechanical soundscape, we have evolved its underlying architecture. The backend has migrated from fragile flat-text scroll files to a robust **PostgreSQL** database, coupled with the state-of-the-art **Argon2id hashing** (with seamless legacy **SHA-1 migration**) for user credentials. This ensures transactional integrity and security without losing a single drop of its gothic visual and auditory atmosphere.
 
 Detailed internal structures and setup guidelines can be found in our **[Occult Library / Docs](docs/)**.
 
@@ -38,10 +38,18 @@ graph TD
 ```
 
 ### 1. 🦇 Daemonium (The Core Backend)
-* **Language**: FreePascal (`daemonium/daemonium.pas`)
+* **Language**: FreePascal (`daemonium/`)
 * **Role**: The heart and soul of the system. Operating on port `8080`, it manages socket connections, authorization, and message histories.
-* **Modernization**: Equipped with FPC's `sqldb`, `pqconnection`, and `sha1` units. It establishes thread-safe communication with PostgreSQL using parameterized queries to fully eliminate SQL injection vulnerabilities.
-* **LLM Key Registry**: Stores provider key health, cooldown TTLs, and failure events in PostgreSQL so disabled or resting keys are filtered automatically.
+* **Modularized Architecture**: The daemon is split into 7 specialized units:
+  * `Auxilia`: Common helpers and response wrappers.
+  * `Cryptographia`: Pure Pascal **Argon2id** password hashing using `HashLib4Pascal`.
+  * `Database`: Thread-safe PostgreSQL connection and schema initialization.
+  * `ClavesLlm`: Dynamic API key status, rate-limit quarantine, and synchronization.
+  * `Usores`: User registration, profile management, and automatic legacy SHA-1 migration.
+  * `Fabulatio`: Interactive chat room lists and message history.
+  * `Scientia`: Local keyword-indexed RAG search.
+  * `daemonium.pas`: Core high-performance TCP socket dispatcher.
+* **LLM Key Registry**: Protected by a fast Argon2id variant, it stores provider key health and failure events in PostgreSQL to filter disabled or resting keys automatically.
 
 ### 2. 👁️ Interpres (The Web Frontend & BFF)
 * **Language**: PHP 8.3 + Vanilla JS
@@ -60,7 +68,7 @@ graph TD
 ### 4. 🗃️ Tabularium (The Database)
 * **System**: **PostgreSQL 15-alpine**
 * **Role**: Replaces the ancient flat-text database. It stores structured tables:
-  * `usores`: Nicknames, emails, salted SHA-1 password hashes, and user types.
+  * `usores`: Nicknames, emails, secure Argon2id (and legacy SHA-1) password hashes, and user types.
   * `optiones`: Persisted user UI configurations stored as validated JSON objects.
   * `fabulatio`: Full conversational logs, automatically indexed for instantaneous search and fast retrieval.
   * **Relational Cascades**: Integrated `ON DELETE CASCADE ON UPDATE CASCADE` rules automatically clean user settings and chats when a soul is deleted.
@@ -71,7 +79,7 @@ graph TD
 
 ### 🎭 Genera Accessus (Login Modes)
 * **SPIRITUS**: Anonymous guest entry. Sign in with a nickname and explore the forum.
-* **ANIMA**: Advanced email and password registration. Credentials are safely salted and hashed before committing to PostgreSQL.
+* **ANIMA**: Advanced email and password registration. Credentials are cryptographically protected using state-of-the-art **Argon2id** (with seamless backwards-compatible **SHA-1 migration** upon login).
 
 ### 🔮 Oraculum Agenticum (Agentic Features)
 * **Instrumenta (Tools)**: The Oracle dynamically utilizes `search_web` (via DDG scraper) or `search_knowledge_base` (RAG from local occult texts).
