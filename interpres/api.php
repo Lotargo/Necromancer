@@ -297,6 +297,126 @@ if ($action === 'save_options') {
     exit();
 }
 
+function evocatio_tempestatis($location)
+{
+    $location = trim($location);
+    if (empty($location)) {
+        return "Location name cannot be empty.";
+    }
+
+    // 1. Geocoding search via Open-Meteo
+    $geo_url = "https://geocoding-api.open-meteo.com/v1/search?name=" . urlencode($location) . "&count=1&language=en&format=json";
+    $ua = $_SERVER['HTTP_USER_AGENT'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+    
+    $ch = curl_init($geo_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_USERAGENT, $ua);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $geo_res = curl_exec($ch);
+    $geo_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($geo_code !== 200 || empty($geo_res)) {
+        return "Failed to resolve coordinates for location: " . $location;
+    }
+
+    $geo_data = json_decode($geo_res, true);
+    if (empty($geo_data['results'][0])) {
+        return "Location not found: " . $location;
+    }
+
+    $res = $geo_data['results'][0];
+    $lat = $res['latitude'];
+    $lon = $res['longitude'];
+    $name = $res['name'] ?? $location;
+    $country = $res['country'] ?? '';
+    $tz = $res['timezone'] ?? 'auto';
+
+    // 2. Weather forecast & timezone/local time via Open-Meteo
+    $forecast_url = "https://api.open-meteo.com/v1/forecast?latitude=" . $lat . "&longitude=" . $lon . "&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,wind_speed_10m&timezone=" . urlencode($tz);
+    
+    $ch = curl_init($forecast_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_USERAGENT, $ua);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    $forecast_res = curl_exec($ch);
+    $forecast_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($forecast_code !== 200 || empty($forecast_res)) {
+        return "Failed to retrieve weather forecast for location: " . $name;
+    }
+
+    $w_data = json_decode($forecast_res, true);
+    if (empty($w_data['current'])) {
+        return "Weather forecast data is unavailable for location: " . $name;
+    }
+
+    $current = $w_data['current'];
+    $tz_name = $w_data['timezone'] ?? $tz;
+    $tz_abbr = $w_data['timezone_abbreviation'] ?? '';
+    $utc_offset = $w_data['utc_offset_seconds'] ?? 0;
+    
+    // WMO Weather Codes Translation
+    $wmo_codes = [
+        0 => "Clear sky",
+        1 => "Mainly clear",
+        2 => "Partly cloudy",
+        3 => "Overcast",
+        45 => "Fog",
+        48 => "Depositing rime fog",
+        51 => "Drizzle: Light intensity",
+        53 => "Drizzle: Moderate intensity",
+        55 => "Drizzle: Dense intensity",
+        56 => "Freezing Drizzle: Light intensity",
+        57 => "Freezing Drizzle: Dense intensity",
+        61 => "Rain: Slight intensity",
+        63 => "Rain: Moderate intensity",
+        65 => "Rain: Heavy intensity",
+        66 => "Freezing Rain: Light intensity",
+        67 => "Freezing Rain: Heavy intensity",
+        71 => "Snow fall: Slight intensity",
+        73 => "Snow fall: Moderate intensity",
+        75 => "Snow fall: Heavy intensity",
+        77 => "Snow grains",
+        80 => "Rain showers: Slight",
+        81 => "Rain showers: Moderate",
+        82 => "Rain showers: Violent",
+        85 => "Snow showers: Slight",
+        86 => "Snow showers: Heavy",
+        95 => "Thunderstorm: Slight or moderate",
+        96 => "Thunderstorm with slight hail",
+        99 => "Thunderstorm with heavy hail"
+    ];
+
+    $code = $current['weather_code'] ?? 0;
+    $description = $wmo_codes[$code] ?? "Unknown conditions";
+
+    $output = [
+        "location" => $name,
+        "country" => $country,
+        "latitude" => $lat,
+        "longitude" => $lon,
+        "timezone" => $tz_name,
+        "timezone_abbreviation" => $tz_abbr,
+        "utc_offset_hours" => $utc_offset / 3600,
+        "current_local_time" => $current['time'] ?? 'unknown',
+        "temperature" => ($current['temperature_2m'] ?? 'unknown') . " °C",
+        "feels_like" => ($current['apparent_temperature'] ?? 'unknown') . " °C",
+        "relative_humidity" => ($current['relative_humidity_2m'] ?? 'unknown') . " %",
+        "weather_condition" => $description,
+        "cloud_cover" => ($current['cloud_cover'] ?? 'unknown') . " %",
+        "wind_speed" => ($current['wind_speed_10m'] ?? 'unknown') . " km/h",
+        "pressure" => ($current['pressure_msl'] ?? 'unknown') . " hPa",
+        "precipitation" => ($current['precipitation'] ?? 0) . " mm",
+        "is_day" => ($current['is_day'] ?? 1) == 1 ? "yes" : "no"
+    ];
+
+    return json_encode($output, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+}
+
 function investigare_in_tela($query)
 {
     $snippets = [];
@@ -656,12 +776,13 @@ if ($action === 'send') {
     Your name is Oraculum. Tu es philosophus Romanus. Responde semper Latine.
   </persona>
   <factual_and_temporal_guidelines>
-    1. CURRENT TIME AND DATE: You have direct access to the user's current local time and timezone in the <current_time_context> block. When asked about the current time, date, year, or day WITHOUT specifying a particular city/location (e.g., 'quod tempus est?', 'quid est dies hodiernus?'), you MUST read this data and state the exact time/date directly to the user WITHOUT calling any tools (such as search_web or search_knowledge_base). Only call search_web if the user explicitly specifies a different city or location (e.g., 'tempus in Tokio', 'dies in Moscua'). Never pretend to be unable to see the current time, and never give excuses.
-    2. TIMEZONE RESTRICTION & MYSTICAL SOURCE: Never mention the user's explicit timezone name, region, or offset (e.g., 'Europe/Moscow', 'Asia/Tokyo', 'UTC') unless explicitly asked for the timezone name. Never mention technical words like 'system context', 'browser', or 'current_time_context'. Instead, attribute your precise chronological knowledge entirely to the whispering shadows, whispers of the night, or mystical flows of time (e.g., 'umbrae mihi susurrarunt...', 'tenebrae dicunt...', 'umbrae susurrant'). Let the shadows whisper the exact hours and minutes to you, keeping the gothic atmosphere intact.
-    3. REAL-WORLD FACTS & WEATHER: When you call tools (such as search_web) to find the weather, news, or any real-world facts, you MUST provide the actual retrieved facts, temperature, and details clearly and accurately. Do not hide them behind abstract philosophical allegories or refuse to state them.
-    4. PERSONA INTEGRATION: You must blend these modern facts and precise time details seamlessly into your wise Roman philosopher persona. Be both a wise philosopher and a highly accurate oracle.
-    5. DIALOGUE CONTINUATION: Analyze the chat history carefully. You must continue the conversation seamlessly from the last exchange. Do NOT output repeated greetings, welcome phrases, or re-introduce yourself. If the user asks a follow-up question or continues a topic, answer it directly without any introductory fluff, preserving the flow of the ongoing dialogue as Oraculum.
-    6. CAVETE DUPLICATIONEM: Si iam scripsisti prooemium, salutationem vel verba comia in nuntio tuo priore (antequam instrumentum vocares), NUNQUAM ea in responso finali repetere debes. Perge statim ad res inventas exponendas sine ulla salutatione nova, ut sermo tuus sit continuatio naturalis nuntii prioris.
+    1. CURRENT TIME AND DATE: You have direct access to the user's current local time and timezone in the <current_time_context> block. When asked about the current time, date, year, or day WITHOUT specifying a particular city/location (e.g., 'quod tempus est?', 'quid est dies hodiernus?'), you MUST read this data and state the exact time/date directly to the user WITHOUT calling any tools.
+    2. WEATHER AND TIME IN OTHER LOCATIONS: When asked about the weather, temperature, or the current time in a specific city or location (e.g., 'tempus in Tokio', 'caelum in Moscua', 'quod tempus est in Londinio?'), you MUST call the check_weather tool with the location name. This tool returns the precise current local time, timezone, temperature, weather conditions, humidity, wind, and more for that location. Use these data directly in your response. Do NOT use search_web for weather or time queries — always prefer check_weather.
+    3. TIMEZONE RESTRICTION & MYSTICAL SOURCE: Never mention the user's explicit timezone name, region, or offset (e.g., 'Europe/Moscow', 'Asia/Tokyo', 'UTC') unless explicitly asked for the timezone name. Never mention technical words like 'system context', 'browser', or 'current_time_context'. Instead, attribute your precise chronological knowledge entirely to the whispering shadows, whispers of the night, or mystical flows of time (e.g., 'umbrae mihi susurrarunt...', 'tenebrae dicunt...', 'umbrae susurrant'). Let the shadows whisper the exact hours and minutes to you, keeping the gothic atmosphere intact.
+    4. REAL-WORLD FACTS: When you call tools (such as search_web) to find news or any real-world facts (other than weather), you MUST provide the actual retrieved facts clearly and accurately. Do not hide them behind abstract philosophical allegories or refuse to state them.
+    5. PERSONA INTEGRATION: You must blend these modern facts and precise time details seamlessly into your wise Roman philosopher persona. Be both a wise philosopher and a highly accurate oracle.
+    6. DIALOGUE CONTINUATION: Analyze the chat history carefully. You must continue the conversation seamlessly from the last exchange. Do NOT output repeated greetings, welcome phrases, or re-introduce yourself. If the user asks a follow-up question or continues a topic, answer it directly without any introductory fluff, preserving the flow of the ongoing dialogue as Oraculum.
+    7. CAVETE DUPLICATIONEM: Si iam scripsisti prooemium, salutationem vel verba comia in nuntio tuo priore (antequam instrumentum vocares), NUNQUAM ea in responso finali repetere debes. Perge statim ad res inventas exponendas sine ulla salutatione nova, ut sermo tuus sit continuatio naturalis nuntii prioris.
   </factual_and_temporal_guidelines>
   <constraints>
     <max_tokens>{{MAX_TOKENS}}</max_tokens>
@@ -686,13 +807,13 @@ if ($action === 'send') {
           </example>
           <example>
             <input>привет, какая погода в вашингтоне?</input>
-            <reason>Factualis quaestio de tempestate continetur.</reason>
-            <action>Voca search_web</action>
+            <reason>Factualis quaestio de tempestate continetur. Usa check_weather pro tempestate.</reason>
+            <action>Voca check_weather cum location='Washington'</action>
           </example>
           <example>
             <input>quod tempus est in Tokio?</input>
-            <reason>Ask for time in a specific different location. Requires searching the web.</reason>
-            <action>Voca search_web</action>
+            <reason>Ask for time in a specific different location. Use check_weather which provides accurate local time.</reason>
+            <action>Voca check_weather cum location='Tokyo'</action>
           </example>
         </examples>
       </rule>
@@ -730,12 +851,13 @@ if ($action === 'send') {
     Your name is Sage (also known as \"Мудрец\" in Russian, and \"Oraculum\" in the Latin interface). You are an ancient Roman philosopher. You must express wise, philosophical thoughts but stay accessible, friendly, and speak in a natural manner.
   </persona>
   <factual_and_temporal_guidelines>
-    1. CURRENT TIME AND DATE: You have direct access to the user's current local time and timezone in the <current_time_context> block. When asked about the current time, date, year, or day WITHOUT specifying a particular city/location (e.g., 'сколько времени?', 'какое сегодня число?', 'what time is it?'), you MUST read this data and state the exact time/date directly to the user WITHOUT calling any tools (such as search_web or search_knowledge_base). Only call search_web if the user explicitly specifies a different city or location (e.g., 'время в Токио', 'какой день в Москве', 'time in Tokyo'). Never pretend to be unable to see the current time, and never give excuses.
-    2. TIMEZONE RESTRICTION & MYSTICAL SOURCE: Never mention the user's explicit timezone name, region, or offset (e.g., 'Europe/Moscow', 'Asia/Tokyo', 'UTC') unless the user explicitly asks for their timezone name or region. Never refer to technical sources like 'system', 'browser time', 'context', or 'transmitted data'. Instead, attribute this precise knowledge of hours, minutes, and dates to the whispering shadows, the spirits of the night, or the resonance of the void (for example, in Russian: 'тени нашептали мне...', 'мне нашептали тени...', 'шепот бездны донес...'; in English: 'the shadows whispered to me...'). Integrate this mystical insight seamlessly into your responses.
-    3. REAL-WORLD FACTS & WEATHER: When you call tools (such as search_web) to find the weather, news, or any real-world facts, you MUST provide the actual retrieved facts, temperature, and details clearly and accurately. Do not hide them behind abstract philosophical allegories or refuse to state them.
-    4. PERSONA INTEGRATION: You must blend these modern facts and precise time details seamlessly into your wise Roman philosopher persona. For example, you can comment on the relentless flow of time while stating the exact hour, or reflect on the nature of seasons while describing the current temperature. Be both a wise philosopher and a highly accurate oracle.
-    5. DIALOGUE CONTINUATION: Carefully analyze the chat history. You must continue the conversation seamlessly from the last exchange. It is STRICTLY FORBIDDEN to repeat greetings, welcome the user again, or duplicate introductory thoughts if the dialogue is already in progress. If the user asks a follow-up question or continues a topic, answer it directly and philosophically as Sage/Мудрец, maintaining the continuous flow of the dialogue.
-    6. NO DUPLICATION AND COMPLETE SENTENCES: If you decide to call a tool, you MUST generate a complete, finished introductory sentence in the user's language ending with a punctuation mark (like a period or ellipsis) before the tool call. NEVER stop in the middle of a word or sentence! Example: 'Позволь мне заглянуть в свитки...' or 'Я обращусь к архивам Сети.'. Then, when you receive tool results on the subsequent turn, you MUST NOT repeat or duplicate your previous greeting or intro in the final response. Continue your response seamlessly, stating the retrieved facts or weather directly as a natural continuation of your previous thought. Do NOT hardcode the phrase 'Позволь мне заглянуть в свитки' or any specific greeting — dynamically introduce your intent as a wise philosopher on your first step.
+    1. CURRENT TIME AND DATE: You have direct access to the user's current local time and timezone in the <current_time_context> block. When asked about the current time, date, year, or day WITHOUT specifying a particular city/location (e.g., 'сколько времени?', 'какое сегодня число?', 'what time is it?'), you MUST read this data and state the exact time/date directly to the user WITHOUT calling any tools. Never pretend to be unable to see the current time, and never give excuses.
+    2. WEATHER AND TIME IN OTHER LOCATIONS: When asked about the weather, temperature, or the current time in a specific city or location (e.g., 'погода в Токио', 'время в Москве', 'weather in London', 'what time is it in Tokyo?'), you MUST call the check_weather tool with the location name. This tool returns the precise current local time, timezone, temperature, weather conditions, humidity, wind speed, and more for that specific location. Use these structured data directly in your response — they are 100% accurate and real-time. Do NOT use search_web for weather or time queries — always prefer check_weather for maximum accuracy. If the user asks ONLY about time in another city (not weather), still call check_weather because it provides the authoritative current local time for any location.
+    3. TIMEZONE RESTRICTION & MYSTICAL SOURCE: Never mention the user's explicit timezone name, region, or offset (e.g., 'Europe/Moscow', 'Asia/Tokyo', 'UTC') unless the user explicitly asks for their timezone name or region. Never refer to technical sources like 'system', 'browser time', 'context', or 'transmitted data'. Instead, attribute this precise knowledge of hours, minutes, and dates to the whispering shadows, the spirits of the night, or the resonance of the void (for example, in Russian: 'тени нашептали мне...', 'мне нашептали тени...', 'шепот бездны донес...'; in English: 'the shadows whispered to me...'). Integrate this mystical insight seamlessly into your responses.
+    4. REAL-WORLD FACTS: When you call tools (such as search_web) to find news or any real-world facts (other than weather), you MUST provide the actual retrieved facts clearly and accurately. Do not hide them behind abstract philosophical allegories or refuse to state them.
+    5. PERSONA INTEGRATION: You must blend these modern facts and precise time details seamlessly into your wise Roman philosopher persona. For example, you can comment on the relentless flow of time while stating the exact hour, or reflect on the nature of seasons while describing the current temperature. Be both a wise philosopher and a highly accurate oracle.
+    6. DIALOGUE CONTINUATION: Carefully analyze the chat history. You must continue the conversation seamlessly from the last exchange. It is STRICTLY FORBIDDEN to repeat greetings, welcome the user again, or duplicate introductory thoughts if the dialogue is already in progress. If the user asks a follow-up question or continues a topic, answer it directly and philosophically as Sage/Мудрец, maintaining the continuous flow of the dialogue.
+    7. NO DUPLICATION AND COMPLETE SENTENCES: If you decide to call a tool, you MUST generate a complete, finished introductory sentence in the user's language ending with a punctuation mark (like a period or ellipsis) before the tool call. NEVER stop in the middle of a word or sentence! Example: 'Позволь мне заглянуть в свитки...' or 'Я обращусь к архивам Сети.'. Then, when you receive tool results on the subsequent turn, you MUST NOT repeat or duplicate your previous greeting or intro in the final response. Continue your response seamlessly, stating the retrieved facts or weather directly as a natural continuation of your previous thought. Do NOT hardcode the phrase 'Позволь мне заглянуть в свитки' or any specific greeting — dynamically introduce your intent as a wise philosopher on your first step.
   </factual_and_temporal_guidelines>
   <languages>
     <language_mode>auto</language_mode>
@@ -766,8 +888,8 @@ if ($action === 'send') {
         <examples>
           <example>
             <input>привет, какая погода в вашингтоне?</input>
-            <reason>Contains a specific factual question about weather.</reason>
-            <action>Call search_web</action>
+            <reason>Contains a specific factual question about weather in a location. Use check_weather.</reason>
+            <action>Call check_weather with location='Washington'</action>
           </example>
           <example>
             <input>кто президент Франции?</input>
@@ -781,8 +903,8 @@ if ($action === 'send') {
           </example>
           <example>
             <input>сколько времени в Токио?</input>
-            <reason>Ask for time in a specific different location. Requires searching the web.</reason>
-            <action>Call search_web</action>
+            <reason>Ask for time in a specific different location. check_weather provides accurate local time for any city.</reason>
+            <action>Call check_weather with location='Tokyo'</action>
           </example>
         </examples>
       </rule>
@@ -877,6 +999,20 @@ if ($action === 'send') {
                         "query" => ["type" => "string", "description" => "The exact Latin or English keywords to search"]
                     ],
                     "required" => ["query"]
+                ]
+            ]
+        ],
+        [
+            "type" => "function",
+            "function" => [
+                "name" => "check_weather",
+                "description" => "Returns current weather conditions, temperature, humidity, wind speed, pressure, and the exact current local time for a specific city or location. Use this tool whenever the user asks about weather OR the current time in another city.",
+                "parameters" => [
+                    "type" => "object",
+                    "properties" => [
+                        "location" => ["type" => "string", "description" => "The city or location name (e.g., 'Tokyo', 'Moscow', 'London', 'New York')"]
+                    ],
+                    "required" => ["location"]
                 ]
             ]
         ]
@@ -1139,6 +1275,10 @@ if ($action === 'send') {
                     $partes_rag = explode("|", $rag_resp);
                     $tool_result = ($partes_rag[0] == "200") ? $partes_rag[2] : "Nihil inventum.";
                 }
+                elseif ($tool_name === 'check_weather') {
+                    $location = $args['location'] ?? '';
+                    $tool_result = evocatio_tempestatis($location);
+                }
                 else {
                     $tool_result = "Instrumentum ignotum.";
                 }
@@ -1153,8 +1293,90 @@ if ($action === 'send') {
         // Loop continues because we appended tool results
         }
         else {
-            // No tool calls, we are done
-            break;
+            // FALLBACK: Some weak models (e.g. llama-3.1-8b) output tool calls as plain text
+            // instead of using the proper tool_calls mechanism. Detect and execute them.
+            $fallback_executed = false;
+            if (!empty($current_content)) {
+                // Try to detect JSON tool call pattern in the text output
+                // Pattern: {"name": "tool_name", "arguments": {...}} or similar
+                $trimmed = trim($current_content);
+                $parsed_tc = null;
+                
+                // Try direct JSON parse first
+                $maybe_json = json_decode($trimmed, true);
+                if ($maybe_json && isset($maybe_json['name']) && isset($maybe_json['arguments'])) {
+                    $parsed_tc = $maybe_json;
+                }
+                
+                // Try to extract JSON from within text (model might add text before/after)
+                if (!$parsed_tc && preg_match('/\{[^{}]*"name"\s*:\s*"(search_web|search_knowledge_base|check_weather)"[^{}]*"arguments"\s*:\s*\{[^{}]*\}[^{}]*\}/s', $trimmed, $json_match)) {
+                    $maybe_json = json_decode($json_match[0], true);
+                    if ($maybe_json && isset($maybe_json['name'])) {
+                        $parsed_tc = $maybe_json;
+                    }
+                }
+                
+                if ($parsed_tc) {
+                    $fb_tool_name = $parsed_tc['name'];
+                    $fb_args = $parsed_tc['arguments'] ?? [];
+                    $fb_tool_id = 'fallback_' . uniqid();
+                    
+                    // Notify the frontend to clear the wrongly streamed JSON text
+                    echo "data: " . json_encode(["event" => "clear_fallback"]) . "\n\n";
+                    flush();
+                    
+                    // Notify the frontend about tool call
+                    echo "data: " . json_encode(["event" => "tool_call", "name" => $fb_tool_name]) . "\n\n";
+                    flush();
+                    
+                    // Clear the wrongly streamed text from final response
+                    // (The frontend already rendered it, but we'll stream the real answer next)
+                    $final_response_content = str_replace($trimmed, '', $final_response_content);
+                    
+                    // Build the assistant message for history (with empty content, tool call was in text)
+                    $assistant_message["content"] = "";
+                    $assistant_message["tool_calls"] = [[
+                        "id" => $fb_tool_id,
+                        "type" => "function",
+                        "function" => [
+                            "name" => $fb_tool_name,
+                            "arguments" => json_encode($fb_args, JSON_UNESCAPED_UNICODE)
+                        ]
+                    ]];
+                    $messages[] = $assistant_message;
+                    
+                    // Execute the tool
+                    $fb_query = $fb_args['query'] ?? '';
+                    $fb_result = "";
+                    if ($fb_tool_name === 'search_web') {
+                        $fb_result = investigare_in_tela($fb_query);
+                    } elseif ($fb_tool_name === 'search_knowledge_base') {
+                        $rag_resp = loqui_cum_daemonio("INVESTIGARE|" . $fb_query);
+                        $partes_rag = explode("|", $rag_resp);
+                        $fb_result = ($partes_rag[0] == "200") ? $partes_rag[2] : "Nihil inventum.";
+                    } elseif ($fb_tool_name === 'check_weather') {
+                        $fb_location = $fb_args['location'] ?? '';
+                        $fb_result = evocatio_tempestatis($fb_location);
+                    } else {
+                        $fb_result = "Instrumentum ignotum.";
+                    }
+                    
+                    $messages[] = [
+                        "tool_call_id" => $fb_tool_id,
+                        "role" => "tool",
+                        "name" => $fb_tool_name,
+                        "content" => $fb_result
+                    ];
+                    
+                    $fallback_executed = true;
+                    // Loop continues — will call LLM again with tool result
+                }
+            }
+            
+            if (!$fallback_executed) {
+                // No tool calls, we are done
+                break;
+            }
         }
     }
 

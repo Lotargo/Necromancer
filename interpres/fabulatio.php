@@ -2659,6 +2659,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                         roomLabel.textContent = `[${dataNode.new_name}]`;
                                         virtualRooms = virtualRooms.filter(r => r !== currentRoom);
                                         loadChats();
+                                    } else if (dataNode.event === 'clear_fallback') {
+                                        // FALLBACK CLEANUP: Model outputted tool call as text.
+                                        // Clear the wrongly rendered JSON from the chat bubble.
+                                        if (normalTextSpan) {
+                                            normalTextSpan.innerHTML = '';
+                                        }
+                                        if (window.streamingState) {
+                                            window.streamingState.content = '';
+                                        }
                                     } else if (dataNode.event === 'tool_call') {
                                         // 1. Принудительный синхронный рендеринг накопленного контента Шага 1 перед переходом к инструменту
                                         if (window.streamingState) {
@@ -2692,6 +2701,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                                             latinToolName = `[EVOCATIO: Investigatio in Tela]`;
                                         } else if (dataNode.name === 'search_knowledge_base') {
                                             latinToolName = `[EVOCATIO: Scripturae Necronomiconis]`;
+                                        } else if (dataNode.name === 'check_weather') {
+                                            latinToolName = `[EVOCATIO: Tempestatis et Caeli]`;
                                         }
 
                                         const toolSpan = document.createElement('div');
