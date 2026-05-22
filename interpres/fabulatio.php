@@ -2510,6 +2510,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             formData.append('nuntius', msg);
             formData.append('lingua', currentLangMode);
             formData.append('search', currentSearchMode);
+            formData.append('timezone', Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+            formData.append('local_time', new Date().toString());
 
             let reasoningSpan = null;
             let normalTextSpan = document.createElement('span');
