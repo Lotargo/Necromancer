@@ -11,5 +11,4 @@ config.env
 **/tmp_payload.txt
 tmp/
 .agent/
-
-
+scratch/
