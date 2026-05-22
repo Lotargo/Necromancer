@@ -2,6 +2,10 @@
 
 This guide explains how the LLM load-balancing architecture works, how to configure API providers, add models, rotate keys, and secure configurations.
 
+> [!IMPORTANT]
+> The load balancer is used only when `AEQUILIBRIUM_ENABLED=true` in `config.env`.
+> If `AEQUILIBRIUM_ENABLED=false`, `Interpres` skips the Lua balancer entirely and uses the single OpenAI-compatible provider defined in `.env`.
+
 ---
 
 ## 🏛️ Load Balancer Architecture (`Aequilibrium`)

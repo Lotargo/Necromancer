@@ -58,6 +58,21 @@ function loqui_cum_aequilibrio($id_sessionis)
     return trim($responsum);
 }
 
+function env_ad_boolean($nomen, $default = false)
+{
+    $valor = getenv($nomen);
+    if ($valor === false || $valor === '') {
+        return $default;
+    }
+
+    $parsed = filter_var($valor, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    if ($parsed === null) {
+        return $default;
+    }
+
+    return $parsed;
+}
+
 // Public Actions (No Session Required)
 if ($action === 'login_anima' || $action === 'register_anima' || $action === 'forgot_anima') {
     $fp_client = sani($_POST['fp'] ?? '');
@@ -359,20 +374,29 @@ if ($action === 'send') {
         $is_first = true;
     }
 
-    // Aequilibrium: Petere Clavem et Provisorem
-    $aequilibrium_resp = loqui_cum_aequilibrio($cubiculum);
-    $apikey = getenv("OPENAI_API_KEY"); // Fallback
-    $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
-    $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
+    $aequilibrium_activum = env_ad_boolean("AEQUILIBRIUM_ENABLED", true);
+    $apikey = null;
+    $api_url = null;
+    $model = null;
     $provisor_nomen = "Ignotus";
 
-    if ($aequilibrium_resp) {
-        $partes_aeq = explode("|", $aequilibrium_resp);
-        if ($partes_aeq[0] === "200") {
-            $provisor_nomen = $partes_aeq[2];
-            $apikey = $partes_aeq[3];
-            $api_url = $partes_aeq[4];
-            $model = $partes_aeq[5];
+    if ($aequilibrium_activum) {
+        $aequilibrium_resp = loqui_cum_aequilibrio($cubiculum);
+        if ($aequilibrium_resp) {
+            $partes_aeq = explode("|", $aequilibrium_resp);
+            if ($partes_aeq[0] === "200") {
+                $provisor_nomen = $partes_aeq[2];
+                $apikey = $partes_aeq[3];
+                $api_url = $partes_aeq[4];
+                $model = $partes_aeq[5];
+            }
+        }
+    } else {
+        $apikey = getenv("OPENAI_API_KEY") ?: null;
+        $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
+        $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
+        if ($apikey) {
+            $provisor_nomen = "Custom";
         }
     }
 
@@ -426,7 +450,11 @@ if ($action === 'send') {
     }
 
     if (!$apikey) {
-        $msg = "Clavis API deest. Aequilibrium non respondet, et nulla clavis in .env exstat.";
+        if ($aequilibrium_activum) {
+            $msg = "Clavis API deest. Aequilibrium activum est, sed nullum responsum validum cum provisore, clave et modelo accepimus.";
+        } else {
+            $msg = "Clavis API deest. Aequilibrium inactivum est, ergo valores ex .env requiruntur.";
+        }
         echo "data: " . json_encode(["choices" => [["delta" => ["content" => $msg]]]]) . "\n\n";
         loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $msg);
         exit();
@@ -649,7 +677,9 @@ if ($action === 'send') {
             $err_msg = "Error Oraculi (HTTP $http_code): " . $err_str;
 
             // Unpin the provider from the load balancer if it fails
-            purgare_sessionem_aequilibrio($cubiculum);
+            if ($aequilibrium_activum) {
+                purgare_sessionem_aequilibrio($cubiculum);
+            }
 
             // Wait, we could retry if loop_count == 1, but for now we just show the error
             if ($loop_count == 1) {
@@ -719,7 +749,9 @@ if ($action === 'send') {
     loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
 
     // Unpin session from load balancer after ReAct loop finishes
-    purgare_sessionem_aequilibrio($cubiculum);
+    if ($aequilibrium_activum) {
+        purgare_sessionem_aequilibrio($cubiculum);
+    }
 
     exit();
 }

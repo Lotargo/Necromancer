@@ -1,5 +1,5 @@
 # Groq API Claves Example
 # Add your Groq API keys here (one key per line)
 # The load balancer will automatically rotate these keys using Round-Robin
-gsk_YOUR_GROQ_API_KEY_1_HERE
-gsk_YOUR_GROQ_API_KEY_2_HERE
+YOUR_GROQ_API_KEY_1_HERE
+YOUR_GROQ_API_KEY_2_HERE
