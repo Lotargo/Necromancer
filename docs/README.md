@@ -20,6 +20,10 @@ Deep dive into our implementation of salted **SHA-1 hashing**, parameterized SQL
 ### 4. 🔮 [Deployment & Summoning Guide](deployment.md)
 Comprehensive instructions to deploy the stack utilizing Docker Compose, environment variables configuration, and native compiling manuals for FreePascal and PHP development environments.
 
+### 5. ⚙️ [LLM Providers & Load Balancing Configuration](providers.md)
+Detailed setup instructions for LLM API keys and model rotations inside the `tabularium/provisores/` directory, explanation of Aequilibrium's hot-reload mechanics, active provider automatic filtering, and security guidelines.
+
+
 ---
 
 ## 🖤 The Philosophy of Occult Engineering

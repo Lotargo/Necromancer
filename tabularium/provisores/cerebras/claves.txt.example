@@ -1,0 +1,5 @@
+# Cerebras API Claves Example
+# Add your Cerebras API keys here (one key per line)
+# The load balancer will automatically rotate these keys using Round-Robin
+csk-YOUR_CEREBRAS_API_KEY_1_HERE
+csk-YOUR_CEREBRAS_API_KEY_2_HERE

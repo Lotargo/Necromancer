@@ -1,0 +1,5 @@
+# Gemini API Claves Example
+# Add your Gemini API keys here (one key per line)
+# The load balancer will automatically rotate these keys using Round-Robin
+YOUR_GEMINI_API_KEY_1_HERE
+YOUR_GEMINI_API_KEY_2_HERE
