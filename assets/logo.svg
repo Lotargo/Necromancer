@@ -1,118 +1,217 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 250" width="100%" height="100%">
   <defs>
-    <!-- CRT Screen Neon Glow Filter -->
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="8" result="blur" />
-      <feComponentTransfer in="blur" result="glow1">
-        <feFuncA type="linear" slope="0.7"/>
-      </feComponentTransfer>
+    <!-- Импортируем шрифты -->
+    <style type="text/css">
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&amp;family=VT323&amp;display=swap');
+
+      .bg {
+        fill: #030804;
+      }
+
+      /* Мерцание задней сетки */
+      .grid {
+        stroke: #00ff66;
+        stroke-width: 0.5;
+        stroke-opacity: 0.15;
+        animation: gridPulse 6s infinite ease-in-out;
+      }
+
+      /* Неоновый текст */
+      .necromancer-title {
+        font-family: 'Orbitron', sans-serif;
+        font-weight: 900;
+        font-size: 54px;
+        fill: #00ff66;
+        text-anchor: middle;
+        letter-spacing: 12px;
+        filter: url(#neon-glow);
+        animation: glitchText 4s infinite linear alternate, flicker 0.15s infinite;
+      }
+
+      .sub-title {
+        font-family: 'VT323', monospace;
+        font-size: 20px;
+        fill: #00ff66;
+        fill-opacity: 0.7;
+        text-anchor: middle;
+        letter-spacing: 6px;
+        animation: pulseSub 3s infinite ease-in-out;
+      }
+
+      /* Анимированные оккультные круги по бокам */
+      .occult-seal {
+        fill: none;
+        stroke: #00ff66;
+        stroke-width: 1;
+        stroke-opacity: 0.4;
+        filter: url(#neon-glow-weak);
+      }
+
+      .seal-rotate-clockwise {
+        transform-origin: center;
+        animation: rotateCW 25s infinite linear;
+      }
+
+      .seal-rotate-counter {
+        transform-origin: center;
+        animation: rotateCCW 20s infinite linear;
+      }
+
+      .crt-lines {
+        fill: url(#crt-pattern);
+        opacity: 0.18;
+      }
+
+      /* Анимации */
+      @keyframes rotateCW {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes rotateCCW {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(-360deg); }
+      }
+
+      @keyframes gridPulse {
+        0%, 100% { stroke-opacity: 0.12; }
+        50% { stroke-opacity: 0.22; }
+      }
+
+      @keyframes pulseSub {
+        0%, 100% { fill-opacity: 0.6; text-shadow: 0 0 2px rgba(0,255,102,0.3); }
+        50% { fill-opacity: 0.95; text-shadow: 0 0 8px rgba(0,255,102,0.8); }
+      }
+
+      @keyframes flicker {
+        0% { opacity: 0.98; }
+        50% { opacity: 1; }
+        100% { opacity: 0.99; }
+      }
+
+      @keyframes glitchText {
+        0%, 95%, 100% {
+          transform: translate(0, 0);
+          text-shadow: 0 0 10px rgba(0,255,102,0.6), 0 0 20px rgba(0,255,102,0.4);
+        }
+        96% {
+          transform: translate(-3px, 2px);
+          text-shadow: -2px 0 red, 2px 0 blue, 0 0 15px rgba(0,255,102,0.9);
+        }
+        97% {
+          transform: translate(3px, -1px);
+          text-shadow: 2px -2px red, -2px 2px blue, 0 0 15px rgba(0,255,102,0.9);
+        }
+        98% {
+          transform: translate(-1px, -2px);
+          text-shadow: -1px 2px red, 1px -2px blue, 0 0 10px rgba(0,255,102,0.6);
+        }
+        99% {
+          transform: translate(2px, 1px);
+          text-shadow: 1px -1px red, -1px 1px blue, 0 0 10px rgba(0,255,102,0.6);
+        }
+      }
+    </style>
+
+    <!-- Фильтр для яркого неонового свечения -->
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feGaussianBlur stdDeviation="8" result="coloredBlur2"/>
+      <feGaussianBlur stdDeviation="15" result="coloredBlur3"/>
       <feMerge>
-        <feMergeNode in="glow1" />
-        <feMergeNode in="SourceGraphic" />
+        <feMergeNode in="coloredBlur3"/>
+        <feMergeNode in="coloredBlur2"/>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
 
-    <!-- Deep Eldritch Inner Shadow Filter -->
-    <filter id="inner-shadow">
-      <feOffset dx="0" dy="0"/>
-      <feGaussianBlur stdDeviation="4" result="offset-blur"/>
-      <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
-      <feFlood flood-color="#00ff00" flood-opacity="0.6" result="color"/>
-      <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
-      <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
+    <!-- Фильтр для слабого неонового свечения -->
+    <filter id="neon-glow-weak" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
     </filter>
+
+    <!-- Паттерн CRT-сканлайнов -->
+    <pattern id="crt-pattern" width="4" height="4" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="4" y2="0" stroke="#000" stroke-width="1.5" />
+    </pattern>
   </defs>
 
-  <style>
-    .glow-path {
-      fill: none;
-      stroke: #00ff00;
-      stroke-width: 2.5;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      filter: url(#glow);
-    }
-    .neon-text {
-      font-family: 'Courier New', Courier, monospace;
-      font-weight: bold;
-      fill: #00ff00;
-      filter: url(#glow);
-      letter-spacing: 6px;
-    }
-    .occult-symbols {
-      fill: none;
-      stroke: #008800;
-      stroke-width: 1.5;
-      opacity: 0.6;
-      stroke-dasharray: 4,4;
-    }
-    .crt-scanlines {
-      fill: url(#scanline-pattern);
-      opacity: 0.15;
-    }
-  </style>
+  <!-- Задний фон -->
+  <rect class="bg" width="100%" height="100%" rx="10" />
 
-  <!-- Dark Crypt Background -->
-  <rect width="100%" height="100%" fill="#050505"/>
+  <!-- Кибер-оккультная сетка на фоне -->
+  <g>
+    <!-- Горизонтальные линии -->
+    <line class="grid" x1="0" y1="25" x2="800" y2="25" />
+    <line class="grid" x1="0" y1="50" x2="800" y2="50" />
+    <line class="grid" x1="0" y1="75" x2="800" y2="75" />
+    <line class="grid" x1="0" y1="100" x2="800" y2="100" />
+    <line class="grid" x1="0" y1="125" x2="800" y2="125" />
+    <line class="grid" x1="0" y1="150" x2="800" y2="150" />
+    <line class="grid" x1="0" y1="175" x2="800" y2="175" />
+    <line class="grid" x1="0" y1="200" x2="800" y2="200" />
+    <line class="grid" x1="0" y1="225" x2="800" y2="225" />
 
-  <!-- Occult Cabbalistic Circle & Pentagram -->
-  <circle cx="300" cy="270" r="220" class="glow-path" stroke-dasharray="10 15" style="stroke-width: 1.5; stroke: #00cc00;" />
-  <circle cx="300" cy="270" r="240" class="glow-path" style="stroke-width: 3; stroke: #00ff00;" />
-  
-  <!-- Elder Sign Star Lines -->
-  <polygon points="300,30 430,410 110,180 490,180 170,410" class="occult-symbols" />
-
-  <!-- Runes and Occult Markings -->
-  <g class="neon-text" style="font-size: 14px; opacity: 0.8;">
-    <text x="300" y="55" text-anchor="middle">𐏃 𐎵 𐎪</text>
-    <text x="495" y="275" text-anchor="middle">𐎠 𐎫</text>
-    <text x="300" y="495" text-anchor="middle">𐎹 𐎥 𐎼</text>
-    <text x="105" y="275" text-anchor="middle">𐎫 𐎵</text>
+    <!-- Вертикальные линии -->
+    <line class="grid" x1="50" y1="0" x2="50" y2="250" />
+    <line class="grid" x1="100" y1="0" x2="100" y2="250" />
+    <line class="grid" x1="150" y1="0" x2="150" y2="250" />
+    <line class="grid" x1="200" y1="0" x2="200" y2="250" />
+    <line class="grid" x1="250" y1="0" x2="250" y2="250" />
+    <line class="grid" x1="300" y1="0" x2="300" y2="250" />
+    <line class="grid" x1="350" y1="0" x2="350" y2="250" />
+    <line class="grid" x1="400" y1="0" x2="400" y2="250" />
+    <line class="grid" x1="450" y1="0" x2="450" y2="250" />
+    <line class="grid" x1="500" y1="0" x2="500" y2="250" />
+    <line class="grid" x1="550" y1="0" x2="550" y2="250" />
+    <line class="grid" x1="600" y1="0" x2="600" y2="250" />
+    <line class="grid" x1="650" y1="0" x2="650" y2="250" />
+    <line class="grid" x1="700" y1="0" x2="700" y2="250" />
+    <line class="grid" x1="750" y1="0" x2="750" y2="250" />
   </g>
 
-  <!-- Glowing Cyber Skull Centerpiece -->
-  <g transform="translate(180, 140)">
-    <!-- Outer Skull Shape Contour -->
-    <path d="M 60,30 
-             C 40,30 10,70 10,120
-             C 10,180 40,195 40,210
-             L 55,210 L 55,240
-             C 55,250 85,250 85,250
-             L 155,250
-             C 155,250 185,250 185,240
-             L 185,210 L 200,210
-             C 200,195 230,180 230,120
-             C 230,70 200,30 180,30
-             Z" 
-          class="glow-path" style="stroke-width: 4; fill: #081a08; fill-opacity: 0.8;" />
+  <!-- Левая оккультная печать (Cyber Pentagram Seal) -->
+  <g transform="translate(85, 125)">
+    <circle class="occult-seal seal-rotate-clockwise" r="55" />
+    <circle class="occult-seal seal-rotate-counter" r="45" stroke-dasharray="6,4" />
+    <!-- Кибер-звезда -->
+    <polygon class="occult-seal seal-rotate-clockwise" points="0,-45 26,38 -42,-12 42,-12 -26,38" />
+    <circle class="occult-seal" r="8" />
+  </g>
 
-    <!-- Skull Eye Sockets -->
-    <path d="M 50,110 C 50,130 85,130 85,110 C 85,90 50,90 50,110 Z" class="glow-path" style="fill: #000; stroke-width: 3;" />
-    <path d="M 155,110 C 155,130 190,130 190,110 C 190,90 155,90 155,110 Z" class="glow-path" style="fill: #000; stroke-width: 3;" />
+  <!-- Правая оккультная печать (Cyber Pentagram Seal) -->
+  <g transform="translate(715, 125)">
+    <circle class="occult-seal seal-rotate-clockwise" r="55" />
+    <circle class="occult-seal seal-rotate-counter" r="45" stroke-dasharray="6,4" />
+    <!-- Кибер-звезда -->
+    <polygon class="occult-seal seal-rotate-clockwise" points="0,-45 26,38 -42,-12 42,-12 -26,38" />
+    <circle class="occult-seal" r="8" />
+  </g>
+
+  <!-- Центральные элементы текста -->
+  <g transform="translate(0, 10)">
+    <!-- Технологические рамки декора -->
+    <path d="M 180,50 L 160,50 L 160,150 L 180,150" fill="none" stroke="#00ff66" stroke-width="1.5" stroke-opacity="0.5" filter="url(#neon-glow-weak)" />
+    <path d="M 620,50 L 640,50 L 640,150 L 620,150" fill="none" stroke="#00ff66" stroke-width="1.5" stroke-opacity="0.5" filter="url(#neon-glow-weak)" />
     
-    <!-- Glowing Eye Pupils (Eldritch Flame) -->
-    <circle cx="67" cy="110" r="5" fill="#ff0000" filter="url(#glow)"/>
-    <circle cx="172" cy="110" r="5" fill="#ff0000" filter="url(#glow)"/>
-
-    <!-- Nasal Cavity -->
-    <path d="M 110,150 L 120,135 L 130,150 L 125,160 L 115,160 Z" class="glow-path" style="fill: #000; stroke-width: 2.5;" />
-
-    <!-- Teeth / Grille (Representing CRT Terminal Matrix lines) -->
-    <path d="M 75,200 L 165,200" class="glow-path" style="stroke-width: 3;" />
-    <path d="M 85,200 L 85,230" class="glow-path" style="stroke-width: 2;" />
-    <path d="M 100,200 L 100,230" class="glow-path" style="stroke-width: 2;" />
-    <path d="M 115,200 L 115,230" class="glow-path" style="stroke-width: 2;" />
-    <path d="M 125,200 L 125,230" class="glow-path" style="stroke-width: 2;" />
-    <path d="M 140,200 L 140,230" class="glow-path" style="stroke-width: 2;" />
-    <path d="M 155,200 L 155,230" class="glow-path" style="stroke-width: 2;" />
-
-    <!-- Circuit board traces inside skull (Merging occult + tech) -->
-    <path d="M 120,30 L 120,80" class="occult-symbols" style="stroke-dasharray: none;" />
-    <path d="M 120,80 L 95,100" class="occult-symbols" style="stroke-dasharray: none;" />
-    <path d="M 120,80 L 145,100" class="occult-symbols" style="stroke-dasharray: none;" />
+    <!-- Название NECROMANCER -->
+    <text x="400" y="115" class="necromancer-title">NECROMANCER</text>
+    
+    <!-- Подзаголовок -->
+    <text x="400" y="155" class="sub-title">CYBER-OCCULT TERMINAL SYSTEM</text>
   </g>
 
-  <!-- Title Text: NECROMANCER -->
-  <text x="300" y="530" text-anchor="middle" class="neon-text" style="font-size: 32px;">NECROMANCER</text>
-  <text x="300" y="560" text-anchor="middle" class="neon-text" style="font-size: 14px; fill: #00cc00; letter-spacing: 3px;">EX LIBRIS DAEMONIUM</text>
+  <!-- Уголки рамки CRT экрана -->
+  <path d="M 15 35 L 15 15 L 35 15" fill="none" stroke="#00ff66" stroke-width="2" stroke-opacity="0.7" />
+  <path d="M 785 35 L 785 15 L 765 15" fill="none" stroke="#00ff66" stroke-width="2" stroke-opacity="0.7" />
+  <path d="M 15 215 L 15 235 L 35 235" fill="none" stroke="#00ff66" stroke-width="2" stroke-opacity="0.7" />
+  <path d="M 785 215 L 785 235 L 765 235" fill="none" stroke="#00ff66" stroke-width="2" stroke-opacity="0.7" />
+
+  <!-- CRT сканлайны наложенные поверх всего -->
+  <rect class="crt-lines" width="100%" height="100%" rx="10" pointer-events="none" />
 </svg>

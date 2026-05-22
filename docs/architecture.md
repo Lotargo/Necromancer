@@ -65,8 +65,8 @@ Built on top of PHP 8.3 and Vanilla HTML5/CSS3/Javascript, `Interpres` acts as b
 
 * **Client UI (Vanilla JS & HTML5)**:
   * **CRT Monitor Shader**: A sophisticated combination of CSS radial gradients, keyframe flickers, scanline overlays, and border-box glows.
-  * **Occult Canvas Skins**: Renders complex interactive visual effects on a full-screen HTML5 Canvas (such as blood drips, matrix rain, and moving stargates).
-  * **Interactive Acoustics**: Synthesizes immersive white noise (ambient laboratory winds, CRT electrical hums) and plays physical mechanical clicks on keypresses utilizing the **Web Audio API**.
+  * **Occult Canvas Skins**: Renders complex interactive visual effects on a full-screen HTML5 Canvas (such as blood drips, matrix rain, floating necromantic embers - Ignis Fatuus, and moving stargates).
+  * **Advanced Audio Mixer**: Synthesizes immersive white noise (ambient laboratory winds, CRT electrical hums), plays mechanical clicks on keypresses, and provides a 3-channel audio mixer (Summa, Sonus, Musica) supporting overdrive amplification up to 200% with reactive crimson slider styling. Uses the **Web Audio API**.
   * **SSE Listener**: Listens to real-time streams from `api.php?action=send` to display chunk-by-chunk characters as the Oracle speaks.
 * **BFF Logic (`api.php`)**:
   * Intercepts AJAX requests from the browser.

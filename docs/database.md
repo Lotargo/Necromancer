@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS optiones (
 
 #### Fields Description:
 * **`nomen`**: *Primary Key & Foreign Key*. References `usores(nomen)`. Enforces a strict 1-to-1 relationship.
-* **`optiones_json`**: Validated JSON payload storing interface configurations (e.g. `{"theme":"dark","audio":"on"}`).
+* **`optiones_json`**: Validated JSON payload storing interface configurations (e.g. `{"theme": 0, "glitches": [23, 24], "volume": 120, "sfxVolume": 80, "musicVolume": 150}`). Includes separate master, sfx, and music levels (supporting up to 200%).
 * **`updated_at`**: Timestamp indicating the last options update.
 
 ---
