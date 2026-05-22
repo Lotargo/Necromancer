@@ -778,9 +778,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
         .config-input, .config-select {
             width: 100%; margin-bottom: 12px; margin-top: 6px; box-sizing: border-box;
-            background-color: rgba(0, 0, 0, 0.4);
-            color: #d8ffe2;
-            border: 1px solid rgba(0, 255, 102, 0.2);
+            background-color: rgba(0, 0, 0, 0.6);
+            color: var(--main-color);
+            border: 1px solid var(--dim-color);
             padding: 12px 16px;
             border-radius: 6px;
             font-family: var(--terminal-font);
@@ -790,7 +790,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         .config-input:focus, .config-select:focus {
             outline: none;
             border-color: var(--main-color);
-            box-shadow: 0 0 10px rgba(0, 255, 102, 0.2);
+            box-shadow: 0 0 10px var(--dim-color);
+        }
+        .config-select option {
+            background-color: var(--dark-color);
+            color: var(--main-color);
+            font-family: var(--terminal-font);
         }
         .config-btn {
             margin-top: 10px;
@@ -1004,17 +1009,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             100% { transform: scale(2.0); opacity: 0; }
         }
 
-        body.glitch-fog .fog-overlay { display: block; }
-        .fog-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23noiseFilter)" opacity="0.1" fill="%2300ff00" /></svg>');
-            opacity: 0.15; z-index: 4; pointer-events: none;
-            animation: fog-move 20s linear infinite;
-        }
-        @keyframes fog-move {
-            0% { background-position: 0 0; }
-            100% { background-position: 100% 100%; }
-        }
 
         #matrixCanvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -1114,7 +1108,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
     <canvas id="matrixCanvas"></canvas>
     <canvas id="advCanvas"></canvas>
-    <div class="fog-overlay"></div>
     <div id="welcome-modal">
         <div class="welcome-content">
             <div class="welcome-text" id="welcome-typewriter"></div>
@@ -1173,7 +1166,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-20" onchange="previewGlitches()"> Lineae Cathodicae (CRT Scanlines)</label>
                     <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-21" onchange="previewGlitches()"> Tenebrae Spirantes (Breathing Shadows)</label>
                     <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-22" onchange="previewGlitches()"> Imber Codicis (Matrix Rain)</label>
-                    <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-23" onchange="previewGlitches()"> Nebula Obscura (Dark Fog)</label>
+                    <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-23" onchange="previewGlitches()"> Ignis Fatuus (Necromantic Embers)</label>
                     <hr style="border-color: var(--dim-color); margin: 10px 0;">
                     <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-24" onchange="previewGlitches()"> Sanguis Stillans (Dripping Blood)</label>
                     <label style="display:block; margin-top:5px; color:var(--warn-color);"><input type="checkbox" id="glitch-25" onchange="previewGlitches()"> Astrum Cadens (Space Flight)</label>
@@ -1186,9 +1179,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-32" onchange="previewGlitches()"> Hospes: Toasty (MK2 pop-up guy)</label>
                     <hr style="border-color: var(--dim-color); margin: 10px 0;">
                     <h4 style="margin: 5px 0; color: #aaa; font-family: 'Orbitron', sans-serif;">Soni (Sounds)</h4>
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 6px 12px; border: 1px solid var(--dim-color); border-radius: 4px; background: rgba(0,0,0,0.3); box-shadow: inset 0 0 5px rgba(0,0,0,0.5);">
-                        <span style="color: var(--warn-color); font-size: 14px; font-family: 'Orbitron', sans-serif;">Volumen (Volume): <span id="volume-val" style="color: #fff; font-weight: bold;">80%</span></span>
-                        <input type="range" id="sound-volume" min="0" max="100" value="80" style="width: 55%; cursor: pointer; accent-color: var(--main-color);" oninput="updateVolumeLabel(this.value)" onchange="previewGlitches(this)">
+                    <!-- Master Volume -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; padding: 8px 12px; border: 1px solid var(--dim-color); border-radius: 6px; background: rgba(0,0,0,0.3); box-shadow: inset 0 0 5px rgba(0,0,0,0.5); min-height: 38px; box-sizing: border-box;">
+                        <span style="color: var(--warn-color); font-size: 11px; font-family: 'Orbitron', sans-serif; white-space: nowrap; flex: 1; min-width: 0; display: flex; justify-content: space-between; align-items: center; margin-right: 4px;">
+                            <span>Summa (Master):</span>
+                            <span id="volume-master-val" style="color: #fff; font-weight: bold; margin-left: 4px;">80%</span>
+                        </span>
+                        <input type="range" id="volume-master" min="0" max="200" value="80" style="width: 40%; max-width: 120px; min-width: 70px; flex-shrink: 0; cursor: pointer; accent-color: var(--main-color);" oninput="updateVolumeLabel('master', this.value)" onchange="saveVisualOptions(true)">
+                    </div>
+                    <!-- SFX Volume -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; padding: 8px 12px; border: 1px solid var(--dim-color); border-radius: 6px; background: rgba(0,0,0,0.3); box-shadow: inset 0 0 5px rgba(0,0,0,0.5); min-height: 38px; box-sizing: border-box;">
+                        <span style="color: var(--warn-color); font-size: 11px; font-family: 'Orbitron', sans-serif; white-space: nowrap; flex: 1; min-width: 0; display: flex; justify-content: space-between; align-items: center; margin-right: 4px;">
+                            <span>Sonus (SFX):</span>
+                            <span id="volume-sfx-val" style="color: #fff; font-weight: bold; margin-left: 4px;">80%</span>
+                        </span>
+                        <input type="range" id="volume-sfx" min="0" max="200" value="80" style="width: 40%; max-width: 120px; min-width: 70px; flex-shrink: 0; cursor: pointer; accent-color: var(--main-color);" oninput="updateVolumeLabel('sfx', this.value)" onchange="saveVisualOptions(true)">
+                    </div>
+                    <!-- Music Volume -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; padding: 8px 12px; border: 1px solid var(--dim-color); border-radius: 6px; background: rgba(0,0,0,0.3); box-shadow: inset 0 0 5px rgba(0,0,0,0.5); min-height: 38px; box-sizing: border-box;">
+                        <span style="color: var(--warn-color); font-size: 11px; font-family: 'Orbitron', sans-serif; white-space: nowrap; flex: 1; min-width: 0; display: flex; justify-content: space-between; align-items: center; margin-right: 4px;">
+                            <span>Musica (Music):</span>
+                            <span id="volume-music-val" style="color: #fff; font-weight: bold; margin-left: 4px;">80%</span>
+                        </span>
+                        <input type="range" id="volume-music" min="0" max="200" value="80" style="width: 40%; max-width: 120px; min-width: 70px; flex-shrink: 0; cursor: pointer; accent-color: var(--main-color);" oninput="updateVolumeLabel('music', this.value)" onchange="saveVisualOptions(true)">
                     </div>
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-33" onchange="previewGlitches(this)"> Soni Extincti (Mute Clicks)</label>
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-35" onchange="previewGlitches(this)"> Claves Mechanicae (Mechanical Keyboard)</label>
@@ -1199,6 +1212,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-41" onchange="previewGlitches(this)"> Melodia: Chibi Ninja (MP3)</label>
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-42" onchange="previewGlitches(this)"> Melodia: Underclocked (MP3)</label>
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-43" onchange="previewGlitches(this)"> Melodia: Dizzy Spells (MP3)</label>
+                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-44" onchange="previewGlitches(this)"> Melodia: Vampire Killer (MP3)</label>
+                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-45" onchange="previewGlitches(this)"> Melodia: Wicked Child (MP3)</label>
                     
                     <hr style="border-color: rgba(255,255,255,0.1); margin: 6px 0;">
                     <h4 style="margin: 3px 0; color: #888; font-size: 13px; font-family: 'Orbitron', sans-serif;">Atmosphaera (Ambient SFX)</h4>
@@ -1728,18 +1743,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         let userState = { level: 1, messages: 0, options: { theme: 0, glitches: [], volume: 80 } };
 
-        function updateVolumeLabel(val) {
-            document.getElementById('volume-val').textContent = val + '%';
-            if (typeof userState !== 'undefined' && userState.options) {
-                userState.options.volume = parseInt(val);
-                if (typeof updateHumSound === 'function') {
-                    updateHumSound();
-                }
-                if (typeof currentBgMusic !== 'undefined' && currentBgMusic) {
-                    currentBgMusic.volume = (parseInt(val) / 100) * 0.15;
-                }
-            }
-        }
+
 
         function loadUserState() {
             fetch('api.php?action=get_user_state')
@@ -1774,11 +1778,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             document.getElementById('glitch-13').parentElement.style.display = 'block';
 
             const g = userState.options.glitches || [];
-            const vol = (typeof userState.options.volume !== 'undefined') ? userState.options.volume : 80;
-            const volSlider = document.getElementById('sound-volume');
-            if (volSlider) volSlider.value = vol;
-            const volText = document.getElementById('volume-val');
-            if (volText) volText.textContent = vol + '%';
+            const masterVol = (typeof userState.options.volume !== 'undefined') ? userState.options.volume : 80;
+            const sfxVol = (typeof userState.options.sfxVolume !== 'undefined') ? userState.options.sfxVolume : 80;
+            const musicVol = (typeof userState.options.musicVolume !== 'undefined') ? userState.options.musicVolume : 80;
+
+            const masterSlider = document.getElementById('volume-master');
+            if (masterSlider) {
+                masterSlider.value = masterVol;
+                masterSlider.style.accentColor = masterVol > 100 ? '#ff3333' : 'var(--main-color)';
+            }
+            const masterText = document.getElementById('volume-master-val');
+            if (masterText) masterText.textContent = masterVol + '%';
+
+            const sfxSlider = document.getElementById('volume-sfx');
+            if (sfxSlider) {
+                sfxSlider.value = sfxVol;
+                sfxSlider.style.accentColor = sfxVol > 100 ? '#ff3333' : 'var(--main-color)';
+            }
+            const sfxText = document.getElementById('volume-sfx-val');
+            if (sfxText) sfxText.textContent = sfxVol + '%';
+
+            const musicSlider = document.getElementById('volume-music');
+            if (musicSlider) {
+                musicSlider.value = musicVol;
+                musicSlider.style.accentColor = musicVol > 100 ? '#ff3333' : 'var(--main-color)';
+            }
+            const musicText = document.getElementById('volume-music-val');
+            if (musicText) musicText.textContent = musicVol + '%';
 
             document.getElementById('glitch-10').checked = g.includes(10);
             document.getElementById('glitch-11').checked = g.includes(11);
@@ -1804,6 +1830,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             if(document.getElementById('glitch-41')) document.getElementById('glitch-41').checked = g.includes(41);
             if(document.getElementById('glitch-42')) document.getElementById('glitch-42').checked = g.includes(42);
             if(document.getElementById('glitch-43')) document.getElementById('glitch-43').checked = g.includes(43);
+            if(document.getElementById('glitch-44')) document.getElementById('glitch-44').checked = g.includes(44);
+            if(document.getElementById('glitch-45')) document.getElementById('glitch-45').checked = g.includes(45);
         }
 
         function applyTheme(themeIndex) {
@@ -1824,7 +1852,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         function previewGlitches(triggeredBy) {
             if (triggeredBy) {
-                const melodyIds = ['glitch-34', 'glitch-41', 'glitch-42', 'glitch-43'];
+                const melodyIds = ['glitch-34', 'glitch-41', 'glitch-42', 'glitch-43', 'glitch-44', 'glitch-45'];
                 if (melodyIds.includes(triggeredBy.id) && triggeredBy.checked) {
                     melodyIds.forEach(id => {
                         if (id !== triggeredBy.id) {
@@ -1858,6 +1886,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             document.body.classList.toggle('play-chibi', document.getElementById('glitch-41') && document.getElementById('glitch-41').checked);
             document.body.classList.toggle('play-underclocked', document.getElementById('glitch-42') && document.getElementById('glitch-42').checked);
             document.body.classList.toggle('play-dizzy', document.getElementById('glitch-43') && document.getElementById('glitch-43').checked);
+            document.body.classList.toggle('play-vampire', document.getElementById('glitch-44') && document.getElementById('glitch-44').checked);
+            document.body.classList.toggle('play-wicked', document.getElementById('glitch-45') && document.getElementById('glitch-45').checked);
             
             if (typeof syncBackgroundMusic === 'function') {
                 syncBackgroundMusic();
@@ -1891,6 +1921,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             document.body.classList.toggle('play-chibi', g.includes(41));
             document.body.classList.toggle('play-underclocked', g.includes(42));
             document.body.classList.toggle('play-dizzy', g.includes(43));
+            document.body.classList.toggle('play-vampire', g.includes(44));
+            document.body.classList.toggle('play-wicked', g.includes(45));
             
             if (typeof syncBackgroundMusic === 'function') {
                 syncBackgroundMusic();
@@ -1923,11 +1955,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             if (document.getElementById('glitch-41') && document.getElementById('glitch-41').checked) glitches.push(41);
             if (document.getElementById('glitch-42') && document.getElementById('glitch-42').checked) glitches.push(42);
             if (document.getElementById('glitch-43') && document.getElementById('glitch-43').checked) glitches.push(43);
+            if (document.getElementById('glitch-44') && document.getElementById('glitch-44').checked) glitches.push(44);
+            if (document.getElementById('glitch-45') && document.getElementById('glitch-45').checked) glitches.push(45);
 
-            const volSlider = document.getElementById('sound-volume');
-            const volume = volSlider ? parseInt(volSlider.value) : 80;
+            const masterSlider = document.getElementById('volume-master');
+            const volume = masterSlider ? parseInt(masterSlider.value) : 80;
 
-            userState.options = { theme, glitches, volume };
+            const sfxSlider = document.getElementById('volume-sfx');
+            const sfxVolume = sfxSlider ? parseInt(sfxSlider.value) : 80;
+
+            const musicSlider = document.getElementById('volume-music');
+            const musicVolume = musicSlider ? parseInt(musicSlider.value) : 80;
+
+            userState.options = { theme, glitches, volume, sfxVolume, musicVolume };
 
             const formData = new URLSearchParams();
             formData.append('action', 'save_options');
@@ -2007,6 +2047,44 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
         spawnEye();
 
+        // Инициализация парящих искр (Ignis Fatuus)
+        const pEmbers = [];
+        const numEmbers = 120;
+        
+        function hexToRgb(hex) {
+            hex = hex.replace(/^#/, '');
+            if (hex.length === 3) {
+                hex = hex.split('').map(c => c + c).join('');
+            }
+            const num = parseInt(hex, 16);
+            return {
+                r: (num >> 16) & 255,
+                g: (num >> 8) & 255,
+                b: num & 255
+            };
+        }
+
+        function initEmbers() {
+            pEmbers.length = 0;
+            const w = advCanvas.width;
+            const h = advCanvas.height;
+            for (let i = 0; i < numEmbers; i++) {
+                pEmbers.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    size: 1 + Math.random() * 2.5,
+                    speedY: 0.3 + Math.random() * 0.7,
+                    amplitude: 0.1 + Math.random() * 0.4,
+                    frequency: 0.005 + Math.random() * 0.015,
+                    angle: Math.random() * Math.PI * 2,
+                    pulseSpeed: 0.005 + Math.random() * 0.01,
+                    pulsePhase: Math.random() * Math.PI * 2,
+                    alpha: Math.random()
+                });
+            }
+        }
+        initEmbers();
+
         const bloodStreams = [];
         const bloodDrops = [];
         const PIXEL_SIZE = 6;
@@ -2032,6 +2110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             advCanvas.width = window.innerWidth;
             advCanvas.height = window.innerHeight;
             initBlood();
+            initEmbers();
         });
 
         let occultAngle = 0;
@@ -2128,6 +2207,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             const isStars = bBody.classList.contains('glitch-stars');
             const isEyes = bBody.classList.contains('glitch-eyes');
             const isBlood = bBody.classList.contains('glitch-blood');
+            const isEmbers = bBody.classList.contains('glitch-fog');
             
             if (isStars) {
                 advCtx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -2138,6 +2218,60 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             
             // Рисуем оккультные круги
             drawOccultCircles(advCtx, w, h);
+
+            if (isEmbers) {
+                const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
+                const rgb = hexToRgb(mainC);
+                
+                pEmbers.forEach(p => {
+                    // Медленное движение вверх
+                    p.y -= p.speedY;
+                    
+                    // Синусоидальные горизонтальные колебания
+                    p.angle += p.frequency;
+                    p.x += Math.sin(p.angle) * p.amplitude;
+                    
+                    // Интерактивное притяжение к курсору мыши
+                    const dx = mouseX - p.x;
+                    const dy = mouseY - p.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 150) {
+                        const force = (150 - dist) / 150 * 0.25;
+                        p.x += dx * force * 0.08;
+                        p.y += dy * force * 0.08;
+                    }
+                    
+                    // Заворачивание за верх экрана
+                    if (p.y < -10) {
+                        p.y = h + 10;
+                        p.x = Math.random() * w;
+                        p.alpha = 0;
+                    }
+                    if (p.x < -10) p.x = w + 10;
+                    if (p.x > w + 10) p.x = -10;
+                    
+                    // Мерцание прозрачности
+                    p.pulsePhase += p.pulseSpeed;
+                    const curAlpha = 0.2 + 0.8 * Math.sin(p.pulsePhase);
+                    
+                    // 1. Мягкое неоновое свечение (Ореол)
+                    const grad = advCtx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 3.5);
+                    grad.addColorStop(0, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${curAlpha * 0.85})`);
+                    grad.addColorStop(0.3, `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${curAlpha * 0.35})`);
+                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    
+                    advCtx.fillStyle = grad;
+                    advCtx.beginPath();
+                    advCtx.arc(p.x, p.y, p.size * 3.5, 0, Math.PI * 2);
+                    advCtx.fill();
+                    
+                    // 2. Яркое ядро искры
+                    advCtx.fillStyle = `rgba(255, 255, 255, ${curAlpha * 0.9})`;
+                    advCtx.beginPath();
+                    advCtx.arc(p.x, p.y, p.size * 0.7, 0, Math.PI * 2);
+                    advCtx.fill();
+                });
+            }
 
             const mainC = getComputedStyle(document.documentElement).getPropertyValue('--main-color').trim() || '#1aff66';
 
@@ -2446,11 +2580,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
     <!-- Web Audio API for retro interaction sounds -->
     <script>
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function getVolCoeff() {
+        function getMasterCoeff() {
             if (typeof userState !== 'undefined' && userState.options && typeof userState.options.volume !== 'undefined') {
                 return userState.options.volume / 100;
             }
             return 0.8;
+        }
+
+        function getSfxCoeff() {
+            if (typeof userState !== 'undefined' && userState.options && typeof userState.options.sfxVolume !== 'undefined') {
+                return userState.options.sfxVolume / 100;
+            }
+            return 0.8;
+        }
+
+        function getMusicCoeff() {
+            if (typeof userState !== 'undefined' && userState.options && typeof userState.options.musicVolume !== 'undefined') {
+                return userState.options.musicVolume / 100;
+            }
+            return 0.8;
+        }
+
+        function getFinalSfxCoeff() {
+            return getMasterCoeff() * getSfxCoeff();
+        }
+
+        function getFinalMusicCoeff() {
+            return getMasterCoeff() * getMusicCoeff();
         }
 
         function playClickSound() {
@@ -2462,7 +2618,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
             oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.1);
             
-            const volCoeff = getVolCoeff();
+            const volCoeff = getFinalSfxCoeff();
             gainNode.gain.setValueAtTime(0.08 * volCoeff, audioCtx.currentTime);
             gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
             
@@ -2483,7 +2639,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             
             if (humGain) {
                 if (isHumEnabled) {
-                    const volCoeff = getVolCoeff();
+                    const volCoeff = getFinalSfxCoeff();
                     humGain.gain.setTargetAtTime(0.015 * volCoeff, audioCtx.currentTime, 0.1);
                 } else {
                     humGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
@@ -2506,7 +2662,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             filter.frequency.setValueAtTime(120, audioCtx.currentTime);
             
             const isHumEnabled = document.body.classList.contains('hum-sound');
-            const volCoeff = getVolCoeff();
+            const volCoeff = getFinalSfxCoeff();
             humGain.gain.setValueAtTime(isHumEnabled ? 0.015 * volCoeff : 0, audioCtx.currentTime);
             
             humOscillator.connect(filter);
@@ -2523,7 +2679,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             if (audioCtx.state === 'suspended') { audioCtx.resume(); }
 
             let t = audioCtx.currentTime;
-            const volCoeff = getVolCoeff();
+            const volCoeff = getFinalSfxCoeff();
             
             // Low spindle rumble
             let rumbleOsc = audioCtx.createOscillator();
@@ -2570,7 +2726,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 clickOsc.type = 'square';
                 clickOsc.frequency.setValueAtTime(600 + Math.random() * 600, cTime);
                 
-                const seekVolCoeff = getVolCoeff();
+                const seekVolCoeff = getFinalSfxCoeff();
                 clickGain.gain.setValueAtTime((0.015 + Math.random() * 0.015) * seekVolCoeff, cTime);
                 clickGain.gain.exponentialRampToValueAtTime(0.001, cTime + 0.015);
                 
@@ -2592,7 +2748,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         function playMechClickSound() {
             if (audioCtx.state === 'suspended') { audioCtx.resume(); }
             let t = audioCtx.currentTime;
-            const volCoeff = getVolCoeff();
+            const volCoeff = getFinalSfxCoeff();
             
             // "Thock" sound (low frequency)
             let osc = audioCtx.createOscillator();
@@ -2669,10 +2825,61 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             
             setInterval(() => {
                 const isWindy = document.body.classList.contains('ambient-wind');
-                const volCoeff = getVolCoeff();
+                const volCoeff = getFinalSfxCoeff();
                 let targetGain = isWindy ? 0.06 * volCoeff : 0;
                 windGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 1.0);
             }, 1000);
+        }
+
+        function updateVolumeLabel(type, val) {
+            const intVal = parseInt(val);
+            if (type === 'master') {
+                const lbl = document.getElementById('volume-master-val');
+                if (lbl) lbl.textContent = val + '%';
+                if (typeof userState !== 'undefined' && userState.options) {
+                    userState.options.volume = intVal;
+                }
+                const slider = document.getElementById('volume-master');
+                if (slider) slider.style.accentColor = intVal > 100 ? '#ff3333' : 'var(--main-color)';
+                updateHumSound();
+                updateWindSoundVolume();
+                updateMusicVolumeOnFly();
+            } else if (type === 'sfx') {
+                const lbl = document.getElementById('volume-sfx-val');
+                if (lbl) lbl.textContent = val + '%';
+                if (typeof userState !== 'undefined' && userState.options) {
+                    userState.options.sfxVolume = intVal;
+                }
+                const slider = document.getElementById('volume-sfx');
+                if (slider) slider.style.accentColor = intVal > 100 ? '#ff3333' : 'var(--main-color)';
+                updateHumSound();
+                updateWindSoundVolume();
+            } else if (type === 'music') {
+                const lbl = document.getElementById('volume-music-val');
+                if (lbl) lbl.textContent = val + '%';
+                if (typeof userState !== 'undefined' && userState.options) {
+                    userState.options.musicVolume = intVal;
+                }
+                const slider = document.getElementById('volume-music');
+                if (slider) slider.style.accentColor = intVal > 100 ? '#ff3333' : 'var(--main-color)';
+                updateMusicVolumeOnFly();
+            }
+        }
+
+        function updateWindSoundVolume() {
+            if (windGain) {
+                const isWindy = document.body.classList.contains('ambient-wind');
+                const finalSfxCoeff = getFinalSfxCoeff();
+                let targetGain = isWindy ? 0.06 * finalSfxCoeff : 0;
+                windGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.2);
+            }
+        }
+
+        function updateMusicVolumeOnFly() {
+            if (currentBgMusic) {
+                const targetVol = getFinalMusicCoeff() * 0.25;
+                currentBgMusic.volume = Math.min(1.0, Math.max(0.0, targetVol));
+            }
         }
 
         let currentBgMusic = null;
@@ -2697,14 +2904,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             const isChibi = document.body.classList.contains('play-chibi');
             const isUnderclocked = document.body.classList.contains('play-underclocked');
             const isDizzy = document.body.classList.contains('play-dizzy');
+            const isVampire = document.body.classList.contains('play-vampire');
+            const isWicked = document.body.classList.contains('play-wicked');
             const isSynth = document.body.classList.contains('play-melody');
 
             let targetUrl = '';
             if (isChibi) targetUrl = 'audio/chibi-ninja.mp3';
             else if (isUnderclocked) targetUrl = 'audio/underclocked.mp3';
             else if (isDizzy) targetUrl = 'audio/dizzy-spells.mp3';
+            else if (isVampire) targetUrl = 'audio/vampire-killer.mp3';
+            else if (isWicked) targetUrl = 'audio/wicked-child.mp3';
 
-            const volCoeff = getVolCoeff();
+            const volCoeff = getFinalMusicCoeff();
 
             if (!targetUrl) {
                 if (currentBgMusic) {
@@ -2740,13 +2951,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     currentBgMusicUrl = targetUrl;
                     currentBgMusic = new Audio(targetUrl);
                     currentBgMusic.loop = true;
-                    currentBgMusic.volume = volCoeff * 0.15;
+                    currentBgMusic.volume = Math.min(1.0, Math.max(0.0, volCoeff * 0.25));
                     currentBgMusic.play().catch(err => {
                         console.log("Autoplay blocked or playback error:", err);
                     });
                 } else {
                     if (currentBgMusic) {
-                        currentBgMusic.volume = volCoeff * 0.15;
+                        currentBgMusic.volume = Math.min(1.0, Math.max(0.0, volCoeff * 0.25));
                         if (currentBgMusic.paused) {
                             currentBgMusic.play().catch(err => {});
                         }
@@ -2776,7 +2987,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     osc.type = 'square';
                     osc.frequency.setValueAtTime(freq / 2, t);
                     
-                    const volCoeff = getVolCoeff();
+                    const volCoeff = getFinalMusicCoeff();
                     gain.gain.setValueAtTime(0.015 * volCoeff, t);
                     gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
                     
