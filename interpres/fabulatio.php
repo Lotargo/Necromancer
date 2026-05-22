@@ -1185,16 +1185,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-31" onchange="previewGlitches()"> Hospes: Pac-Man (Chased in the abyss)</label>
                     <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-32" onchange="previewGlitches()"> Hospes: Toasty (MK2 pop-up guy)</label>
                     <hr style="border-color: var(--dim-color); margin: 10px 0;">
-                    <h4 style="margin: 5px 0; color: #aaa;">Soni (Sounds)</h4>
+                    <h4 style="margin: 5px 0; color: #aaa; font-family: 'Orbitron', sans-serif;">Soni (Sounds)</h4>
                     <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 6px 12px; border: 1px solid var(--dim-color); border-radius: 4px; background: rgba(0,0,0,0.3); box-shadow: inset 0 0 5px rgba(0,0,0,0.5);">
                         <span style="color: var(--warn-color); font-size: 14px; font-family: 'Orbitron', sans-serif;">Volumen (Volume): <span id="volume-val" style="color: #fff; font-weight: bold;">80%</span></span>
-                        <input type="range" id="sound-volume" min="0" max="100" value="80" style="width: 55%; cursor: pointer; accent-color: var(--main-color);" oninput="updateVolumeLabel(this.value)" onchange="previewGlitches()">
+                        <input type="range" id="sound-volume" min="0" max="100" value="80" style="width: 55%; cursor: pointer; accent-color: var(--main-color);" oninput="updateVolumeLabel(this.value)" onchange="previewGlitches(this)">
                     </div>
-                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-33" onchange="previewGlitches()"> Soni Extincti (Mute Clicks)</label>
-                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-34" onchange="previewGlitches()"> Melodia Octo-Bit (8-Bit Melody)</label>
-                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-35" onchange="previewGlitches()"> Claves Mechanicae (Mechanical Keyboard)</label>
-                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-36" onchange="previewGlitches()"> Ventus Obscurus (Ambient Wind)</label>
-                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-37" onchange="previewGlitches()"> Murmur Antiquum (50Hz Hum)</label>
+                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-33" onchange="previewGlitches(this)"> Soni Extincti (Mute Clicks)</label>
+                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-35" onchange="previewGlitches(this)"> Claves Mechanicae (Mechanical Keyboard)</label>
+                    
+                    <hr style="border-color: rgba(255,255,255,0.1); margin: 6px 0;">
+                    <h4 style="margin: 3px 0; color: #888; font-size: 13px; font-family: 'Orbitron', sans-serif;">Cantus Retro (Chiptune Tracks)</h4>
+                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-34" onchange="previewGlitches(this)"> Melodia Synthetica (Synth 8-Bit)</label>
+                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-41" onchange="previewGlitches(this)"> Melodia: Chibi Ninja (MP3)</label>
+                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-42" onchange="previewGlitches(this)"> Melodia: Underclocked (MP3)</label>
+                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-43" onchange="previewGlitches(this)"> Melodia: Dizzy Spells (MP3)</label>
+                    
+                    <hr style="border-color: rgba(255,255,255,0.1); margin: 6px 0;">
+                    <h4 style="margin: 3px 0; color: #888; font-size: 13px; font-family: 'Orbitron', sans-serif;">Atmosphaera (Ambient SFX)</h4>
+                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-36" onchange="previewGlitches(this)"> Ventus Obscurus (Ambient Wind)</label>
+                    <label style="display:block; margin-top:2px; color:var(--warn-color);"><input type="checkbox" id="glitch-37" onchange="previewGlitches(this)"> Murmur Antiquum (50Hz Hum)</label>
                 </div>
             </div>
 
@@ -1303,6 +1312,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             if (typeof initHumSound === 'function') initHumSound();
             if (typeof initWindSound === 'function') initWindSound();
             if (typeof initMelody === 'function') initMelody();
+            if (typeof syncBackgroundMusic === 'function') syncBackgroundMusic();
             if (document.body.classList.contains('mute-sounds')) return;
             if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Enter') {
                 if (document.body.classList.contains('mech-clicks')) {
@@ -1725,6 +1735,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
                 if (typeof updateHumSound === 'function') {
                     updateHumSound();
                 }
+                if (typeof currentBgMusic !== 'undefined' && currentBgMusic) {
+                    currentBgMusic.volume = (parseInt(val) / 100) * 0.15;
+                }
             }
         }
 
@@ -1783,6 +1796,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
             if(document.getElementById('glitch-31')) document.getElementById('glitch-31').checked = g.includes(31);
             if(document.getElementById('glitch-32')) document.getElementById('glitch-32').checked = g.includes(32);
+            if(document.getElementById('glitch-33')) document.getElementById('glitch-33').checked = g.includes(33);
+            if(document.getElementById('glitch-34')) document.getElementById('glitch-34').checked = g.includes(34);
+            if(document.getElementById('glitch-35')) document.getElementById('glitch-35').checked = g.includes(35);
+            if(document.getElementById('glitch-36')) document.getElementById('glitch-36').checked = g.includes(36);
+            if(document.getElementById('glitch-37')) document.getElementById('glitch-37').checked = g.includes(37);
+            if(document.getElementById('glitch-41')) document.getElementById('glitch-41').checked = g.includes(41);
+            if(document.getElementById('glitch-42')) document.getElementById('glitch-42').checked = g.includes(42);
+            if(document.getElementById('glitch-43')) document.getElementById('glitch-43').checked = g.includes(43);
         }
 
         function applyTheme(themeIndex) {
@@ -1801,7 +1822,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             saveVisualOptions(true);
         }
 
-        function previewGlitches() {
+        function previewGlitches(triggeredBy) {
+            if (triggeredBy) {
+                const melodyIds = ['glitch-34', 'glitch-41', 'glitch-42', 'glitch-43'];
+                if (melodyIds.includes(triggeredBy.id) && triggeredBy.checked) {
+                    melodyIds.forEach(id => {
+                        if (id !== triggeredBy.id) {
+                            const el = document.getElementById(id);
+                            if (el) el.checked = false;
+                        }
+                    });
+                }
+            }
+
             document.body.classList.toggle('glitch-shake', document.getElementById('glitch-10').checked);
             document.body.classList.toggle('glitch-chromatic', document.getElementById('glitch-11').checked);
             document.body.classList.toggle('glitch-borders', document.getElementById('glitch-12').checked);
@@ -1822,6 +1855,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             document.body.classList.toggle('mech-clicks', document.getElementById('glitch-35') && document.getElementById('glitch-35').checked);
             document.body.classList.toggle('ambient-wind', document.getElementById('glitch-36') && document.getElementById('glitch-36').checked);
             document.body.classList.toggle('hum-sound', document.getElementById('glitch-37') && document.getElementById('glitch-37').checked);
+            document.body.classList.toggle('play-chibi', document.getElementById('glitch-41') && document.getElementById('glitch-41').checked);
+            document.body.classList.toggle('play-underclocked', document.getElementById('glitch-42') && document.getElementById('glitch-42').checked);
+            document.body.classList.toggle('play-dizzy', document.getElementById('glitch-43') && document.getElementById('glitch-43').checked);
+            
+            if (typeof syncBackgroundMusic === 'function') {
+                syncBackgroundMusic();
+            }
             saveVisualOptions(true);
         }
 
@@ -1848,6 +1888,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             document.body.classList.toggle('mech-clicks', g.includes(35));
             document.body.classList.toggle('ambient-wind', g.includes(36));
             document.body.classList.toggle('hum-sound', g.includes(37));
+            document.body.classList.toggle('play-chibi', g.includes(41));
+            document.body.classList.toggle('play-underclocked', g.includes(42));
+            document.body.classList.toggle('play-dizzy', g.includes(43));
+            
+            if (typeof syncBackgroundMusic === 'function') {
+                syncBackgroundMusic();
+            }
         }
 
         function saveVisualOptions(silent = false) {
@@ -1873,6 +1920,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             if (document.getElementById('glitch-35') && document.getElementById('glitch-35').checked) glitches.push(35);
             if (document.getElementById('glitch-36') && document.getElementById('glitch-36').checked) glitches.push(36);
             if (document.getElementById('glitch-37') && document.getElementById('glitch-37').checked) glitches.push(37);
+            if (document.getElementById('glitch-41') && document.getElementById('glitch-41').checked) glitches.push(41);
+            if (document.getElementById('glitch-42') && document.getElementById('glitch-42').checked) glitches.push(42);
+            if (document.getElementById('glitch-43') && document.getElementById('glitch-43').checked) glitches.push(43);
 
             const volSlider = document.getElementById('sound-volume');
             const volume = volSlider ? parseInt(volSlider.value) : 80;
@@ -2428,12 +2478,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 
         function updateHumSound() {
             const isHumEnabled = document.body.classList.contains('hum-sound');
-            const isMuted = document.body.classList.contains('mute-sounds');
             
-            if (audioCtx.state === 'suspended' && isHumEnabled && !isMuted) { audioCtx.resume(); }
+            if (audioCtx.state === 'suspended' && isHumEnabled) { audioCtx.resume(); }
             
             if (humGain) {
-                if (isHumEnabled && !isMuted) {
+                if (isHumEnabled) {
                     const volCoeff = getVolCoeff();
                     humGain.gain.setTargetAtTime(0.015 * volCoeff, audioCtx.currentTime, 0.1);
                 } else {
@@ -2457,9 +2506,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             filter.frequency.setValueAtTime(120, audioCtx.currentTime);
             
             const isHumEnabled = document.body.classList.contains('hum-sound');
-            const isMuted = document.body.classList.contains('mute-sounds');
             const volCoeff = getVolCoeff();
-            humGain.gain.setValueAtTime((isHumEnabled && !isMuted) ? 0.015 * volCoeff : 0, audioCtx.currentTime);
+            humGain.gain.setValueAtTime(isHumEnabled ? 0.015 * volCoeff : 0, audioCtx.currentTime);
             
             humOscillator.connect(filter);
             filter.connect(humGain);
@@ -2472,7 +2520,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
         }
 
         function playHDDSound() {
-            if (document.body.classList.contains('mute-sounds')) return;
             if (audioCtx.state === 'suspended') { audioCtx.resume(); }
 
             let t = audioCtx.currentTime;
@@ -2517,9 +2564,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             
             // Seeking clicks
             let seekInterval = setInterval(() => {
-                if (document.body.classList.contains('mute-sounds')) {
-                    clearInterval(seekInterval); return;
-                }
                 let cTime = audioCtx.currentTime;
                 let clickOsc = audioCtx.createOscillator();
                 let clickGain = audioCtx.createGain();
@@ -2625,11 +2669,90 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             
             setInterval(() => {
                 const isWindy = document.body.classList.contains('ambient-wind');
-                const isMuted = document.body.classList.contains('mute-sounds');
                 const volCoeff = getVolCoeff();
-                let targetGain = (isWindy && !isMuted) ? 0.06 * volCoeff : 0;
+                let targetGain = isWindy ? 0.06 * volCoeff : 0;
                 windGain.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 1.0);
             }, 1000);
+        }
+
+        let currentBgMusic = null;
+        let currentBgMusicUrl = '';
+
+        function stopAllMelodies() {
+            if (currentBgMusic) {
+                try {
+                    currentBgMusic.pause();
+                    currentBgMusic.currentTime = 0;
+                } catch(e) {}
+                currentBgMusic = null;
+                currentBgMusicUrl = '';
+            }
+            if (melodyInterval) {
+                clearInterval(melodyInterval);
+                melodyInterval = null;
+            }
+        }
+
+        function syncBackgroundMusic() {
+            const isChibi = document.body.classList.contains('play-chibi');
+            const isUnderclocked = document.body.classList.contains('play-underclocked');
+            const isDizzy = document.body.classList.contains('play-dizzy');
+            const isSynth = document.body.classList.contains('play-melody');
+
+            let targetUrl = '';
+            if (isChibi) targetUrl = 'audio/chibi-ninja.mp3';
+            else if (isUnderclocked) targetUrl = 'audio/underclocked.mp3';
+            else if (isDizzy) targetUrl = 'audio/dizzy-spells.mp3';
+
+            const volCoeff = getVolCoeff();
+
+            if (!targetUrl) {
+                if (currentBgMusic) {
+                    try {
+                        currentBgMusic.pause();
+                    } catch(e) {}
+                    currentBgMusic = null;
+                    currentBgMusicUrl = '';
+                }
+                
+                if (isSynth) {
+                    if (!melodyInterval) {
+                        initMelody();
+                    }
+                } else {
+                    if (melodyInterval) {
+                        clearInterval(melodyInterval);
+                        melodyInterval = null;
+                    }
+                }
+            } else {
+                if (melodyInterval) {
+                    clearInterval(melodyInterval);
+                    melodyInterval = null;
+                }
+
+                if (currentBgMusicUrl !== targetUrl) {
+                    if (currentBgMusic) {
+                        try {
+                            currentBgMusic.pause();
+                        } catch(e) {}
+                    }
+                    currentBgMusicUrl = targetUrl;
+                    currentBgMusic = new Audio(targetUrl);
+                    currentBgMusic.loop = true;
+                    currentBgMusic.volume = volCoeff * 0.15;
+                    currentBgMusic.play().catch(err => {
+                        console.log("Autoplay blocked or playback error:", err);
+                    });
+                } else {
+                    if (currentBgMusic) {
+                        currentBgMusic.volume = volCoeff * 0.15;
+                        if (currentBgMusic.paused) {
+                            currentBgMusic.play().catch(err => {});
+                        }
+                    }
+                }
+            }
         }
 
         let melodyInterval = null;
@@ -2642,9 +2765,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             if (audioCtx.state === 'suspended') { audioCtx.resume(); }
             melodyInterval = setInterval(() => {
                 const playM = document.body.classList.contains('play-melody');
-                const isMuted = document.body.classList.contains('mute-sounds');
                 
-                if (playM && !isMuted) {
+                if (playM) {
                     let t = audioCtx.currentTime;
                     let freq = scale[melodyPattern[noteIndex]] || scale[0];
                     noteIndex = (noteIndex + 1) % melodyPattern.length;
@@ -2670,6 +2792,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
             initHumSound();
             initWindSound();
             initMelody();
+            if (typeof syncBackgroundMusic === 'function') syncBackgroundMusic();
             if (document.body.classList.contains('mute-sounds')) return;
             if (e.target.closest('button') || 
                 e.target.closest('input[type="submit"]') || 
