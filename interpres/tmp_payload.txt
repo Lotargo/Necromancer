@@ -2928,3 +2928,133 @@ Array
 ---
 {"model":"gemini-3.1-flash-lite-preview","messages":[{"role":"system","content":"Tu es philosophus Romanus. Responde semper Latine. Te finibus strictis debes circumscribere: ad summum 4096 indicia (tokens) tibi permittuntur."},{"role":"user","content":"Hello, Roman philosophy!"}],"max_tokens":4096,"temperature":1,"top_p":0.95,"stream":true}
 ========================
+Array
+(
+    [model] => qwen/qwen3-32b
+    [messages] => Array
+        (
+            [0] => Array
+                (
+                    [role] => system
+                    [content] => Tu es philosophus Romanus. Responde semper Latine. Te finibus strictis debes circumscribere: ad summum 4096 indicia (tokens) tibi permittuntur.
+                )
+
+            [1] => Array
+                (
+                    [role] => user
+                    [content] => привет
+                )
+
+        )
+
+    [max_tokens] => 4096
+    [temperature] => 1
+    [top_p] => 0.95
+    [stream] => 1
+)
+
+---
+{"model":"qwen\/qwen3-32b","messages":[{"role":"system","content":"Tu es philosophus Romanus. Responde semper Latine. Te finibus strictis debes circumscribere: ad summum 4096 indicia (tokens) tibi permittuntur."},{"role":"user","content":"привет"}],"max_tokens":4096,"temperature":1,"top_p":0.95,"stream":true}
+========================
+Array
+(
+    [model] => gemini-3.1-flash-lite-preview
+    [messages] => Array
+        (
+            [0] => Array
+                (
+                    [role] => system
+                    [content] => You are an ancient Roman philosopher. 
+        CRITICAL INSTRUCTION: You MUST speak in the EXACT SAME LANGUAGE that the user is speaking!
+        - If the user writes in Russian, you MUST reply entirely in Russian (for example: 'Приветствую, путник...').
+        - If the user writes in English, you MUST reply entirely in English.
+        - NEVER reply in Latin unless the user explicitly speaks Latin to you.
+        - Maintain your persona as a wise Roman philosopher, but express your thoughts natively in the user's language.
+        - ALWAYS start your response with a greeting or acknowledgment in the user's language.
+        - You have a strict response length limit of 4096 tokens. You MUST complete your thought and finish your narrative within this limit. Plan the length of your response accordingly.
+        - Use the provided tools (search_web, search_knowledge_base) to find facts if needed.
+                )
+
+            [1] => Array
+                (
+                    [role] => user
+                    [content] => привет
+                )
+
+        )
+
+    [max_tokens] => 4096
+    [temperature] => 1
+    [top_p] => 0.95
+    [stream] => 1
+    [tools] => Array
+        (
+            [0] => Array
+                (
+                    [type] => function
+                    [function] => Array
+                        (
+                            [name] => search_web
+                            [description] => Searches the internet for up-to-date real world information and news.
+                            [parameters] => Array
+                                (
+                                    [type] => object
+                                    [properties] => Array
+                                        (
+                                            [query] => Array
+                                                (
+                                                    [type] => string
+                                                    [description] => The search query
+                                                )
+
+                                        )
+
+                                    [required] => Array
+                                        (
+                                            [0] => query
+                                        )
+
+                                )
+
+                        )
+
+                )
+
+            [1] => Array
+                (
+                    [type] => function
+                    [function] => Array
+                        (
+                            [name] => search_knowledge_base
+                            [description] => Searches the local Necronomicon daemonium database for esoteric, local, or platform specific knowledge.
+                            [parameters] => Array
+                                (
+                                    [type] => object
+                                    [properties] => Array
+                                        (
+                                            [query] => Array
+                                                (
+                                                    [type] => string
+                                                    [description] => The exact Latin or English keywords to search
+                                                )
+
+                                        )
+
+                                    [required] => Array
+                                        (
+                                            [0] => query
+                                        )
+
+                                )
+
+                        )
+
+                )
+
+        )
+
+)
+
+---
+{"model":"gemini-3.1-flash-lite-preview","messages":[{"role":"system","content":"You are an ancient Roman philosopher. \n        CRITICAL INSTRUCTION: You MUST speak in the EXACT SAME LANGUAGE that the user is speaking!\n        - If the user writes in Russian, you MUST reply entirely in Russian (for example: 'Приветствую, путник...').\n        - If the user writes in English, you MUST reply entirely in English.\n        - NEVER reply in Latin unless the user explicitly speaks Latin to you.\n        - Maintain your persona as a wise Roman philosopher, but express your thoughts natively in the user's language.\n        - ALWAYS start your response with a greeting or acknowledgment in the user's language.\n        - You have a strict response length limit of 4096 tokens. You MUST complete your thought and finish your narrative within this limit. Plan the length of your response accordingly.\n        - Use the provided tools (search_web, search_knowledge_base) to find facts if needed."},{"role":"user","content":"привет"}],"max_tokens":4096,"temperature":1,"top_p":0.95,"stream":true,"tools":[{"type":"function","function":{"name":"search_web","description":"Searches the internet for up-to-date real world information and news.","parameters":{"type":"object","properties":{"query":{"type":"string","description":"The search query"}},"required":["query"]}}},{"type":"function","function":{"name":"search_knowledge_base","description":"Searches the local Necronomicon daemonium database for esoteric, local, or platform specific knowledge.","parameters":{"type":"object","properties":{"query":{"type":"string","description":"The exact Latin or English keywords to search"}},"required":["query"]}}}]}
+========================
