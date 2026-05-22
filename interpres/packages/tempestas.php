@@ -56,45 +56,28 @@ function evocatio_temporis($location)
         return $error;
     }
 
-    $time_url = "https://api.open-meteo.com/v1/forecast?latitude=" . $resolved['latitude']
-        . "&longitude=" . $resolved['longitude']
-        . "&current=temperature_2m"
-        . "&timezone=" . urlencode($resolved['timezone']);
+    try {
+        $tz = new DateTimeZone($resolved['timezone']);
+        $dt = new DateTime("now", $tz);
+        $utc_offset_seconds = $tz->getOffset($dt);
 
-    $ch = curl_init($time_url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_USERAGENT, $resolved['ua']);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-    $time_res = curl_exec($ch);
-    $time_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+        $output = [
+            "location" => $resolved['name'],
+            "country" => $resolved['country'],
+            "latitude" => $resolved['latitude'],
+            "longitude" => $resolved['longitude'],
+            "timezone" => $resolved['timezone'],
+            "timezone_abbreviation" => $dt->format('T'),
+            "utc_offset_seconds" => $utc_offset_seconds,
+            "utc_offset_hours" => $utc_offset_seconds / 3600,
+            "gmt_offset" => tempestas_formatare_gmt_offset($utc_offset_seconds),
+            "current_local_time" => $dt->format("Y-m-d H:i:s"),
+        ];
 
-    if ($time_code !== 200 || empty($time_res)) {
-        return "Failed to retrieve current local time for location: " . $resolved['name'];
+        return json_encode($output, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    } catch (Exception $e) {
+        return "Failed to calculate current local time for location: " . $resolved['name'];
     }
-
-    $time_data = json_decode($time_res, true);
-    if (empty($time_data['current']['time'])) {
-        return "Current local time is unavailable for location: " . $resolved['name'];
-    }
-
-    $utc_offset_seconds = (int)($time_data['utc_offset_seconds'] ?? 0);
-
-    $output = [
-        "location" => $resolved['name'],
-        "country" => $resolved['country'],
-        "latitude" => $resolved['latitude'],
-        "longitude" => $resolved['longitude'],
-        "timezone" => $time_data['timezone'] ?? $resolved['timezone'],
-        "timezone_abbreviation" => $time_data['timezone_abbreviation'] ?? '',
-        "utc_offset_seconds" => $utc_offset_seconds,
-        "utc_offset_hours" => $utc_offset_seconds / 3600,
-        "gmt_offset" => tempestas_formatare_gmt_offset($utc_offset_seconds),
-        "current_local_time" => $time_data['current']['time'],
-    ];
-
-    return json_encode($output, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 }
 
 function evocatio_tempestatis($location)
@@ -166,6 +149,14 @@ function evocatio_tempestatis($location)
     $code = $current['weather_code'] ?? 0;
     $description = $wmo_codes[$code] ?? "Unknown conditions";
 
+    try {
+        $tz_live = new DateTimeZone($tz_name);
+        $dt_live = new DateTime("now", $tz_live);
+        $current_local_time = $dt_live->format("Y-m-d H:i:s");
+    } catch (Exception $e) {
+        $current_local_time = $current['time'] ?? 'unknown';
+    }
+
     $output = [
         "location" => $resolved['name'],
         "country" => $resolved['country'],
@@ -175,7 +166,7 @@ function evocatio_tempestatis($location)
         "timezone_abbreviation" => $tz_abbr,
         "utc_offset_hours" => $utc_offset_seconds / 3600,
         "gmt_offset" => tempestas_formatare_gmt_offset($utc_offset_seconds),
-        "current_local_time" => $current['time'] ?? 'unknown',
+        "current_local_time" => $current_local_time,
         "temperature" => ($current['temperature_2m'] ?? 'unknown') . " °C",
         "feels_like" => ($current['apparent_temperature'] ?? 'unknown') . " °C",
         "relative_humidity" => ($current['relative_humidity_2m'] ?? 'unknown') . " %",
