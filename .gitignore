@@ -8,4 +8,6 @@ tabularium/spiritus_mail.log
 tabularium/provisores/*/claves.txt
 .env*
 tmp/
+.agent/
+
 
