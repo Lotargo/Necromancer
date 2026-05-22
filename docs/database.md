@@ -37,6 +37,24 @@ This document details the database schema, relational dependencies, indices, and
                            | nuntius          |
                            | created_at       |
                            +------------------+
+
+ +------------------+      +----------------------+
+ | llm_key_status   |<-----|    llm_key_events    |
+ +------------------+      +----------------------+
+ | provider (PK*)   |      | id (PK)              |
+ | key_hash (PK*)   |      | provider             |
+ | key_hint         |      | key_hash             |
+ | status           |      | key_hint             |
+ | quarantine_until |      | model                |
+ | disabled_reason  |      | event_type           |
+ | last_http_code   |      | http_code            |
+ | last_error_kind  |      | error_kind           |
+ | success_count    |      | detail               |
+ | failure_count    |      | created_at           |
+ | last_success_at  |      +----------------------+
+ | last_failure_at  |
+ | updated_at       |
+ +------------------+
 ```
 
 ---
@@ -107,12 +125,84 @@ CREATE TABLE IF NOT EXISTS fabulatio (
 
 ---
 
+### 4. `llm_key_status` (LLM Key State Table)
+Stores the current health state of every synchronized provider key used by the load-balancing path.
+
+```sql
+CREATE TABLE IF NOT EXISTS llm_key_status (
+    provider VARCHAR(128) NOT NULL,
+    key_hash VARCHAR(64) NOT NULL,
+    key_hint VARCHAR(32) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'active',
+    quarantine_until TIMESTAMP NULL,
+    disabled_reason TEXT,
+    last_http_code INTEGER,
+    last_error_kind VARCHAR(128),
+    success_count INTEGER NOT NULL DEFAULT 0,
+    failure_count INTEGER NOT NULL DEFAULT 0,
+    last_success_at TIMESTAMP NULL,
+    last_failure_at TIMESTAMP NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (provider, key_hash)
+);
+```
+
+#### Fields Description:
+* **`provider`**: Provider name such as `gemini`, `groq`, or `cerebras`.
+* **`key_hash`**: Salted SHA-1 hash of the real key. The plaintext key is not stored in PostgreSQL.
+* **`key_hint`**: Short masked hint used for logs and debugging.
+* **`status`**: Current lifecycle state, such as `active`, `resting`, or `disabled`.
+* **`quarantine_until`**: TTL timestamp used for temporary cooldowns after rate limits or regional restrictions.
+* **`disabled_reason`**: Why the key was permanently disabled.
+* **`last_http_code`**: Most recent relevant provider HTTP status.
+* **`last_error_kind`**: Normalized failure kind such as `rate_limit`, `auth_or_billing`, or `transient`.
+* **`success_count` / `failure_count`**: Running counters of observed outcomes.
+* **`last_success_at` / `last_failure_at`**: Timestamps of the latest success or failure.
+* **`updated_at`**: Last state update timestamp.
+
+---
+
+### 5. `llm_key_events` (LLM Key Event Log)
+Stores the event history used to audit key health decisions and TTL-based quarantine logic.
+
+```sql
+CREATE TABLE IF NOT EXISTS llm_key_events (
+    id SERIAL PRIMARY KEY,
+    provider VARCHAR(128) NOT NULL,
+    key_hash VARCHAR(64) NOT NULL,
+    key_hint VARCHAR(32) NOT NULL,
+    model VARCHAR(255),
+    event_type VARCHAR(64) NOT NULL,
+    http_code INTEGER,
+    error_kind VARCHAR(128),
+    detail TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### Fields Description:
+* **`provider` / `key_hash` / `key_hint`**: Identify the affected key without storing the plaintext value.
+* **`model`**: Model used when the event occurred.
+* **`event_type`**: Normalized event such as `SUCCESS`, `RATE_LIMIT`, `DISABLE`, or `TRANSIENT`.
+* **`http_code`**: Observed provider HTTP status.
+* **`error_kind`**: Classified failure category.
+* **`detail`**: Sanitized diagnostic payload.
+* **`created_at`**: Event creation timestamp.
+
+---
+
 ## ⚡ Performance Optimization: Indexes
 
 To achieve instantaneous page load speeds during room rendering and message history checks, the following multi-column index has been deployed:
 
 ```sql
 CREATE INDEX IF NOT EXISTS idx_fabulatio_nomen_cubiculum ON fabulatio(nomen, cubiculum);
+```
+
+For key-state lookups and event history queries, the following event index is also used:
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_llm_key_events_lookup ON llm_key_events(provider, key_hash, created_at);
 ```
 
 ### Purpose:

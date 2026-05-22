@@ -12,7 +12,7 @@ Herein lies the complete documentation of our transition from a paper-thin retro
 Detailed analysis of the four pillars: the FreePascal **Daemonium**, the PHP/JS **Interpres**, the LuaJIT **Aequilibrium**, and the **PostgreSQL** repository. Includes socket protocols and network communication specifications.
 
 ### 2. 🗃️ [PostgreSQL Database Schema](database.md)
-Full descriptions of the relational tables (`usores`, `optiones`, `fabulatio`), column properties, custom performance indexes (`idx_fabulatio_nomen_cubiculum`), and cascade consistency dynamics.
+Full descriptions of the relational tables (`usores`, `optiones`, `fabulatio`), plus the PostgreSQL-backed LLM key-state tables used for quarantine, logging, and synchronization.
 
 ### 3. 🛡️ [Security & Cryptography](security.md)
 Deep dive into our implementation of salted **SHA-1 hashing**, parameterized SQL injection guards, socket protocol sanitization, and path traversal mitigations.
@@ -21,7 +21,7 @@ Deep dive into our implementation of salted **SHA-1 hashing**, parameterized SQL
 Comprehensive instructions to deploy the stack utilizing Docker Compose, environment variables configuration, and native compiling manuals for FreePascal and PHP development environments.
 
 ### 5. ⚙️ [LLM Providers & Load Balancing Configuration](providers.md)
-Detailed setup instructions for LLM API keys and model rotations inside the `tabularium/provisores/` directory, explanation of Aequilibrium's hot-reload mechanics, active provider automatic filtering, and security guidelines.
+Detailed setup instructions for LLM API keys and model rotations inside the `tabularium/provisores/` directory, explanation of Aequilibrium's hot-reload mechanics, PostgreSQL-backed key-state sync, and security guidelines.
 
 
 ---

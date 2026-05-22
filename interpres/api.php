@@ -73,6 +73,131 @@ function env_ad_boolean($nomen, $default = false)
     return $parsed;
 }
 
+function sanitizare_internam($value)
+{
+    return str_replace(["|", "\r", "\n"], [" ", "", " "], (string)$value);
+}
+
+function statum_clavis_llm($provider, $key)
+{
+    $resp = loqui_cum_daemonio(
+        "STATUM_CLAVIS_LLM|" . sanitizare_internam($provider) . "|" . sanitizare_internam($key)
+    );
+    $partes = explode("|", $resp, 3);
+    if (($partes[0] ?? '') === "200") {
+        return trim($partes[2] ?? 'active');
+    }
+    return 'active';
+}
+
+function notare_eventum_clavis_llm($provider, $key, $model, $event_type, $http_code, $error_kind, $detail = '')
+{
+    $mandatum = implode("|", [
+        "NOTARE_EVENTUM_CLAVIS_LLM",
+        sanitizare_internam($provider),
+        sanitizare_internam($key),
+        sanitizare_internam($model),
+        sanitizare_internam($event_type),
+        sanitizare_internam((string)$http_code),
+        sanitizare_internam($error_kind),
+        sanitizare_internam($detail),
+    ]);
+    return loqui_cum_daemonio($mandatum);
+}
+
+function classificare_eventum_llm($http_code, $err_str)
+{
+    $text = strtolower((string)$err_str);
+
+    if ($http_code === 429 || strpos($text, 'rate limit') !== false || strpos($text, 'too many requests') !== false) {
+        return ["event_type" => "RATE_LIMIT", "error_kind" => "rate_limit"];
+    }
+
+    $is_region = (
+        strpos($text, 'region') !== false ||
+        strpos($text, 'country') !== false ||
+        strpos($text, 'location') !== false ||
+        strpos($text, 'unsupported_location') !== false
+    );
+    if ($is_region) {
+        return ["event_type" => "REGION_BLOCKED", "error_kind" => "region_blocked"];
+    }
+
+    $is_auth = (
+        strpos($text, 'invalid api key') !== false ||
+        strpos($text, 'unauthorized') !== false ||
+        strpos($text, 'authentication') !== false ||
+        strpos($text, 'payment method is required') !== false ||
+        strpos($text, 'billing') !== false ||
+        strpos($text, 'account') !== false
+    );
+
+    if ($http_code === 401 || $http_code === 402 || ($http_code === 403 && !$is_region) || $is_auth) {
+        return ["event_type" => "DISABLE", "error_kind" => "auth_or_billing"];
+    }
+
+    if ($http_code === 400 || $http_code === 404) {
+        return ["event_type" => "MODEL_ERROR", "error_kind" => "model_or_request"];
+    }
+
+    if ($http_code >= 500 || $http_code === 0 || strpos($text, 'timed out') !== false || strpos($text, 'could not resolve') !== false) {
+        return ["event_type" => "TRANSIENT", "error_kind" => "transient"];
+    }
+
+    return ["event_type" => "TRANSIENT", "error_kind" => "unknown"];
+}
+
+function eligere_destinationem_llm($id_sessionis, $aequilibrium_activum)
+{
+    if ($aequilibrium_activum) {
+        $ultimus_error = "Aequilibrium activum est, sed nullum responsum validum cum provisore, clave et modelo accepimus.";
+        for ($temptatio = 0; $temptatio < 12; $temptatio++) {
+            $aequilibrium_resp = loqui_cum_aequilibrio($id_sessionis);
+            if ($aequilibrium_resp) {
+                $partes_aeq = explode("|", $aequilibrium_resp);
+                if (count($partes_aeq) >= 6 && $partes_aeq[0] === "200") {
+                    $provider = $partes_aeq[2];
+                    $key = $partes_aeq[3];
+                    $status = statum_clavis_llm($provider, $key);
+                    if ($status === 'active') {
+                        return [
+                            "apikey" => $key,
+                            "api_url" => $partes_aeq[4],
+                            "model" => $partes_aeq[5],
+                            "provisor_nomen" => $provider,
+                            "error" => null
+                        ];
+                    }
+
+                    $ultimus_error = "Omnes claves huius rotationis sunt in statu '" . $status . "'.";
+                    purgare_sessionem_aequilibrio($id_sessionis);
+                    continue;
+                }
+            }
+        }
+
+        return [
+            "apikey" => null,
+            "api_url" => null,
+            "model" => null,
+            "provisor_nomen" => "Ignotus",
+            "error" => $ultimus_error
+        ];
+    }
+
+    $apikey = getenv("OPENAI_API_KEY") ?: null;
+    $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
+    $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
+
+    return [
+        "apikey" => $apikey,
+        "api_url" => $api_url,
+        "model" => $model,
+        "provisor_nomen" => $apikey ? "Custom" : "Ignotus",
+        "error" => $apikey ? null : "Aequilibrium inactivum est, ergo valores ex .env requiruntur."
+    ];
+}
+
 // Public Actions (No Session Required)
 if ($action === 'login_anima' || $action === 'register_anima' || $action === 'forgot_anima') {
     $fp_client = sani($_POST['fp'] ?? '');
@@ -375,30 +500,11 @@ if ($action === 'send') {
     }
 
     $aequilibrium_activum = env_ad_boolean("AEQUILIBRIUM_ENABLED", true);
-    $apikey = null;
-    $api_url = null;
-    $model = null;
-    $provisor_nomen = "Ignotus";
-
-    if ($aequilibrium_activum) {
-        $aequilibrium_resp = loqui_cum_aequilibrio($cubiculum);
-        if ($aequilibrium_resp) {
-            $partes_aeq = explode("|", $aequilibrium_resp);
-            if ($partes_aeq[0] === "200") {
-                $provisor_nomen = $partes_aeq[2];
-                $apikey = $partes_aeq[3];
-                $api_url = $partes_aeq[4];
-                $model = $partes_aeq[5];
-            }
-        }
-    } else {
-        $apikey = getenv("OPENAI_API_KEY") ?: null;
-        $api_url = getenv("OPENAI_API_URL") ?: "https://api.openai.com/v1/chat/completions";
-        $model = getenv("OPENAI_API_MODEL") ?: "gpt-4o-mini";
-        if ($apikey) {
-            $provisor_nomen = "Custom";
-        }
-    }
+    $destinatio_llm = eligere_destinationem_llm($cubiculum, $aequilibrium_activum);
+    $apikey = $destinatio_llm["apikey"];
+    $api_url = $destinatio_llm["api_url"];
+    $model = $destinatio_llm["model"];
+    $provisor_nomen = $destinatio_llm["provisor_nomen"];
 
     // 0.5 Auto-name if first message
     $renamed_to = "";
@@ -450,20 +556,10 @@ if ($action === 'send') {
     }
 
     if (!$apikey) {
-        if ($aequilibrium_activum) {
-            $msg = "Clavis API deest. Aequilibrium activum est, sed nullum responsum validum cum provisore, clave et modelo accepimus.";
-        } else {
-            $msg = "Clavis API deest. Aequilibrium inactivum est, ergo valores ex .env requiruntur.";
-        }
+        $msg = "Clavis API deest. " . $destinatio_llm["error"];
         echo "data: " . json_encode(["choices" => [["delta" => ["content" => $msg]]]]) . "\n\n";
         loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $msg);
         exit();
-    }
-
-    // Nuntiare provisorem ad clientem (Optional info)
-    if ($provisor_nomen !== "Ignotus") {
-        echo "data: " . json_encode(["event" => "provisor", "nomen" => $provisor_nomen, "model" => $model]) . "\n\n";
-        flush();
     }
 
     // Read LLM config
@@ -547,12 +643,35 @@ if ($action === 'send') {
         ]
     ];
 
-    $max_loops = 5;
+    $max_loops = 8;
     $loop_count = 0;
     $final_response_content = "";
+    $provisor_nuntiatus = "";
 
     while ($loop_count < $max_loops) {
         $loop_count++;
+
+        $destinatio_llm = eligere_destinationem_llm($cubiculum, $aequilibrium_activum);
+        $apikey = $destinatio_llm["apikey"];
+        $api_url = $destinatio_llm["api_url"];
+        $model = $destinatio_llm["model"];
+        $provisor_nomen = $destinatio_llm["provisor_nomen"];
+
+        if (!$apikey) {
+            $err_msg = "Clavis API deest. " . $destinatio_llm["error"];
+            echo "data: " . json_encode(["choices" => [["delta" => ["content" => $err_msg]]]]) . "\n\n";
+            $final_response_content .= $err_msg;
+            break;
+        }
+
+        if ($provisor_nomen !== "Ignotus") {
+            $provisor_hash = $provisor_nomen . "|" . $model;
+            if ($provisor_hash !== $provisor_nuntiatus) {
+                echo "data: " . json_encode(["event" => "provisor", "nomen" => $provisor_nomen, "model" => $model]) . "\n\n";
+                flush();
+                $provisor_nuntiatus = $provisor_hash;
+            }
+        }
 
         $data = [
             "model" => $model,
@@ -675,13 +794,32 @@ if ($action === 'send') {
 
             $err_str = $err ?: ($parsed_msg ?: trim($error_buffer));
             $err_msg = "Error Oraculi (HTTP $http_code): " . $err_str;
+            $eventus = classificare_eventum_llm((int)$http_code, $err_str);
+
+            if ($aequilibrium_activum && $provisor_nomen !== "Ignotus") {
+                notare_eventum_clavis_llm($provisor_nomen, $apikey, $model, $eventus["event_type"], (int)$http_code, $eventus["error_kind"], $err_str);
+            }
 
             // Unpin the provider from the load balancer if it fails
             if ($aequilibrium_activum) {
                 purgare_sessionem_aequilibrio($cubiculum);
             }
 
-            // Wait, we could retry if loop_count == 1, but for now we just show the error
+            $potest_fallere = $aequilibrium_activum
+                && $loop_count < $max_loops
+                && $current_content === ""
+                && empty($tool_calls_buffer)
+                && empty($final_response_content);
+
+            if ($potest_fallere) {
+                echo "data: " . json_encode([
+                    "event" => "failover",
+                    "message" => "Provider " . $provisor_nomen . " [" . $model . "] failed, trying the next provider/model."
+                ]) . "\n\n";
+                flush();
+                continue;
+            }
+
             if ($loop_count == 1) {
                 echo "data: " . json_encode(["choices" => [["delta" => ["content" => $err_msg]]]]) . "\n\n";
                 $final_response_content .= $err_msg;
@@ -689,6 +827,10 @@ if ($action === 'send') {
                 $final_response_content .= "\n" . $err_msg;
             }
             break;
+        }
+
+        if ($aequilibrium_activum && $provisor_nomen !== "Ignotus") {
+            notare_eventum_clavis_llm($provisor_nomen, $apikey, $model, "SUCCESS", (int)$http_code, "success", "");
         }
 
         // Add the assistant's message to history

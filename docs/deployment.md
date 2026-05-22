@@ -32,8 +32,8 @@ AEQUILIBRIUM_ENABLED=true
 #### Custom Provider Blueprint (`.env`):
 ```ini
 # --- Custom OpenAI-Compatible Provider ---
-OPENAI_API_URL=https://api.openai.com/v1/chat/completions
-OPENAI_API_MODEL=gpt-4o-mini
+OPENAI_API_URL=https://your-provider.example/v1/chat/completions
+OPENAI_API_MODEL=your-model-name-here
 OPENAI_API_KEY=your_secret_openai_key_here
 
 # --- Relational Database Secrets ---
@@ -61,7 +61,7 @@ Verify that `chat_daemonium` has successfully initialized connection to PostgreS
 docker-compose logs chat_daemonium
 ```
 
-*Expected output should confirm database schema validation/creation with no errors.*
+*Expected output should confirm database schema validation/creation with no errors, including the LLM key-state tables used for quarantine and sync.*
 
 ---
 

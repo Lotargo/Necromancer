@@ -34,13 +34,14 @@ graph TD
     A[BFF Front: Interpres PHP / JS] <-->|Sockets TCP / Port 8080| B[Backend Core: Daemonium Pascal]
     B <-->|libpq / Port 5432| C[(Database: PostgreSQL)]
     A <-->|TCP / Port 8081| D[Balancer: Aequilibrium Lua]
-    D -->|Rotation| E[AI Providers: OpenAI / Gemini / LocalAI]
+    D -->|Rotation| E[AI Providers: Gemini / Groq / Cerebras]
 ```
 
 ### 1. 🦇 Daemonium (The Core Backend)
 * **Language**: FreePascal (`daemonium/daemonium.pas`)
 * **Role**: The heart and soul of the system. Operating on port `8080`, it manages socket connections, authorization, and message histories.
 * **Modernization**: Equipped with FPC's `sqldb`, `pqconnection`, and `sha1` units. It establishes thread-safe communication with PostgreSQL using parameterized queries to fully eliminate SQL injection vulnerabilities.
+* **LLM Key Registry**: Stores provider key health, cooldown TTLs, and failure events in PostgreSQL so disabled or resting keys are filtered automatically.
 
 ### 2. 👁️ Interpres (The Web Frontend & BFF)
 * **Language**: PHP 8.3 + Vanilla JS
@@ -49,10 +50,11 @@ graph TD
     * **Advanced Audio Mixer**: A three-channel audio control center (Summa/Master, Sonus/SFX, Musica/Music) utilizing the **Web Audio API**. Boost volumes up to 200% with dynamic visual crimson overdrive glows above 100% and enjoy looped occult background scores.
     * **HTML5 Canvas**: Eldritch visual overlays (Matrix Rain, Blood Drips, Watching Eyes, and Ignis Fatuus reactive embers).
     * **Sanitization**: Deep input parsing to prevent pipe injection attacks over TCP sockets.
+    * **Provider Failover**: Retries early provider failures by unpinning the current balancer session and requesting the next available provider/model candidate.
 
 ### 3. ⚖️ Aequilibrium (The Load Balancer)
 * **Language**: Lua / LuaJIT (`aequilibrium/aequilibrium.lua`)
-* **Role**: Runs on port `8081`. Provides smart API key rotation and model fallbacks for LLM connections.
+* **Role**: Runs on port `8081`. Provides provider rotation, key rotation, and session pinning for LLM connections when `AEQUILIBRIUM_ENABLED=true`.
 * **Resiliency**: Built-in crash protection (`pcall`) and socket descriptor auto-closure to handle high concurrent traffic.
 
 ### 4. 🗃️ Tabularium (The Database)
@@ -75,6 +77,7 @@ graph TD
 * **Instrumenta (Tools)**: The Oracle dynamically utilizes `search_web` (via DDG scraper) or `search_knowledge_base` (RAG from local occult texts).
 * **Ratio Cogitandi (Reasoning)**: Streams the Oracle's thought process step-by-step prior to writing the final Latin response.
 * **Nomina Automatica**: The Oracle automatically names new chat sessions with elegant Latin phrases based on the first message context.
+* **Key Quarantine**: Repeated `429` responses place a key into a 30-minute rest period, while invalid or billing-blocked keys are disabled automatically.
 
 ### 🌌 Visus & Auditio (CRT Aesthetics)
 * **Screen Shaking & CRT Glitches**: Fluid scanlines, chromatic aberration, and simulated mechanical hardware noise recreate a classic terminal feel.
@@ -123,19 +126,20 @@ When `AEQUILIBRIUM_ENABLED=false`, configure your OpenAI-compatible provider ins
 
 ```ini
 # OpenAI or compatible LLM API endpoints
-OPENAI_API_URL=https://api.openai.com/v1/chat/completions
-OPENAI_API_MODEL=gpt-5.4
+OPENAI_API_URL=https://your-provider.example/v1/chat/completions
+OPENAI_API_MODEL=your-model-name-here
 OPENAI_API_KEY=your_secret_api_key_here
 ```
 
 To configure **Google Gemini** via its OpenAI-compatible endpoint:
 ```ini
 OPENAI_API_URL=https://generativelanguage.googleapis.com/v1beta/openai/chat/completions
-OPENAI_API_MODEL=gemini-3.5-flash
+OPENAI_API_MODEL=gemini-2.5-flash-lite
 OPENAI_API_KEY=your_gemini_api_key_here
 ```
 
 When `AEQUILIBRIUM_ENABLED=true`, the `.env` OpenAI values are ignored and the active providers are loaded from `tabularium/provisores/`.
+The currently maintained balancer providers in this repository are `gemini`, `groq`, and `cerebras`.
 
 After modifying `.env` or `config.env`, rebuild your Docker containers:
 ```bash
