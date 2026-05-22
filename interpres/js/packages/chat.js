@@ -96,6 +96,7 @@ function selectRoom(room, refreshSidebar = true) {
 
                 if (isOracle) {
                     cleanBlock = block.replace(/^Oraculum:\s*/, '');
+                    if (cleanBlock.trim() === '') return;
                     let thoughtMatch = cleanBlock.match(/<thought>(.*?)<\/thought>(.*)/s);
                     if (thoughtMatch) {
                         let thought = thoughtMatch[1];
@@ -363,9 +364,11 @@ chatForm.onsubmit = function(e) {
                                 loadChats();
                             } else if (dataNode.event === 'clear_fallback') {
                                 // FALLBACK CLEANUP: Model outputted tool call as text.
-                                // Clear the wrongly rendered JSON from the chat bubble.
-                                if (normalTextSpan) {
-                                    normalTextSpan.innerHTML = '';
+                                // Remove the wrongly rendered JSON chat bubble from the DOM.
+                                if (oraclePrefix) {
+                                    oraclePrefix.remove();
+                                    oraclePrefix = null;
+                                    normalTextSpan = null;
                                 }
                                 if (window.streamingState) {
                                     window.streamingState.content = '';
@@ -379,7 +382,7 @@ chatForm.onsubmit = function(e) {
                                         s.rid = 0;
                                     }
                                     // Рендерим накопленный текст в СТАРЫЙ normalTextSpan
-                                    if (s.content) {
+                                    if (s.content && s.content.trim() !== '') {
                                         ensureOraclePrefix();
                                         normalTextSpan.innerHTML = DOMPurify.sanitize(marked.parse(s.content));
                                         if (typeof renderMathInElement === 'function') {
@@ -426,6 +429,14 @@ chatForm.onsubmit = function(e) {
                                  }
                                 
                                 chatEl.scrollTop = chatEl.scrollHeight;
+
+                                // Reset the bubble references so that any future text (in the next ReAct loop) gets a fresh bubble!
+                                if (oraclePrefix && (!normalTextSpan || normalTextSpan.textContent.trim() === '')) {
+                                    oraclePrefix.remove();
+                                }
+                                oraclePrefix = null;
+                                reasoningSpan = null;
+                                normalTextSpan = null;
                              } else if (dataNode.choices && dataNode.choices[0].delta) {
                                  const delta = dataNode.choices[0].delta;
                                   if (delta.reasoning_content || delta.content) {
@@ -458,7 +469,7 @@ chatForm.onsubmit = function(e) {
                                                  const contentDiv = reasoningSpan.querySelector('.reasoning-content');
                                                  if (contentDiv) contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(s.reasoning));
                                               }
-                                              if (s.content) {
+                                              if (s.content && s.content.trim() !== '') {
                                                   ensureOraclePrefix();
                                                   normalTextSpan.innerHTML = DOMPurify.sanitize(marked.parse(s.content));
                                                   renderMathInElement(normalTextSpan, {
