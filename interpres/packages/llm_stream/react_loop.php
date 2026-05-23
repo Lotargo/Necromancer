@@ -19,7 +19,7 @@ function llm_stream_append_react_reminder($messages_to_send, $loop_count, $lingu
     return $messages_to_send;
 }
 
-function llm_stream_build_request_data($model, $messages_to_send, $llm_config, $search_mode, $tools)
+function llm_stream_build_request_data($model, $messages_to_send, $llm_config, $search_mode, $tools, $provisor_nomen = "")
 {
     $data = [
         "model" => $model,
@@ -33,7 +33,10 @@ function llm_stream_build_request_data($model, $messages_to_send, $llm_config, $
     if ($search_mode === 'on') {
         $data["tools"] = $tools;
         $data["tool_choice"] = "auto";
-        $data["parallel_tool_calls"] = false;
+
+        if (strtolower(trim($provisor_nomen ?? '')) !== 'gemini') {
+            $data["parallel_tool_calls"] = false;
+        }
     }
 
     return $data;
@@ -272,7 +275,7 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
         }
 
         $messages_to_send = llm_stream_append_react_reminder($messages, $loop_count, $lingua_mode);
-        $data = llm_stream_build_request_data($model, $messages_to_send, $llm_config, $search_mode, $tools);
+        $data = llm_stream_build_request_data($model, $messages_to_send, $llm_config, $search_mode, $tools, $provisor_nomen);
         $tool_calls_buffer = [];
         $current_content = "";
         $error_buffer = "";
@@ -387,6 +390,32 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
                 }
 
                 $tool_result = llm_stream_execute_tool($tool_name, $args);
+
+                // AUTO-RAG: Automatically inject knowledge base hints for Pascal compilation errors
+                if (strpos($tool_result, 'Pascal Execution Compilation:') !== false) {
+                    // Extract a clean version of the error message to search the knowledge base
+                    // Remove the compiler banner which can pollute the search
+                    $clean_error = preg_replace('/Pascal Execution Compilation:.*?Error:/s', 'Error:', $tool_result);
+                    // Remove filenames and line numbers
+                    $clean_error = preg_replace('/temp_[a-zA-Z0-9_]+\.pas\([0-9,]+\)\s*/', '', $clean_error);
+
+                    // Take up to 150 characters, ensuring it captures the actual error string
+                    $clean_error = substr($clean_error, 0, 150);
+
+                    // Sanitize the string to prevent IPC protocol breakage
+                    $clean_error = str_replace(["\r", "\n", "|"], " ", trim($clean_error));
+
+                    $rag_resp = loqui_cum_daemonio("INVESTIGARE|" . $clean_error);
+                    $partes_rag = explode("|", $rag_resp);
+
+                    if (($partes_rag[0] ?? '') === '200') {
+                        $hint = $partes_rag[2] ?? '';
+                        if (!empty($hint)) {
+                            $tool_result .= "\n\n[System Note: The local knowledge base suggests: '" . $hint . "']";
+                        }
+                    }
+                }
+
                 if ($tool_name === 'solve_discrete_math') {
                     $last_math_result = $tool_result;
                 }
