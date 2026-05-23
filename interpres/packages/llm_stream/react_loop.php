@@ -76,6 +76,7 @@ function llm_stream_stream_completion($api_url, $apikey, $data, &$tool_calls_buf
             $json = json_decode($jsonStr, true);
 
             if ($json && isset($json['error'])) {
+                if (!isset($error_buffer)) $error_buffer = '';
                 $error_buffer .= json_encode($json);
                 continue;
             }
@@ -321,6 +322,8 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
             }
 
             if ($aequilibrium_activum && $loop_count < $max_loops && $api_error_retries < $max_api_error_retries) {
+                // We only increment if failover actually happened (inside the blocks below),
+                // but for safety we can just increment here since this block is inside if ($err || $http_code >= 400 || !empty($error_buffer))
                 $api_error_retries++;
 
                 if ($loop_count === 1 && empty($final_response_content) && empty($tool_calls_buffer) && $current_content === "") {
@@ -440,7 +443,16 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
         } else {
             $fallback_executed = llm_stream_maybe_execute_fallback_tool($assistant_message, $messages, $current_content, $final_response_content);
             if (!$fallback_executed) {
+                // LLM output is pure text (could be a final answer or a plan without tools).
+                // We must break the ReAct cycle to prevent infinite loops of tool-less thoughts
                 break;
+            } else {
+                // Inform frontend that fallback tool was captured
+                echo "data: " . json_encode(["choices" => [["delta" => ["content" => "
+
+[Fallback Tool Recovered...]
+"]]]]) . "\n\n";
+                flush();
             }
         }
     }
