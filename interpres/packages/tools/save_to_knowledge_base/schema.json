@@ -1,0 +1,17 @@
+{
+  "type": "function",
+  "function": {
+    "name": "save_to_knowledge_base",
+    "description": "Saves a rule or solution into the local knowledge base. Use this to record successful solutions to compilation errors or missing identifiers (e.g. mapping an error to the required standard library unit).",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "rule": {
+          "type": "string",
+          "description": "A clear, concise rule or solution to save. Example: 'Error: Identifier not found IntToStr -> Solution: uses SysUtils;'"
+        }
+      },
+      "required": ["rule"]
+    }
+  }
+}

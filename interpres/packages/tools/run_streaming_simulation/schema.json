@@ -17,7 +17,7 @@
         },
         "code": {
           "type": "string",
-          "description": "A self-contained Pascal program. Must print coordinates to standard output at regular intervals (using Sleep(30) or Sleep(50) from SysUtils) in JSON format. Only uses Math and SysUtils. Example: program Wave; uses Math; var t: Double; begin for t := 0 to 100 do begin WriteLn('{\"x\": ' + FloatToStr(t/10) + ', \"y\": ' + FloatToStr(sin(t/10)) + '}'); end; end."
+          "description": "A self-contained Pascal program. Must print coordinates to standard output at regular intervals (using Sleep(30) or Sleep(50) from SysUtils) in JSON format. You MUST include the appropriate standard Pascal libraries in your `uses` clause (e.g. Math, SysUtils, Classes, StrUtils) depending on the functions you use. If you encounter a Compilation Error, analyze it. If you lack the knowledge to fix it, use `search_knowledge_base` or `search_web` to find the correct standard library for the missing identifier, then retry execution. If you successfully resolve an error, you MUST call `save_to_knowledge_base` to store the solution for future reference. Example: program Wave; uses Math, SysUtils; var t: Double; begin for t := 0 to 100 do begin WriteLn('{\"x\": ' + FloatToStr(t/10) + ', \"y\": ' + FloatToStr(sin(t/10)) + '}'); end; end."
         }
       },
       "required": ["title", "type", "code"]
