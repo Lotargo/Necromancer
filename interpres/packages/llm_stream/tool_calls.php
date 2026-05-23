@@ -65,6 +65,12 @@ function normalizare_tool_calls_ad_executionem($tool_calls_buffer)
 
     foreach ($tool_calls_buffer as $tc) {
         $tool_name = $tc['function']['name'] ?? '';
+
+        // Ensure every tool call has a unique ID, falling back if missing from buffer
+        if (empty($tc['id'])) {
+            $tc['id'] = 'tool_' . uniqid();
+        }
+
         $raw_arguments = (string)($tc['function']['arguments'] ?? '');
         $decoded = json_decode($raw_arguments, true);
 
