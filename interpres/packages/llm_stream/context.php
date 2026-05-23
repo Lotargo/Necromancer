@@ -94,7 +94,7 @@ function llm_stream_emit_room_rename($renamed_to)
 function llm_stream_load_config()
 {
     $llm_config_path = __DIR__ . '/../../../tabularium/llm_config.json';
-    $llm_config = ["max_tokens" => 4096, "temperature" => 1.0, "top_p" => 0.95];
+    $llm_config = ["max_tokens" => 8192, "temperature" => 1.0, "top_p" => 0.95];
     if (file_exists($llm_config_path)) {
         $json_config = json_decode(file_get_contents($llm_config_path), true);
         if (is_array($json_config)) {
