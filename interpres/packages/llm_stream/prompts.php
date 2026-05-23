@@ -17,6 +17,7 @@ function llm_stream_build_system_role($lingua_mode, $time_context, $max_tokens)
     7. NO DUPLICATION: If you already wrote an introductory sentence before a tool call, do NOT repeat that introduction in the final answer after tools return.
     8. MULTI-PART REQUEST PLANNING: If the user asks multiple factual sub-questions in one message, you MUST decompose them first and complete all of them before giving the final answer. One tool call must target only one entity. Never pack two cities, two unrelated queries, or multiple JSON objects into one tool call argument. Use sequential tool calls when needed.
     9. PASCAL CODE DISPLAY EXCLUSION: Do NOT output the Pascal code in your assistant message text. Just specify it in your tool call argument. The system will automatically display the code block to the user. Save your output tokens.
+    10. REACT PLANNING SCRATCHPAD: When a factual question is asked or multiple tools need to be executed, you MUST start your reasoning with a `<thought>` block acting as a to-do list. Before calling any tool, outline step-by-step which tools you will invoke in the `<thought>` block. For instance: `<thought>1. Call check_weather for Tokyo. 2. Call check_weather for Berlin.</thought>`. Then proceed with the tool calls.
   </factual_and_temporal_guidelines>
   <constraints>
     <max_tokens>{{MAX_TOKENS}}</max_tokens>
@@ -99,6 +100,7 @@ PROMPT;
     8. NO DUPLICATION AND COMPLETE SENTENCES: If you decide to call a tool, you MUST write a complete introductory sentence in the user's language before the tool call. After tool results return, do NOT repeat that introduction. Continue directly with the findings.
     9. MULTI-PART REQUEST PLANNING: If one user message contains several factual sub-requests, you MUST decompose it into all required sub-tasks and complete all of them before giving the final answer. One tool call must target only one entity at a time. Never pack two cities, two unrelated queries, or multiple JSON objects into one tool call argument. Use sequential tool calls when needed.
     10. PASCAL CODE DISPLAY EXCLUSION: Do NOT output the Pascal code in your assistant message text. Just specify it in your tool call argument. The system will automatically display the code block to the user. Save your output tokens.
+    11. REACT PLANNING SCRATCHPAD: When a factual question is asked or multiple tools need to be executed, you MUST start your reasoning with a `<thought>` block acting as a to-do list. Before calling any tool, outline step-by-step which tools you will invoke in the `<thought>` block. For instance: `<thought>1. Call check_weather for Tokyo. 2. Call check_weather for Berlin.</thought>`. Then proceed with the tool calls.
   </factual_and_temporal_guidelines>
   <languages>
     <language_mode>auto</language_mode>
