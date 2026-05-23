@@ -19,7 +19,7 @@
 
 **Necromancer** is an arcane chat interface and local backend system wrapped in the aesthetics of a retro CRT terminal and the lore of dark magic. It acts as a gateway to interact with an AI **Oraculum** (Oracle), using Latin incantations, occult themes, and ancient Roman personas.
 
-While the project preserves its **retro CRT shell** and immersive mechanical soundscape, we have evolved its underlying architecture. The backend has migrated from fragile flat-text scroll files to a robust **PostgreSQL** database, coupled with the state-of-the-art **Argon2id hashing** (with seamless legacy **SHA-1 migration**) for user credentials. This ensures transactional integrity and security without losing a single drop of its gothic visual and auditory atmosphere.
+While the project preserves its **retro CRT shell** and immersive mechanical soundscape, we have evolved its underlying architecture. The backend has migrated from fragile flat-text scroll files to a robust **PostgreSQL** database, coupled with the state-of-the-art **Argon2id hashing** (with seamless legacy **SHA-1 migration**) for user credentials. The AI gateway has also been modernized to utilize the industry-standard **`openai-php/client`** GenAI SDK for robust model orchestration and strict typing. This ensures transactional integrity and security without losing a single drop of its gothic visual and auditory atmosphere.
 
 Detailed internal structures and setup guidelines can be found in our **[Occult Library / Docs](docs/)**.
 
@@ -200,6 +200,7 @@ For developers wishing to run the components natively on Windows/Linux:
 5. **Run Interpres**:
    ```bash
    cd interpres
+   composer install
    php -S 127.0.0.1:666
    ```
 
