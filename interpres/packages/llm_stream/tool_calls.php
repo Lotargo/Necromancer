@@ -98,6 +98,7 @@ function normalizare_tool_calls_ad_executionem($tool_calls_buffer)
         $fallback_args = match ($tool_name) {
             'check_weather', 'check_time' => ['location' => ''],
             'search_web', 'search_knowledge_base' => ['query' => ''],
+            'solve_discrete_math', 'run_streaming_simulation' => ['code' => ''],
             default => [],
         };
 
@@ -110,7 +111,8 @@ function normalizare_tool_calls_ad_executionem($tool_calls_buffer)
 
 function llm_stream_build_tools()
 {
-    return [
+    require_once __DIR__ . '/tool_manager.php';
+    $hardcoded = [
         [
             "type" => "function",
             "function" => [
@@ -168,10 +170,19 @@ function llm_stream_build_tools()
             ]
         ]
     ];
+
+    $dynamic = tool_manager_load_dynamic_tools();
+    return array_merge($hardcoded, $dynamic);
 }
 
 function llm_stream_execute_tool($tool_name, $args)
 {
+    require_once __DIR__ . '/tool_manager.php';
+    $dyn_res = tool_manager_execute_tool($tool_name, $args);
+    if ($dyn_res !== null) {
+        return $dyn_res;
+    }
+
     $query = $args['query'] ?? '';
 
     return match ($tool_name) {

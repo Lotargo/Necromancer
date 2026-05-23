@@ -64,7 +64,7 @@ begin
     while not Query.EOF do
     begin
       if Historia <> '' then
-        Historia := Historia + '\n';
+        Historia := Historia + '[NUNTIUS_SEP]';
       Historia := Historia + Query.FieldByName('nuntius').AsString;
       Query.Next;
     end;

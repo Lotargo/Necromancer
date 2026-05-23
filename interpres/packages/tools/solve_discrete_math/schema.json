@@ -1,0 +1,17 @@
+{
+  "type": "function",
+  "function": {
+    "name": "solve_discrete_math",
+    "description": "Calculates math/logic using a highly optimized sandboxed Pascal program. Returns math formulas formatted in LaTeX notation ($...$ or $$...$$). Use this for any precise math, discrete math, complex calculations, or logical equations.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "A self-contained Pascal program. Standard syntax. Must print the final result using WriteLn, formatted in LaTeX. Only import Math (uses Math;). Example: program MathSol; uses Math; begin WriteLn('$$x = \\frac{-b \\pm \\sqrt{d}}{2a}$$'); end."
+        }
+      },
+      "required": ["code"]
+    }
+  }
+}

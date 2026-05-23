@@ -1,5 +1,29 @@
 // Necromancer - AJAX Chat Logic, SSE Streaming & Room Management
 
+function restoreLatexDelimiters(text) {
+    if (!text) return text;
+    
+    // 1. Восстанавливаем \[ ... \] из [ ... ]
+    // Исключаем ссылки Markdown и кнопки чата [R]/[X].
+    // Ищем признаки LaTeX: математические знаки (=, +, -, *, /, _, ^, \, {, }) или латинские переменные с индексами.
+    text = text.replace(/\[\s*([\s\S]+?)\s*\](?!\()/g, (match, content) => {
+        const isMath = /[=\+\-\*\/_^{}\\]/.test(content) || 
+                       /[a-zA-Z_\theta\pi\alpha\beta\gamma\delta\lambda\mu\sigma\omega\phi\psi\xi\eta\zeta\chi\epsilon]+\s*[0-9]+/.test(content) ||
+                       /\\begin|\\end|\\cdot|\\gcd|\\frac|\\boxed|\\qquad|\\mathbb/.test(content);
+        if (isMath) {
+            return '\\[' + content + '\\]';
+        }
+        return match;
+    });
+
+    // 2. Восстанавливаем \( ... \) из ( ... )
+    // Исключаем скобки, которые экранированы командами \\left( и \\right)
+    // Ищем характерные команды LaTeX внутри круглых скобок.
+    text = text.replace(/(?<!\\left\s*)\(\s*((\\gcd|\\alpha|\\beta|\\gamma|\\delta|\\pi|\\theta|\\cdot|\\boxed|\\frac|\\sum|\\infty|\\mathbb|\\begin|\\end)[^)]*?)\s*(?<!\\right)\)/g, '\\($1\\)');
+    
+    return text;
+}
+
 function loadChats(selectDefault = false) {
     fetch('api.php?action=list&t=' + Date.now())
         .then(r => r.json())
@@ -80,6 +104,8 @@ function selectRoom(room, refreshSidebar = true) {
                 chatEl.innerHTML = 'Nihil scriptum est...';
                 return;
             }
+            
+            text = restoreLatexDelimiters(text);
             
             chatEl.innerHTML = '';
             const messageBlocks = text.split(/(?=^Tute:|^Oraculum:)/m);
@@ -373,6 +399,23 @@ chatForm.onsubmit = function(e) {
                                 if (window.streamingState) {
                                     window.streamingState.content = '';
                                 }
+                            } else if (dataNode.event === 'simulation_init') {
+                                // Инстанцируем Canvas Player в DOM чата
+                                const canvasPlayer = document.createElement('canvas-player');
+                                canvasPlayer.setAttribute('sim-id', dataNode.sim_id);
+                                canvasPlayer.setAttribute('title', dataNode.title || 'Physica Simulatio');
+                                canvasPlayer.setAttribute('type', dataNode.type || 'oscilloscope');
+                                chatEl.appendChild(canvasPlayer);
+                                chatEl.scrollTop = chatEl.scrollHeight;
+
+                                // Глобальный диспатч для подключенного компонента
+                                window.dispatchEvent(new CustomEvent(`sim_init_${dataNode.sim_id}`, { detail: dataNode }));
+                            } else if (dataNode.event === 'simulation_data') {
+                                // Стриминг точки данных
+                                window.dispatchEvent(new CustomEvent(`sim_data_${dataNode.sim_id}`, { detail: dataNode }));
+                            } else if (dataNode.event === 'simulation_end') {
+                                // Завершение симуляции
+                                window.dispatchEvent(new CustomEvent(`sim_end_${dataNode.sim_id}`, { detail: dataNode }));
                             } else if (dataNode.event === 'tool_call') {
                                 // 1. Принудительный синхронный рендеринг накопленного контента Шага 1 перед переходом к инструменту
                                 if (window.streamingState) {
@@ -437,7 +480,23 @@ chatForm.onsubmit = function(e) {
                                 oraclePrefix = null;
                                 reasoningSpan = null;
                                 normalTextSpan = null;
-                             } else if (dataNode.choices && dataNode.choices[0].delta) {
+                             } else if (dataNode.event === 'tool_execute') {
+                                 // Автоматическая визуализация исходного Pascal-кода при его выполнении
+                                 if (dataNode.code) {
+                                     const codeBlock = document.createElement('div');
+                                     codeBlock.className = 'msg-oracle';
+                                     codeBlock.style.marginTop = '10px';
+                                     codeBlock.style.marginBottom = '15px';
+                                     
+                                     let label = (dataNode.name === 'run_streaming_simulation') ? 'Simulatio' : 'Calculus';
+                                     codeBlock.innerHTML = `<strong>Scriptura Pascal (${label}):</strong>
+                                         <pre style="position: relative;"><code class="language-pascal">${DOMPurify.sanitize(dataNode.code)}</code></pre>`;
+                                     
+                                     chatEl.appendChild(codeBlock);
+                                     if (typeof addCopyButtons === 'function') addCopyButtons(codeBlock);
+                                     chatEl.scrollTop = chatEl.scrollHeight;
+                                 }
+                              } else if (dataNode.choices && dataNode.choices[0].delta) {
                                  const delta = dataNode.choices[0].delta;
                                   if (delta.reasoning_content || delta.content) {
                                       if (!window.streamingState) {

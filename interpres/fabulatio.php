@@ -225,5 +225,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
     <script src="js/packages/ui.js"></script>
     <script src="js/packages/config.js"></script>
     <script src="js/packages/chat.js"></script>
+    <script type="module" src="js/packages/katex_player.js"></script>
+    <script type="module" src="js/packages/canvas_player.js"></script>
 </body>
 </html>

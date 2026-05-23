@@ -12,3 +12,4 @@ config.env
 tmp/
 .agent/
 scratch/
+dont_delete*

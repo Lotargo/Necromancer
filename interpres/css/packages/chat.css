@@ -80,6 +80,8 @@
             border-radius: 6px;
             padding: 12px; 
             overflow-x: auto; 
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
             margin-top: 10px;
             margin-bottom: 10px;
             font-family: var(--terminal-font); 
@@ -321,6 +323,27 @@
             color: var(--dim-color) !important;
             box-shadow: none !important;
             cursor: not-allowed;
+        }
+
+        /* KaTeX Overflow & Responsive Math Styles */
+        .katex-display {
+            overflow-x: auto !important;
+            overflow-y: hidden !important;
+            padding: 8px 0 !important;
+            max-width: 100% !important;
+            /* Custom thin green scrollbar for CRT aesthetics */
+            scrollbar-width: thin;
+            scrollbar-color: var(--dim-color) rgba(0, 0, 0, 0.3);
+        }
+        .katex-display::-webkit-scrollbar {
+            height: 4px;
+        }
+        .katex-display::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+        .katex-display::-webkit-scrollbar-thumb {
+            background-color: var(--dim-color);
+            border-radius: 2px;
         }
 
         
