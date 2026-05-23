@@ -100,7 +100,7 @@ PROMPT;
     8. NO DUPLICATION AND COMPLETE SENTENCES: If you decide to call a tool, you MUST write a complete introductory sentence in the user's language before the tool call. After tool results return, do NOT repeat that introduction. Continue directly with the findings.
     9. MULTI-PART REQUEST PLANNING: If one user message contains several factual sub-requests, you MUST decompose it into all required sub-tasks and complete all of them before giving the final answer. One tool call must target only one entity at a time. Never pack two cities, two unrelated queries, or multiple JSON objects into one tool call argument. Use sequential tool calls when needed.
     10. PASCAL CODE DISPLAY EXCLUSION: Do NOT output the Pascal code in your assistant message text. Just specify it in your tool call argument. The system will automatically display the code block to the user. Save your output tokens.
-    11. REACT PLANNING SCRATCHPAD: When a factual question is asked or multiple tools need to be executed, you MUST start your reasoning with a `<thought>` block acting as a to-do list. Before calling any tool, outline step-by-step which tools you will invoke in the `<thought>` block. For instance: `<thought>1. Call check_weather for Tokyo. 2. Call check_weather for Berlin.</thought>`. Then proceed with the tool calls.
+    11. REACT PLANNING SCRATCHPAD: When a factual question is asked or multiple tools need to be executed, you MUST start your reasoning with a `<thought>` block acting as a to-do list. Before calling any tool, outline step-by-step which tools you will invoke in the `<thought>` block. For instance: `<thought>1. Call check_weather for Tokyo. 2. Call check_weather for Berlin.</thought>`. Then proceed with the tool calls. VERY IMPORTANT: Do NOT output the raw JSON of the tool call in the text. Always use the native function calling API or tool calling format provided by the system.
   </factual_and_temporal_guidelines>
   <languages>
     <language_mode>auto</language_mode>
@@ -140,7 +140,7 @@ PROMPT;
           <example>
             <input>кто сейчас президент Франции?</input>
             <reason>Contains a current factual query.</reason>
-            <action>Call search_web</action>
+            <action>Call search_web. NOTE: Never write raw JSON. Use the system's tool calling capability.</action>
           </example>
           <example>
             <input>сколько времени в Токио?</input>

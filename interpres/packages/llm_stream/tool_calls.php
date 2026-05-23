@@ -63,7 +63,7 @@ function normalizare_tool_calls_ad_executionem($tool_calls_buffer)
 {
     $normalized = [];
 
-    foreach ($tool_calls_buffer as $tc) {
+    foreach ($tool_calls_buffer as &$tc) {
         $tool_name = $tc['function']['name'] ?? '';
 
         // Ensure every tool call has a unique ID, falling back if missing from buffer
