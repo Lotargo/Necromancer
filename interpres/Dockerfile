@@ -6,6 +6,11 @@ WORKDIR /app/interpres
 # Copy the PHP scripts
 COPY . .
 
+# Install Composer and dependencies
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN apk add --no-cache git unzip \
+    && composer install --no-dev --optimize-autoloader
+
 # Expose the web server port
 EXPOSE 8000
 

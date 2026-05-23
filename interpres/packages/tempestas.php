@@ -17,7 +17,7 @@ function tempestas_resolvere_locum($location)
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     $geo_res = curl_exec($ch);
     $geo_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    // curl_close($ch); // Deprecated in PHP 8.5, has no effect in PHP >= 8.0
 
     if ($geo_code !== 200 || empty($geo_res)) {
         return [null, "Failed to resolve coordinates for location: " . $location];
@@ -99,7 +99,7 @@ function evocatio_tempestatis($location)
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     $forecast_res = curl_exec($ch);
     $forecast_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    // curl_close($ch);
 
     if ($forecast_code !== 200 || empty($forecast_res)) {
         return "Failed to retrieve weather forecast for location: " . $resolved['name'];

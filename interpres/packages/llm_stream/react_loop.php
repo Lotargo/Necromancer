@@ -1,5 +1,59 @@
 <?php
 
+$autoloader = dirname(__DIR__, 2) . '/vendor/autoload.php';
+if (file_exists($autoloader)) {
+    require_once $autoloader;
+}
+
+if (!class_exists('ThoughtSignatureStreamDecorator')) {
+    class ThoughtSignatureStreamDecorator implements \Psr\Http\Message\StreamInterface {
+        private $stream;
+        private $buffer = '';
+        public static $signatures = [];
+
+        public function __construct(\Psr\Http\Message\StreamInterface $stream) {
+            $this->stream = $stream;
+        }
+
+        public function read(int $length): string {
+            $data = $this->stream->read($length);
+            $this->buffer .= $data;
+            
+            $lines = explode("\n", $this->buffer);
+            $this->buffer = array_pop($lines);
+
+            foreach ($lines as $line) {
+                if (str_starts_with($line, 'data: {')) {
+                    $json = json_decode(substr($line, 6), true);
+                    if ($json && isset($json['choices'][0]['delta']['tool_calls'])) {
+                        foreach ($json['choices'][0]['delta']['tool_calls'] as $tc) {
+                            if (isset($tc['id']) && isset($tc['extra_content'])) {
+                                self::$signatures[$tc['id']] = $tc['extra_content'];
+                            }
+                        }
+                    }
+                }
+            }
+            return $data;
+        }
+
+        public function __toString(): string { return $this->stream->__toString(); }
+        public function close(): void { $this->stream->close(); }
+        public function detach() { return $this->stream->detach(); }
+        public function getSize(): ?int { return $this->stream->getSize(); }
+        public function tell(): int { return $this->stream->tell(); }
+        public function eof(): bool { return $this->stream->eof(); }
+        public function isSeekable(): bool { return $this->stream->isSeekable(); }
+        public function seek(int $offset, int $whence = SEEK_SET): void { $this->stream->seek($offset, $whence); }
+        public function rewind(): void { $this->stream->rewind(); }
+        public function isWritable(): bool { return $this->stream->isWritable(); }
+        public function write(string $string): int { return $this->stream->write($string); }
+        public function isReadable(): bool { return $this->stream->isReadable(); }
+        public function getContents(): string { return $this->stream->getContents(); }
+        public function getMetadata(?string $key = null) { return $this->stream->getMetadata($key); }
+    }
+}
+
 function llm_stream_append_react_reminder($messages_to_send, $loop_count, $lingua_mode)
 {
     if ($loop_count <= 1) {
@@ -53,48 +107,74 @@ function llm_stream_build_request_data($model, $messages_to_send, $llm_config, $
 
 function llm_stream_stream_completion($api_url, $apikey, $data, &$tool_calls_buffer, &$current_content, &$final_response_content, &$error_buffer, &$total_reasoning)
 {
-    $ch = curl_init($api_url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    $json_encoded_data = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-    file_put_contents(dirname(__DIR__) . "/tmp_payload.txt", print_r($data, true) . "\n---\n" . $json_encoded_data . "\n========================\n", FILE_APPEND);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $json_encoded_data);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        "Content-Type: application/json",
-        "Authorization: Bearer " . $apikey,
-    ]);
-    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    if (!class_exists('\OpenAI')) {
+        $autoloader = dirname(__DIR__, 2) . '/vendor/autoload.php';
+        if (file_exists($autoloader)) {
+            require_once $autoloader;
+        } else {
+            return [500, "Composer autoloader not found."];
+        }
+    }
 
-    curl_setopt($ch, CURLOPT_WRITEFUNCTION, function ($ch, $chunk) use (&$tool_calls_buffer, &$current_content, &$final_response_content, &$error_buffer, &$total_reasoning) {
-        $lines = explode("\n", $chunk);
-        foreach ($lines as $line) {
-            if (!empty(trim($line)) && strpos($line, 'data: ') !== 0 && strpos(trim($line), '{') === 0 && empty($current_content) && empty($tool_calls_buffer)) {
-                $error_buffer .= $chunk;
-                return strlen($chunk);
+    $data['stream'] = true; // Ensure boolean
+    
+    // Log outgoing request
+    $log_json_data = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    file_put_contents(dirname(__DIR__) . "/tmp_payload.txt", print_r($data, true) . "\n---\n" . $log_json_data . "\n========================\n", FILE_APPEND);
+
+    try {
+        $base_uri = preg_replace('#/chat/completions/?$#', '', $api_url);
+        
+        $handlerStack = \GuzzleHttp\HandlerStack::create();
+        
+        $handlerStack->push(\GuzzleHttp\Middleware::mapRequest(function (\Psr\Http\Message\RequestInterface $request) {
+            if ($request->getMethod() === 'POST') {
+                $body = $request->getBody()->getContents();
+                $request->getBody()->rewind();
+                
+                if (!empty($body)) {
+                    $json = json_decode($body, true);
+                    if ($json && isset($json['messages'])) {
+                        $modified = false;
+                        foreach ($json['messages'] as &$msg) {
+                            if (isset($msg['role']) && $msg['role'] === 'assistant' && isset($msg['tool_calls'])) {
+                                foreach ($msg['tool_calls'] as &$tc) {
+                                    if (isset($tc['id']) && isset(ThoughtSignatureStreamDecorator::$signatures[$tc['id']])) {
+                                        $tc['extra_content'] = ThoughtSignatureStreamDecorator::$signatures[$tc['id']];
+                                        $modified = true;
+                                    }
+                                }
+                            }
+                        }
+                        if ($modified) {
+                            $newBody = json_encode($json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                            return $request->withBody(\GuzzleHttp\Psr7\Utils::streamFor($newBody));
+                        }
+                    }
+                }
             }
+            return $request;
+        }));
 
-            if (strpos($line, 'data: ') !== 0) {
+        $handlerStack->push(\GuzzleHttp\Middleware::mapResponse(function (\Psr\Http\Message\ResponseInterface $response) {
+            return $response->withBody(new ThoughtSignatureStreamDecorator($response->getBody()));
+        }));
+
+        $client = \OpenAI::factory()
+            ->withApiKey($apikey)
+            ->withBaseUri($base_uri)
+            ->withHttpClient(new \GuzzleHttp\Client(['stream' => true, 'verify' => false, 'handler' => $handlerStack]))
+            ->make();
+
+        $stream = $client->chat()->createStreamed($data);
+
+        foreach ($stream as $response) {
+            $raw_response = $response->toArray();
+            if (!isset($raw_response['choices'][0]['delta'])) {
                 continue;
             }
 
-            $jsonStr = substr($line, 6);
-            if (trim($jsonStr) === '[DONE]') {
-                continue;
-            }
-
-            $json = json_decode($jsonStr, true);
-
-            if ($json && isset($json['error'])) {
-                if (!isset($error_buffer)) $error_buffer = '';
-                $error_buffer .= json_encode($json);
-                continue;
-            }
-
-            if (!$json || !isset($json['choices'][0]['delta'])) {
-                continue;
-            }
-
-            $delta = $json['choices'][0]['delta'];
+            $delta = $raw_response['choices'][0]['delta'];
 
             if (isset($delta['content']) && $delta['content'] !== null) {
                 $current_content .= $delta['content'];
@@ -109,41 +189,46 @@ function llm_stream_stream_completion($api_url, $apikey, $data, &$tool_calls_buf
                 flush();
             }
 
-            if (!isset($delta['tool_calls'])) {
-                continue;
-            }
+            if (isset($delta['tool_calls'])) {
+                foreach ($delta['tool_calls'] as $tc) {
+                    $idx = $tc['index'] ?? 0;
+                    if (!isset($tool_calls_buffer[$idx])) {
+                        $tool_calls_buffer[$idx] = [
+                            "id" => $tc['id'] ?? "",
+                            "type" => "function",
+                            "function" => [
+                                "name" => $tc['function']['name'] ?? "",
+                                "arguments" => $tc['function']['arguments'] ?? "",
+                            ],
+                        ];
 
-            foreach ($delta['tool_calls'] as $tc) {
-                $idx = $tc['index'] ?? 0;
-                if (!isset($tool_calls_buffer[$idx])) {
-                    $tool_calls_buffer[$idx] = [
-                        "id" => $tc['id'] ?? "",
-                        "type" => "function",
-                        "function" => [
-                            "name" => $tc['function']['name'] ?? "",
-                            "arguments" => $tc['function']['arguments'] ?? "",
-                        ],
-                    ];
-
-                    if (!empty($tc['function']['name'])) {
-                        echo "data: " . json_encode(["event" => "tool_call", "name" => $tc['function']['name']]) . "\n\n";
-                        flush();
+                        if (!empty($tc['function']['name'])) {
+                            echo "data: " . json_encode(["event" => "tool_call", "name" => $tc['function']['name']]) . "\n\n";
+                            flush();
+                        }
+                    } elseif (isset($tc['function']['arguments'])) {
+                        $tool_calls_buffer[$idx]['function']['arguments'] .= $tc['function']['arguments'];
                     }
-                } elseif (isset($tc['function']['arguments'])) {
-                    $tool_calls_buffer[$idx]['function']['arguments'] .= $tc['function']['arguments'];
+
+                    if (isset($tc['extra_content'])) {
+                        $tool_calls_buffer[$idx]['extra_content'] = $tc['extra_content'];
+                    }
                 }
             }
         }
-
-        return strlen($chunk);
-    });
-
-    curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err = curl_error($ch);
-    curl_close($ch);
-
-    return [$http_code, $err];
+        return [200, ""];
+    } catch (\GuzzleHttp\Exception\ClientException $e) {
+        $response = $e->getResponse();
+        $error_buffer = $response ? $response->getBody()->getContents() : $e->getMessage();
+        return [$e->getCode(), $error_buffer];
+    } catch (\Exception $e) {
+        $error_buffer = $e->getMessage();
+        $http_code = $e->getCode();
+        if ($http_code < 100 || $http_code >= 600) {
+            $http_code = 500;
+        }
+        return [$http_code, $error_buffer];
+    }
 }
 
 function llm_stream_rotate_key_within_pinned_model($cubiculum, $aequilibrium_activum, $pinned_provider, $pinned_model)
