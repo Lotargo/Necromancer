@@ -84,7 +84,9 @@ Built on top of PHP 8.3 and Vanilla HTML5/CSS3/Javascript, `Interpres` acts as b
   * Chooses between a single custom OpenAI-compatible provider from `.env` or the Lua balancer (`Aequilibrium`) depending on `AEQUILIBRIUM_ENABLED`.
   * Fetches rotated provider/key/model candidates from `Aequilibrium` on port `8081` when balancing is enabled.
   * Logs key outcomes back to `Daemonium`, which persists key health in PostgreSQL.
-  * Sends requests to external LLM providers and streams the raw response back to the client using PHP's `event-stream` interface.
+  * Sends requests to external LLM providers and streams the response back to the client using PHP's `event-stream` interface.
+  * Uses the modern **`openai-php/client`** SDK for robust streaming and structured tool call handling.
+  * Incorporates a custom **Guzzle Middleware** and **PSR-7 Stream Decorator** to natively preserve and inject `thought_signature` fields, guaranteeing compatibility with Gemini API constraints without breaking SDK typings.
 
 ---
 

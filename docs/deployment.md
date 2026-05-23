@@ -73,7 +73,7 @@ For developers wishing to run the services bare-metal without containerization:
 * **Operating Systems**: Linux (Debian/Ubuntu), macOS, or Windows.
 * **Compiler**: FreePascal Compiler (`fpc` version 3.2.0 or higher).
 * **Database Driver**: A running local **PostgreSQL 15** server with client libraries (`libpq`) installed.
-* **Runtime**: PHP 8.1 or higher.
+* **Runtime**: PHP 8.1 or higher and **Composer** (PHP Package Manager).
 
 ### Step 1: Database Initialization
 Connect to your local Postgres server and initialize the database:
@@ -103,9 +103,10 @@ fpc -O2 daemonium.pas
 *Note: Make sure that `libpq` is on your system path so the FPC connection library can bind dynamically.*
 
 ### Step 4: Launch `Interpres` (PHP Web Server)
-Navigate to the web gateway directory and launch PHP's built-in development server:
+Navigate to the web gateway directory, install dependencies via Composer, and launch PHP's built-in development server:
 ```bash
 cd ../interpres
+composer install
 php -S 127.0.0.1:666
 ```
 
