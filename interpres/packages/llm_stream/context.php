@@ -104,19 +104,35 @@ function llm_stream_load_config()
     return $llm_config;
 }
 
+if (!function_exists('llm_stream_decode_db_message')) {
+    function llm_stream_decode_db_message($text)
+    {
+        $text = str_replace('\\\\', '\\', $text);
+        $text = str_replace('\n', "\n", $text);
+        return $text;
+    }
+}
+
 function llm_stream_build_history_messages($system_role, $usor, $cubiculum, $user_fp, $nuntius)
 {
     $chat_history = [];
     $resp_hist2 = loqui_cum_daemonio("LEGENDE_NUNTIOS|" . $usor . "|" . $cubiculum . "|" . $user_fp);
     $partes_hist2 = explode("|", $resp_hist2, 3);
     if (($partes_hist2[0] ?? '') === "200" && trim($partes_hist2[2] ?? "") !== "") {
-        $lines = explode('\n', $partes_hist2[2]);
+        $lines = explode('[NUNTIUS_SEP]', $partes_hist2[2]);
         $lines = array_slice($lines, -20);
         foreach ($lines as $line) {
-            if (strpos($line, 'Tute: ') === 0) {
-                $chat_history[] = ["role" => "user", "content" => substr($line, 6)];
-            } elseif (strpos($line, 'Oraculum: ') === 0) {
-                $chat_history[] = ["role" => "assistant", "content" => substr($line, 10)];
+            $line_decoded = llm_stream_decode_db_message($line);
+            if (strpos($line_decoded, 'Tute: ') === 0) {
+                $content = substr($line_decoded, 6);
+                $content = preg_replace('~\\\\\s*$~m', '', $content);
+                $chat_history[] = ["role" => "user", "content" => $content];
+            } elseif (strpos($line_decoded, 'Oraculum: ') === 0) {
+                $content = substr($line_decoded, 10);
+                // Очищаем историю от паразитных бэкслешей на концах строк (возникающих из-за багов деэкранирования),
+                // чтобы предотвратить заражение контекста и копирование ошибок ИИ-моделями в последующих запросах.
+                $content = preg_replace('~\\\\\s*$~m', '', $content);
+                $chat_history[] = ["role" => "assistant", "content" => $content];
             }
         }
     }
@@ -131,17 +147,69 @@ function llm_stream_build_history_messages($system_role, $usor, $cubiculum, $use
     return $messages;
 }
 
-function llm_stream_save_final_response($usor, $cubiculum, $user_fp, $final_response_content, $total_reasoning)
+function llm_stream_save_final_response($usor, $cubiculum, $user_fp, $final_response_content, $total_reasoning, $executed_codes = [], $assistant_texts = [])
 {
-    $clean_resp = str_replace(["\r", "\n"], " ", trim($final_response_content));
-    $clean_reasoning = str_replace(["\r", "\n"], " ", trim($total_reasoning));
-    if ($clean_reasoning !== '') {
-        $clean_resp = "<thought>" . $clean_reasoning . "</thought> " . $clean_resp;
-    }
+    $clean_reasoning = str_replace(["\r\n", "\r", "\n"], "\\n", trim($total_reasoning));
+    
+    // Если у нас есть раздельные тексты ассистента, сохраняем их пошагово
+    if (is_array($assistant_texts) && count($assistant_texts) > 0) {
+        $total_texts = count($assistant_texts);
+        for ($i = 0; $i < $total_texts; $i++) {
+            $text = $assistant_texts[$i];
+            
+            // Если это первое сообщение и есть reasoning, прикрепляем <thought> к нему
+            if ($i === 0 && $clean_reasoning !== '') {
+                $text_to_save = "<thought>" . $clean_reasoning . "</thought> " . $text;
+            } else {
+                $text_to_save = $text;
+            }
+            
+            // Сохраняем промежуточный ответ ассистента
+            if (trim($text_to_save) !== '') {
+                $clean_resp = str_replace(["\r\n", "\r", "\n"], "\\n", trim($text_to_save));
+                $clean_resp = str_replace('\\', '\\\\', $clean_resp);
+                loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
+            }
+            
+            // Если после этого шага был выполнен Pascal-код, сохраняем его сразу следом в виде отдельного сообщения
+            if (isset($executed_codes[$i])) {
+                $item = $executed_codes[$i];
+                $label = ($item['name'] === 'run_streaming_simulation') ? 'Simulatio' : 'Calculus';
+                $code_content = "**Scriptura Pascal (" . $label . "):**\n```pascal\n" . $item['code'] . "\n```";
+                
+                $clean_resp = str_replace(["\r\n", "\r", "\n"], "\\n", trim($code_content));
+                $clean_resp = str_replace('\\', '\\\\', $clean_resp);
+                loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
+            }
+        }
+        
+        // Если кодов Pascal было больше, чем текстовых ответов, дописываем оставшиеся
+        for ($i = $total_texts; $i < count($executed_codes); $i++) {
+            $item = $executed_codes[$i];
+            $label = ($item['name'] === 'run_streaming_simulation') ? 'Simulatio' : 'Calculus';
+            $code_content = "**Scriptura Pascal (" . $label . "):**\n```pascal\n" . $item['code'] . "\n```";
+            
+            $clean_resp = str_replace(["\r\n", "\r", "\n"], "\\n", trim($code_content));
+            $clean_resp = str_replace('\\', '\\\\', $clean_resp);
+            loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
+        }
+    } else {
+        // Резервный вариант (старая логика слитного сохранения)
+        foreach ($executed_codes as $item) {
+            $label = ($item['name'] === 'run_streaming_simulation') ? 'Simulatio' : 'Calculus';
+            $final_response_content .= "\n\n**Scriptura Pascal (" . $label . "):**\n```pascal\n" . $item['code'] . "\n```";
+        }
 
-    if ($clean_resp === '') {
-        $clean_resp = "Oraculum mutum est.";
-    }
+        $clean_resp = str_replace(["\r\n", "\r", "\n"], "\\n", trim($final_response_content));
+        if ($clean_reasoning !== '') {
+            $clean_resp = "<thought>" . $clean_reasoning . "</thought> " . $clean_resp;
+        }
 
-    loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
+        if ($clean_resp === '') {
+            $clean_resp = "Oraculum mutum est.";
+        }
+
+        $clean_resp = str_replace('\\', '\\\\', $clean_resp);
+        loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
+    }
 }

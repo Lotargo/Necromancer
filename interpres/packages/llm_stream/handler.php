@@ -57,7 +57,9 @@ function llm_stream_handle_send($usor, $cubiculum, $user_fp)
         $cubiculum,
         $user_fp,
         $result['final_response_content'],
-        $result['total_reasoning']
+        $result['total_reasoning'],
+        $result['executed_codes'] ?? [],
+        $result['assistant_texts'] ?? []
     );
 
     exit();

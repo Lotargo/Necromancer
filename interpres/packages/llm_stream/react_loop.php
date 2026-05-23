@@ -152,18 +152,21 @@ function llm_stream_maybe_execute_fallback_tool(&$assistant_message, &$messages,
 
     $trimmed = trim($current_content);
     $parsed_tc = null;
+
+    // 1. Попытка распарсить строку целиком как JSON
     $maybe_json = json_decode($trimmed, true);
-    if ($maybe_json && isset($maybe_json['name']) && isset($maybe_json['arguments'])) {
+    if ($maybe_json && isset($maybe_json['name'])) {
         $parsed_tc = $maybe_json;
     }
 
-    if (
-        !$parsed_tc
-        && preg_match('/\{[^{}]*"name"\s*:\s*"(search_web|search_knowledge_base|check_weather|check_time)"[^{}]*"arguments"\s*:\s*\{[^{}]*\}[^{}]*\}/s', $trimmed, $json_match)
-    ) {
-        $maybe_json = json_decode($json_match[0], true);
-        if ($maybe_json && isset($maybe_json['name'])) {
-            $parsed_tc = $maybe_json;
+    // 2. Если целиком не получилось, ищем регулярным выражением валидный JSON-объект, содержащий "name": "название_инструмента"
+    if (!$parsed_tc) {
+        $tools_pattern = 'search_web|search_knowledge_base|check_weather|check_time|solve_discrete_math|run_streaming_simulation';
+        if (preg_match('/\{[^{}]*"name"\s*:\s*"(' . $tools_pattern . ')"[^{}]*\}/s', $trimmed, $json_match)) {
+            $maybe_json = json_decode($json_match[0], true);
+            if ($maybe_json && isset($maybe_json['name'])) {
+                $parsed_tc = $maybe_json;
+            }
         }
     }
 
@@ -172,7 +175,34 @@ function llm_stream_maybe_execute_fallback_tool(&$assistant_message, &$messages,
     }
 
     $fb_tool_name = $parsed_tc['name'];
-    $fb_args = $parsed_tc['arguments'] ?? [];
+    $fb_args = [];
+
+    // 3. Восстанавливаем аргументы с учетом всех возможных вариаций ключей (arguments, parameters, params, root keys)
+    if (isset($parsed_tc['arguments'])) {
+        $fb_args = $parsed_tc['arguments'];
+    } elseif (isset($parsed_tc['parameters'])) {
+        $fb_args = $parsed_tc['parameters'];
+    } elseif (isset($parsed_tc['params'])) {
+        $fb_args = $parsed_tc['params'];
+    } else {
+        // Аргументы лежат прямо в корне объекта!
+        foreach ($parsed_tc as $k => $v) {
+            if (!in_array($k, ['name', 'type'])) {
+                $fb_args[$k] = $v;
+            }
+        }
+    }
+
+    // 4. Если аргументы представлены в виде обычной строки, оборачиваем в соответствующий названию инструмента ключ
+    if (is_string($fb_args)) {
+        $param_name = in_array($fb_tool_name, ['solve_discrete_math', 'run_streaming_simulation']) 
+            ? 'code' 
+            : (in_array($fb_tool_name, ['search_web', 'search_knowledge_base']) ? 'query' : 'location');
+        $fb_args = [$param_name => $fb_args];
+    } elseif (!is_array($fb_args)) {
+        $fb_args = [];
+    }
+
     $fb_tool_id = 'fallback_' . uniqid();
 
     echo "data: " . json_encode(["event" => "clear_fallback"]) . "\n\n";
@@ -218,6 +248,9 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
     $final_response_content = "";
     $provisor_nuntiatus = "";
     $total_reasoning = "";
+    $executed_codes = [];
+    $assistant_texts = [];
+    $last_math_result = null;
 
     while ($loop_count < $max_loops) {
         $loop_count++;
@@ -268,7 +301,7 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
             }
 
             $err_str = $err ?: ($parsed_msg ?: trim($error_buffer));
-            $err_msg = "Error Oraculi (HTTP $http_code): " . $err_str;
+            $err_msg = "Error Oraculi [Provider: " . $provisor_nomen . ", Model: " . $model . "] (HTTP " . $http_code . "): " . $err_str;
             $eventus = classificare_eventum_llm((int)$http_code, $err_str);
 
             if ($aequilibrium_activum && $provisor_nomen !== "Ignotus") {
@@ -325,6 +358,9 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
         }
 
         $assistant_message = ["role" => "assistant", "content" => $current_content ?: ""];
+        if (trim($current_content) !== '') {
+            $assistant_texts[] = $current_content;
+        }
         if (!empty($tool_calls_buffer)) {
             $normalized_tool_calls = normalizare_tool_calls_ad_executionem(array_values($tool_calls_buffer));
             $assistant_message["tool_calls"] = $normalized_tool_calls;
@@ -333,7 +369,27 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
             foreach ($normalized_tool_calls as $tc) {
                 $tool_name = $tc['function']['name'];
                 $args = json_decode($tc['function']['arguments'], true) ?: [];
+
+                // Автоматически фиксируем сгенерированный Pascal-код и отправляем на фронтенд
+                if (in_array($tool_name, ['solve_discrete_math', 'run_streaming_simulation']) && isset($args['code'])) {
+                    $executed_codes[] = [
+                        "name" => $tool_name,
+                        "code" => $args['code']
+                    ];
+                    
+                    // Стримим событие выполнения с полным исходным кодом на фронтенд
+                    echo "data: " . json_encode([
+                        "event" => "tool_execute",
+                        "name" => $tool_name,
+                        "code" => $args['code']
+                    ]) . "\n\n";
+                    flush();
+                }
+
                 $tool_result = llm_stream_execute_tool($tool_name, $args);
+                if ($tool_name === 'solve_discrete_math') {
+                    $last_math_result = $tool_result;
+                }
                 $messages[] = [
                     "tool_call_id" => $tc['id'],
                     "role" => "tool",
@@ -349,6 +405,19 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
         }
     }
 
+    // AUTO-FALLBACK ДЛЯ ЛЕНИВЫХ МОДЕЛЕЙ:
+    // Если выполнялся математический инструмент, но модель не вывела результат в финальном ответе
+    if ($last_math_result !== null && !empty(trim($last_math_result))) {
+        $math_snippet = substr(trim($last_math_result), 0, 50);
+        if (empty($final_response_content) || strpos($final_response_content, $math_snippet) === false) {
+            $prefix = "\n\n**Calculus Oraculi:**\n";
+            echo "data: " . json_encode(["choices" => [["delta" => ["content" => $prefix . $last_math_result]]]]) . "\n\n";
+            flush();
+            $final_response_content .= $prefix . $last_math_result;
+            $assistant_texts[] = $prefix . $last_math_result;
+        }
+    }
+
     echo "data: [DONE]\n\n";
     flush();
 
@@ -358,6 +427,8 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
 
     return [
         'final_response_content' => $final_response_content,
+        'assistant_texts' => $assistant_texts,
         'total_reasoning' => $total_reasoning,
+        'executed_codes' => $executed_codes
     ];
 }

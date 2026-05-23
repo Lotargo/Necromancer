@@ -1,0 +1,26 @@
+{
+  "type": "function",
+  "function": {
+    "name": "run_streaming_simulation",
+    "description": "Runs an interactive physical simulation on HTML5 Canvas. The simulation runs in real-time on a retro oscilloscope/radar player. The Pascal program must output coordinates as JSON lines (e.g. WriteLn('{\"x\": 1.0, \"y\": 2.0}')) with a short delay (e.g. using Sleep(50) from SysUtils) to create smooth streaming curves.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the physical simulation (e.g. 'Damped Pendulum', 'Lissajous Curves', 'Chaotic Attractor')"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["oscilloscope", "radar", "graph"],
+          "description": "The visual display style of the Canvas Player. Use 'oscilloscope' for standard waves/particles, 'radar' for scanning/sonar sweeps, and 'graph' for progressive y(x) plots."
+        },
+        "code": {
+          "type": "string",
+          "description": "A self-contained Pascal program. Must print coordinates to standard output at regular intervals (using Sleep(30) or Sleep(50) from SysUtils) in JSON format. Only uses Math and SysUtils. Example: program Wave; uses Math; var t: Double; begin for t := 0 to 100 do begin WriteLn('{\"x\": ' + FloatToStr(t/10) + ', \"y\": ' + FloatToStr(sin(t/10)) + '}'); end; end."
+        }
+      },
+      "required": ["title", "type", "code"]
+    }
+  }
+}

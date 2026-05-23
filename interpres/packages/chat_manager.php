@@ -21,7 +21,22 @@ if ($action === 'load') {
     $partes = explode("|", $resp, 3);
     $historia = ($partes[0] == "200") ? $partes[2] : "";
     header('Content-Type: text/plain');
-    echo str_replace('\n', "\n", $historia);
+    if ($historia !== "") {
+        if (!function_exists('llm_stream_decode_db_message')) {
+            function llm_stream_decode_db_message($text)
+            {
+                $text = str_replace('\\\\', '\\', $text);
+                $text = str_replace('\n', "\n", $text);
+                return $text;
+            }
+        }
+        $messages = explode('[NUNTIUS_SEP]', $historia);
+        $decoded_messages = [];
+        foreach ($messages as $msg) {
+            $decoded_messages[] = llm_stream_decode_db_message($msg);
+        }
+        echo implode("\n", $decoded_messages);
+    }
     exit();
 }
 
