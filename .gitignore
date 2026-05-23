@@ -13,3 +13,4 @@ tmp/
 .agent/
 scratch/
 dont_delete*
+interpres/vendor/

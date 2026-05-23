@@ -38,7 +38,7 @@ function llm_stream_try_auto_name_room($is_first, $apikey, $api_url, $model, $nu
     curl_setopt($ch_t, CURLOPT_POSTFIELDS, json_encode($data_title, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE));
     curl_setopt($ch_t, CURLOPT_HTTPHEADER, ["Content-Type: application/json", "Authorization: Bearer " . $apikey]);
     $res_t = curl_exec($ch_t);
-    curl_close($ch_t);
+    // curl_close($ch_t);
 
     $json_t = json_decode($res_t, true);
     if (!isset($json_t['choices'][0]['message']['content'])) {

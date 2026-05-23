@@ -16,7 +16,7 @@ function investigare_in_tela($query)
     $yahoo_html = curl_exec($ch);
     $yahoo_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $yahoo_err = curl_error($ch);
-    curl_close($ch);
+    // curl_close($ch);
 
     if ($yahoo_code === 200 && !empty($yahoo_html)) {
         $matches = [];
@@ -51,7 +51,7 @@ function investigare_in_tela($query)
 
             $html = curl_exec($ch);
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+            // curl_close($ch);
 
             if ($http_code === 200 && !empty($html) && strlen($html) > 1000) {
                 break;
