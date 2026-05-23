@@ -11,8 +11,32 @@ const
   TABULARIUM_SCIENTIA = '../tabularium/scientia/scientia.txt';
 
 function Investigare(VerbaQuery: String): String;
+function SalvareScientiam(Regula: String): String;
 
 implementation
+
+function SalvareScientiam(Regula: String): String;
+var
+  F: TextFile;
+begin
+  if Regula = '' then
+    Exit(FormareResponsum(400, 'Error', 'Regula inanis est'));
+
+  ForceDirectories(ExtractFilePath(TABULARIUM_SCIENTIA));
+
+  AssignFile(F, TABULARIUM_SCIENTIA);
+  try
+    if FileExists(TABULARIUM_SCIENTIA) then
+      Append(F)
+    else
+      Rewrite(F);
+
+    WriteLn(F, Regula);
+    Result := FormareResponsum(200, 'Successus', 'Regula salvata est');
+  finally
+    CloseFile(F);
+  end;
+end;
 
 function Investigare(VerbaQuery: String): String;
 var

@@ -112,6 +112,8 @@ begin
     end
     else if Mandatum = 'INVESTIGARE' then
       Responsum := Investigare(Parametrum1)
+    else if Mandatum = 'SALVARE_SCIENTIAM' then
+      Responsum := SalvareScientiam(Parametrum1)
     else if Mandatum = 'INDEX_FABULATIONUM' then
     begin
       if DataInput.Count > 2 then
