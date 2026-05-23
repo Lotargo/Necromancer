@@ -74,6 +74,12 @@ function llm_stream_stream_completion($api_url, $apikey, $data, &$tool_calls_buf
             }
 
             $json = json_decode($jsonStr, true);
+
+            if ($json && isset($json['error'])) {
+                $error_buffer .= json_encode($json);
+                continue;
+            }
+
             if (!$json || !isset($json['choices'][0]['delta'])) {
                 continue;
             }
@@ -248,6 +254,8 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
     $pinned_model = $model;
     $max_loops = 8;
     $loop_count = 0;
+    $api_error_retries = 0;
+    $max_api_error_retries = 3;
     $final_response_content = "";
     $provisor_nuntiatus = "";
     $total_reasoning = "";
@@ -312,7 +320,9 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
                 purgare_sessionem_aequilibrio($cubiculum);
             }
 
-            if ($aequilibrium_activum && $loop_count < $max_loops) {
+            if ($aequilibrium_activum && $loop_count < $max_loops && $api_error_retries < $max_api_error_retries) {
+                $api_error_retries++;
+
                 if ($loop_count === 1 && empty($final_response_content) && empty($tool_calls_buffer) && $current_content === "") {
                     $destinatio_llm = eligere_destinationem_llm($cubiculum, $aequilibrium_activum);
                     $apikey = $destinatio_llm["apikey"];
@@ -324,9 +334,10 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
 
                     echo "data: " . json_encode([
                         "event" => "failover",
-                        "message" => "Provider " . $provisor_nomen . " failed. Switching to a new provider/model.",
+                        "message" => "Provider " . $provisor_nomen . " failed. Switching to a new provider/model. Retry " . $api_error_retries . "/" . $max_api_error_retries,
                     ]) . "\n\n";
                     flush();
+                    $loop_count--;
                     continue;
                 }
 
@@ -339,7 +350,7 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
 
                     echo "data: " . json_encode([
                         "event" => "failover",
-                        "message" => "Key for " . $pinned_provider . " [" . $pinned_model . "] rotated successfully due to API error.",
+                        "message" => "Key for " . $pinned_provider . " [" . $pinned_model . "] rotated successfully due to API error. Retry " . $api_error_retries . "/" . $max_api_error_retries,
                     ]) . "\n\n";
                     flush();
                     $loop_count--;
