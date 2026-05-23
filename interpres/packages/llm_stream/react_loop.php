@@ -11,9 +11,18 @@ function llm_stream_append_react_reminder($messages_to_send, $loop_count, $lingu
     }
 
     if ($lingua_mode === 'auto') {
-        $messages_to_send[0]['content'] .= "\n\n[SYSTEM REMINDER: This is ReAct step $loop_count. You have already generated the initial introduction in the previous assistant message. Do NOT repeat or duplicate your previous greeting, intro, or introductory thoughts. Begin directly with the retrieved findings and continue naturally. Example transitions: 'Согласно найденным сведениям...' or 'Изучив свитки, я обнаружил...']";
+        $messages_to_send[0]['content'] .= "\n\n[SYSTEM REMINDER: This is ReAct step $loop_count. You have received the results of the previous tool execution (Observation). You MUST start your response with a `<thought>` block to:
+1. Reflect on the tool's output. If there were errors, compilation failures, or unexpected results, diagnose the issue and plan the fix.
+2. If Pascal code was executed, perform a strict mental code review (check for logical bugs, syntax, boundary conditions, correct types).
+3. Decide if you need to call another tool or if you have enough information for the final answer.
+Do NOT repeat greetings or duplicate introductory thoughts.
+Пример перехода после блока </thought>: 'Согласно найденным сведениям...' или 'Изучив свитки, я обнаружил...']";
     } else {
-        $messages_to_send[0]['content'] .= "\n\n[SYSTEM REMINDER: Hic est gradus $loop_count ReAct. Iam introductionem scripsisti in nuntio assistant superius. NOLI salutationem vel introductionem repetere. Incipe statim ab investigationis eventu et cogitationem tuam sine ulla duplicatione perge.]";
+        $messages_to_send[0]['content'] .= "\n\n[SYSTEM REMINDER: Hic est gradus $loop_count ReAct. Eventum instrumenti accepisti. Cogitationem tuam in `<thought>` block statim incipe:
+1. Perpende eventum instrumenti. Si error accidit, cogita cur et quomodo corrigas.
+2. Si codicem (e.g. Pascal) scripsisti, diligentissime eum recense (code review).
+3. Constitue utrum alio instrumento egeas an responsum finale parare possis.
+NOLI salutationem vel cogitationes priores repetere.]";
     }
 
     return $messages_to_send;
@@ -105,7 +114,7 @@ function llm_stream_stream_completion($api_url, $apikey, $data, &$tool_calls_buf
             }
 
             foreach ($delta['tool_calls'] as $tc) {
-                $idx = $tc['index'];
+                $idx = $tc['index'] ?? 0;
                 if (!isset($tool_calls_buffer[$idx])) {
                     $tool_calls_buffer[$idx] = [
                         "id" => $tc['id'] ?? "",
@@ -162,11 +171,13 @@ function llm_stream_maybe_execute_fallback_tool(&$assistant_message, &$messages,
 
     $trimmed = trim($current_content);
     $parsed_tc = null;
+    $json_block = '';
 
     // 1. Попытка распарсить строку целиком как JSON
     $maybe_json = json_decode($trimmed, true);
     if ($maybe_json && isset($maybe_json['name'])) {
         $parsed_tc = $maybe_json;
+        $json_block = $trimmed;
     }
 
     // 2. Если целиком не получилось, ищем регулярным выражением валидный JSON-объект, содержащий "name": "название_инструмента"
@@ -176,6 +187,7 @@ function llm_stream_maybe_execute_fallback_tool(&$assistant_message, &$messages,
             $maybe_json = json_decode($json_match[0], true);
             if ($maybe_json && isset($maybe_json['name'])) {
                 $parsed_tc = $maybe_json;
+                $json_block = $json_match[0];
             }
         }
     }
@@ -220,9 +232,14 @@ function llm_stream_maybe_execute_fallback_tool(&$assistant_message, &$messages,
     echo "data: " . json_encode(["event" => "tool_call", "name" => $fb_tool_name]) . "\n\n";
     flush();
 
-    $final_response_content = str_replace($trimmed, '', $final_response_content);
+    // Extract any text content (like the <thought> block) by removing the JSON block from trimmed content
+    $text_content = trim(str_replace($json_block, '', $trimmed));
 
-    $assistant_message["content"] = "";
+    // Remove only the raw JSON block from final_response_content to keep the thoughts visible but hide raw JSON
+    $final_response_content = str_replace($json_block, '', $final_response_content);
+
+    // Keep the thought block / non-JSON text in the assistant message content so it remains in context history
+    $assistant_message["content"] = $text_content;
     $assistant_message["tool_calls"] = [[
         "id" => $fb_tool_id,
         "type" => "function",
