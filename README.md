@@ -194,7 +194,7 @@ For developers wishing to run the components natively on Windows/Linux:
 4. **Compile & Run Daemonium**:
    ```bash
    cd daemonium
-   fpc daemonium.pas
+   fpc @hashlib.cfg daemonium.pas
    ./daemonium
    ```
 5. **Run Interpres**:
