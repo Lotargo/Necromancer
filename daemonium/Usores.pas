@@ -284,7 +284,6 @@ var
   F: TextFile;
   Codex: String;
 begin
-  Randomize;
   Codex := IntToStr(Random(900000) + 100000); // 6-digit code
   AssignFile(F, SPIRITUS_MAIL_LOG);
   if not FileExists(SPIRITUS_MAIL_LOG) then Rewrite(F) else Append(F);
