@@ -8,10 +8,10 @@ uses
   Classes, SysUtils, sha1, strutils, Cryptographia;
 
 const
-  SPIRITUS_MAIL_LOG = '../tabularium/spiritus_mail.log';
-  TABULARIUM_PROVISORES = '../tabularium/provisores/';
   LLM_SYNC_INTERVAL_MINUTES = 1.0 / 1440.0;
 
+function GetSpiritusMailLog: String;
+function GetTabulariumProvisores: String;
 function FormareResponsum(Codex: Integer; Nuntius, Data: String): String;
 function HashPassword(const Pass, Salt: String): String;
 function HashClavisLLM(const Clavis: String): String;
@@ -20,6 +20,20 @@ function BrevisClavisLLM(Clavis: String): String;
 function LegereLineasNonVacuas(Via: String): TStringList;
 
 implementation
+
+function GetSpiritusMailLog: String;
+begin
+  Result := GetEnvironmentVariable('SPIRITUS_MAIL_LOG');
+  if Result = '' then
+    Result := '../tabularium/spiritus_mail.log';
+end;
+
+function GetTabulariumProvisores: String;
+begin
+  Result := GetEnvironmentVariable('TABULARIUM_PROVISORES');
+  if Result = '' then
+    Result := '../tabularium/provisores/';
+end;
 
 function FormareResponsum(Codex: Integer; Nuntius, Data: String): String;
 begin

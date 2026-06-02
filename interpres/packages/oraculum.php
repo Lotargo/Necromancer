@@ -29,6 +29,7 @@ function notare_eventum_clavis_llm($provider, $key, $model, $event_type, $http_c
 
 function classificare_eventum_llm($http_code, $err_str)
 {
+    $http_code = (int)$http_code;
     $text = strtolower((string)$err_str);
 
     if ($http_code === 429 || strpos($text, 'rate limit') !== false || strpos($text, 'too many requests') !== false) {
