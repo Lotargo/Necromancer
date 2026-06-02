@@ -167,7 +167,7 @@ function llm_stream_save_final_response($usor, $cubiculum, $user_fp, $final_resp
             // Сохраняем промежуточный ответ ассистента
             if (trim($text_to_save) !== '') {
                 $clean_resp = str_replace(["\r\n", "\r", "\n"], "\\n", trim($text_to_save));
-                $clean_resp = str_replace('\\', '\\\\', $clean_resp);
+
                 loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
             }
             
@@ -178,7 +178,7 @@ function llm_stream_save_final_response($usor, $cubiculum, $user_fp, $final_resp
                 $code_content = "**Scriptura Pascal (" . $label . "):**\n```pascal\n" . $item['code'] . "\n```";
                 
                 $clean_resp = str_replace(["\r\n", "\r", "\n"], "\\n", trim($code_content));
-                $clean_resp = str_replace('\\', '\\\\', $clean_resp);
+
                 loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
             }
         }
@@ -190,7 +190,7 @@ function llm_stream_save_final_response($usor, $cubiculum, $user_fp, $final_resp
             $code_content = "**Scriptura Pascal (" . $label . "):**\n```pascal\n" . $item['code'] . "\n```";
             
             $clean_resp = str_replace(["\r\n", "\r", "\n"], "\\n", trim($code_content));
-            $clean_resp = str_replace('\\', '\\\\', $clean_resp);
+
             loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
         }
     } else {
@@ -209,7 +209,7 @@ function llm_stream_save_final_response($usor, $cubiculum, $user_fp, $final_resp
             $clean_resp = "Oraculum mutum est.";
         }
 
-        $clean_resp = str_replace('\\', '\\\\', $clean_resp);
+
         loqui_cum_daemonio("ADDERE_NUNTIUM|" . $usor . "|" . $cubiculum . "|" . $user_fp . "|Oraculum: " . $clean_resp);
     }
 }
