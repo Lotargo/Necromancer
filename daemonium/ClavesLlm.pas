@@ -58,7 +58,7 @@ begin
   if (not ForceSync) and (not DebetSynchronizareProvider(Provider)) then
     Exit(FormareResponsum(200, 'Successus', 'Synchronizatio recens iam facta est'));
 
-  ProviderDir := TABULARIUM_PROVISORES + Provider + '/';
+  ProviderDir := GetTabulariumProvisores() + Provider + '/';
   ClavesPath := ProviderDir + 'claves.txt';
 
   Query := TSQLQuery.Create(DBConn);
