@@ -14,7 +14,7 @@ if ($action === 'login_anima') {
         $_SESSION["usor"] = sani($partes[2]);
         $_SESSION["fp"] = $fp_client;
         if (isset($_POST['remember'])) {
-            setcookie(session_name(), session_id(), time() + 86400 * 30, "/");
+            setcookie(session_name(), session_id(), time() + 86400 * 30, "/", "", false, true);
         }
         echo json_encode(["status" => "ok", "usor" => sani($partes[2])]);
     }

@@ -139,6 +139,7 @@ begin
   SynchronizareClavesLLMProvider('gemini', True);
   SynchronizareClavesLLMProvider('groq', True);
   SynchronizareClavesLLMProvider('cerebras', True);
+  SynchronizareClavesLLMProvider('sambanova', True);
 end;
 
 function StatumClavisLLM(Provider, Clavis: String): String;
