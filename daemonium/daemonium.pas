@@ -266,6 +266,9 @@ begin
   WriteLn(' [!] ГОД ОТ РОЖДЕСТВА ХРИСТОВА / YEAR: ', FormatDateTime('yyyy', Now));
   WriteLn('------------------------------------------------');
 
+  // Initialize random number generator once
+  Randomize;
+
   // Connect to PostgreSQL and verify schema
   InitDatabase;
 

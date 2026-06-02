@@ -11,7 +11,15 @@ function loqui_cum_daemonio($mandatum)
     fwrite($fp, $mandatum . "\n");
     $responsum = fgets($fp, 8192);
     fclose($fp);
-    error_log("[DAEMON REQ] " . $mandatum);
+    $safe_mandatum = $mandatum;
+    if (str_starts_with($mandatum, 'STATUM_CLAVIS_LLM') || str_starts_with($mandatum, 'NOTARE_EVENTUM_CLAVIS_LLM')) {
+        $parts = explode('|', $mandatum);
+        if (count($parts) >= 3) {
+            $parts[2] = 'REDACTED';
+            $safe_mandatum = implode('|', $parts);
+        }
+    }
+    error_log("[DAEMON REQ] " . $safe_mandatum);
     error_log("[DAEMON RESP] " . trim($responsum));
     return trim($responsum);
 }
