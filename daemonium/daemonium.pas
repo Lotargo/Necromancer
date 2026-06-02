@@ -43,6 +43,7 @@ var
 begin
   LineaData := '';
   repeat
+    FillChar(Buffer, SizeOf(Buffer), 0);
     BytesRead := fpRecv(CliensSock, @Buffer[0], SizeOf(Buffer) - 1, 0);
     if BytesRead > 0 then
     begin
