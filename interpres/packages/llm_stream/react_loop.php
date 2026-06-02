@@ -391,7 +391,6 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
         $tool_calls_buffer = [];
         $current_content = "";
         $error_buffer = "";
-        $total_reasoning = "";
 
         [$http_code, $err] = llm_stream_stream_completion(
             $api_url,

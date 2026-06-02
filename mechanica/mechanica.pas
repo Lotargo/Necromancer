@@ -222,6 +222,9 @@ begin
 
     Mandatum := Parts[0];
     Id := Parts[1];
+    Id := StringReplace(Id, '/', '', [rfReplaceAll]);
+    Id := StringReplace(Id, '\', '', [rfReplaceAll]);
+    Id := StringReplace(Id, '.', '', [rfReplaceAll]);
     PascalCode := Parts[2];
 
     WriteLn('[MECHANICA REQ] Cmd: ', Mandatum, ' | Id: ', Id);
