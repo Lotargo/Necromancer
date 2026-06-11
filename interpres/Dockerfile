@@ -1,5 +1,13 @@
 # Navis pro Interprete (PHP)
-FROM public.ecr.aws/docker/library/php:8.3-cli-alpine
+ARG PHP_BASE_IMAGE=php:8.3-cli-alpine
+ARG COMPOSER_BASE_IMAGE=composer:2
+
+FROM ${COMPOSER_BASE_IMAGE} AS composer_base
+FROM ${PHP_BASE_IMAGE}
+
+ARG INSTALL_SYSTEM_DEPS=1
+
+RUN rm -rf /app/interpres
 
 WORKDIR /app/interpres
 
@@ -7,8 +15,8 @@ WORKDIR /app/interpres
 COPY . .
 
 # Install Composer and dependencies
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-RUN apk add --no-cache git unzip \
+COPY --from=composer_base /usr/bin/composer /usr/bin/composer
+RUN if [ "$INSTALL_SYSTEM_DEPS" = "1" ]; then apk add --no-cache git unzip; fi \
     && composer install --no-dev --optimize-autoloader
 
 # Expose the web server port

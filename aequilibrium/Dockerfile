@@ -1,7 +1,12 @@
-FROM alpine:3.19
+ARG BASE_IMAGE=alpine:3.19
+FROM ${BASE_IMAGE}
+
+ARG INSTALL_SYSTEM_DEPS=1
 
 # Installe LuaJIT
-RUN apk add --no-cache luajit
+RUN if [ "$INSTALL_SYSTEM_DEPS" = "1" ]; then apk add --no-cache luajit; fi
+
+RUN rm -rf /app/aequilibrium
 
 WORKDIR /app/aequilibrium
 

@@ -1,0 +1,25 @@
+services:
+  daemonium:
+    build:
+      args:
+        BASE_IMAGE: necromancer-daemonium:latest
+        INSTALL_SYSTEM_DEPS: "0"
+
+  interpres:
+    build:
+      args:
+        PHP_BASE_IMAGE: necromancer-interpres:latest
+        COMPOSER_BASE_IMAGE: necromancer-interpres:latest
+        INSTALL_SYSTEM_DEPS: "0"
+
+  aequilibrium:
+    build:
+      args:
+        BASE_IMAGE: necromancer-aequilibrium:latest
+        INSTALL_SYSTEM_DEPS: "0"
+
+  mechanica:
+    build:
+      args:
+        BASE_IMAGE: necromancer-mechanica:latest
+        INSTALL_SYSTEM_DEPS: "0"

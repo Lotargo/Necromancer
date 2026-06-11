@@ -1,9 +1,16 @@
 # Dockerfile pro Mechanica (FreePascal Sandbox Runner)
-FROM public.ecr.aws/debian/debian:bookworm-slim
+ARG BASE_IMAGE=debian:bookworm-slim
+FROM ${BASE_IMAGE}
 
-RUN apt-get update && apt-get install -y \
-    fpc \
-    && rm -rf /var/lib/apt/lists/*
+ARG INSTALL_SYSTEM_DEPS=1
+
+RUN if [ "$INSTALL_SYSTEM_DEPS" = "1" ]; then \
+        apt-get update && apt-get install -y \
+        fpc \
+        && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+RUN rm -rf /app/mechanica
 
 WORKDIR /app/mechanica
 

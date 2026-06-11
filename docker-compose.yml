@@ -7,7 +7,7 @@ services:
       - POSTGRES_USER=necromancer
       - POSTGRES_PASSWORD=necromancer_secret
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     restart: always

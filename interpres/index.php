@@ -26,8 +26,8 @@ function sani($val) {
 $error = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nomen = sani(trim($_POST["nomen"]));
-    $actio = sani($_POST["actio"]);
+    $nomen = sani(trim($_POST["nomen"] ?? ""));
+    $actio = sani($_POST["actio"] ?? "");
     $fp = sani($_POST["fp"] ?? "");
 
     if (!empty($nomen)) {
@@ -56,6 +56,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             else {
                 $error = !empty($partes[2]) ? $partes[2] : "Nomen iam exstat.";
             }
+        }
+        else {
+            $error = "Actio ignota est.";
         }
     }
     else {

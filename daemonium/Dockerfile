@@ -1,11 +1,18 @@
 # Navis pro Daemonio (FreePascal)
-FROM public.ecr.aws/debian/debian:bookworm-slim
+ARG BASE_IMAGE=debian:bookworm-slim
+FROM ${BASE_IMAGE}
 
-RUN apt-get update && apt-get install -y \
-    fpc \
-    libpq5 \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+ARG INSTALL_SYSTEM_DEPS=1
+
+RUN if [ "$INSTALL_SYSTEM_DEPS" = "1" ]; then \
+        apt-get update && apt-get install -y \
+        fpc \
+        libpq5 \
+        libpq-dev \
+        && rm -rf /var/lib/apt/lists/*; \
+    fi
+
+RUN rm -rf /app/daemonium
 
 WORKDIR /app/daemonium
 
