@@ -250,9 +250,9 @@ begin
           WriteLn('[MIGRATION] Usor "', RegNomen, '" password hash migrated from SHA-1 to Argon2id.');
         end;
       end
-      else if Length(RegPass) = 64 then
+      else
       begin
-        // Argon2id
+        // Argon2id or variable length hash format
         PassHash := HashPassword(Password, RegNomen);
         if RegPass = PassHash then
           Valido := True;
@@ -284,10 +284,9 @@ var
   F: TextFile;
   Codex: String;
 begin
-  Randomize;
   Codex := IntToStr(Random(900000) + 100000); // 6-digit code
-  AssignFile(F, SPIRITUS_MAIL_LOG);
-  if not FileExists(SPIRITUS_MAIL_LOG) then Rewrite(F) else Append(F);
+  AssignFile(F, GetSpiritusMailLog());
+  if not FileExists(GetSpiritusMailLog()) then Rewrite(F) else Append(F);
   WriteLn(F, DateTimeToStr(Now) + ' | ' + Email + ' | CODE: ' + Codex);
   CloseFile(F);
   Result := FormareResponsum(200, 'Successus', 'Codex missus est (check log)');
@@ -366,7 +365,7 @@ begin
         if SavedHash = LegacySHA1(VetusPass) then
           Valido := True;
       end
-      else if Length(SavedHash) = 64 then
+      else
       begin
         if SavedHash = HashPassword(VetusPass, Nomen) then
           Valido := True;

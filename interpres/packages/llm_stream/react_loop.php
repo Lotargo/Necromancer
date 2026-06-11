@@ -120,7 +120,8 @@ function llm_stream_stream_completion($api_url, $apikey, $data, &$tool_calls_buf
     
     // Log outgoing request
     $log_json_data = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
-    file_put_contents(dirname(__DIR__) . "/tmp_payload.txt", print_r($data, true) . "\n---\n" . $log_json_data . "\n========================\n", FILE_APPEND);
+    $safe_payload = preg_replace('/"Authorization":\s*"[^"]+"/', '"Authorization": "REDACTED"', print_r($data, true) . "\n---\n" . $log_json_data);
+    file_put_contents(dirname(__DIR__) . "/tmp_payload.txt", $safe_payload . "\n========================\n", FILE_APPEND);
 
     try {
         $base_uri = preg_replace('#/chat/completions/?$#', '', $api_url);
@@ -163,7 +164,7 @@ function llm_stream_stream_completion($api_url, $apikey, $data, &$tool_calls_buf
         $client = \OpenAI::factory()
             ->withApiKey($apikey)
             ->withBaseUri($base_uri)
-            ->withHttpClient(new \GuzzleHttp\Client(['stream' => true, 'verify' => false, 'handler' => $handlerStack]))
+            ->withHttpClient(new \GuzzleHttp\Client(['stream' => true, 'verify' => true, 'handler' => $handlerStack]))
             ->make();
 
         $stream = $client->chat()->createStreamed($data);
@@ -390,7 +391,6 @@ function llm_stream_run_react_loop($messages, $lingua_mode, $search_mode, $llm_c
         $tool_calls_buffer = [];
         $current_content = "";
         $error_buffer = "";
-        $total_reasoning = "";
 
         [$http_code, $err] = llm_stream_stream_completion(
             $api_url,

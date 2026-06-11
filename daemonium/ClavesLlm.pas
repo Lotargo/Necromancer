@@ -58,7 +58,7 @@ begin
   if (not ForceSync) and (not DebetSynchronizareProvider(Provider)) then
     Exit(FormareResponsum(200, 'Successus', 'Synchronizatio recens iam facta est'));
 
-  ProviderDir := TABULARIUM_PROVISORES + Provider + '/';
+  ProviderDir := GetTabulariumProvisores() + Provider + '/';
   ClavesPath := ProviderDir + 'claves.txt';
 
   Query := TSQLQuery.Create(DBConn);
@@ -92,15 +92,19 @@ begin
       begin
         if InClause <> '' then
           InClause := InClause + ',';
-        InClause := InClause + QuotedStr(Hashes[I]);
+        InClause := InClause + ':hash' + IntToStr(I);
       end;
 
       Query.SQL.Text := 'DELETE FROM llm_key_events WHERE provider = :provider AND key_hash NOT IN (' + InClause + ')';
       Query.ParamByName('provider').AsString := Provider;
+      for I := 0 to Hashes.Count - 1 do
+        Query.ParamByName('hash' + IntToStr(I)).AsString := Hashes[I];
       Query.ExecSQL;
 
       Query.SQL.Text := 'DELETE FROM llm_key_status WHERE provider = :provider AND key_hash NOT IN (' + InClause + ')';
       Query.ParamByName('provider').AsString := Provider;
+      for I := 0 to Hashes.Count - 1 do
+        Query.ParamByName('hash' + IntToStr(I)).AsString := Hashes[I];
       Query.ExecSQL;
     end
     else
@@ -135,6 +139,7 @@ begin
   SynchronizareClavesLLMProvider('gemini', True);
   SynchronizareClavesLLMProvider('groq', True);
   SynchronizareClavesLLMProvider('cerebras', True);
+  SynchronizareClavesLLMProvider('sambanova', True);
 end;
 
 function StatumClavisLLM(Provider, Clavis: String): String;

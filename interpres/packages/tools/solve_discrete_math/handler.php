@@ -5,6 +5,10 @@ if (empty($code)) {
     return "Error: No Pascal code provided.";
 }
 
+if (strlen($code) > 65536) {
+    return "Error: Pascal code exceeds the maximum allowed size of 64KB.";
+}
+
 $mechanica_host = getenv("MECHANICA_HOST") ?: "127.0.0.1";
 $mechanica_port = getenv("MECHANICA_PORT") ?: 8082;
 $unique_id = uniqid('math_');

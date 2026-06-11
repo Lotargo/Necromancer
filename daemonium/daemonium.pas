@@ -43,6 +43,7 @@ var
 begin
   LineaData := '';
   repeat
+    FillChar(Buffer, SizeOf(Buffer), 0);
     BytesRead := fpRecv(CliensSock, @Buffer[0], SizeOf(Buffer) - 1, 0);
     if BytesRead > 0 then
     begin
@@ -264,6 +265,9 @@ begin
   WriteLn(' [!] WARNING: 640KB RAM IS ENOUGH FOR EVERYONE (Currently using: ', GetFPCHeapStatus.CurrHeapUsed div 1024, 'KB)');
   WriteLn(' [!] ГОД ОТ РОЖДЕСТВА ХРИСТОВА / YEAR: ', FormatDateTime('yyyy', Now));
   WriteLn('------------------------------------------------');
+
+  // Initialize random number generator once
+  Randomize;
 
   // Connect to PostgreSQL and verify schema
   InitDatabase;

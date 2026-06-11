@@ -75,7 +75,7 @@ begin
     Proc.Executable := 'fpc';
     Proc.Parameters.Add('-O2');
     Proc.Parameters.Add(TempFileName);
-    Proc.Options := Proc.Options + [poWaitOnExit, poUsePipes, poNoConsole];
+    Proc.Options := Proc.Options + [poWaitOnExit, poUsePipes, poNoConsole, poStderrToOutput];
     Proc.Execute;
     OutputList.LoadFromStream(Proc.Output);
     
@@ -190,6 +190,7 @@ var
 begin
   LineaData := '';
   repeat
+    FillChar(Buffer, SizeOf(Buffer), 0);
     BytesRead := fpRecv(CliensSock, @Buffer[0], SizeOf(Buffer) - 1, 0);
     if BytesRead > 0 then
     begin
@@ -221,6 +222,9 @@ begin
 
     Mandatum := Parts[0];
     Id := Parts[1];
+    Id := StringReplace(Id, '/', '', [rfReplaceAll]);
+    Id := StringReplace(Id, '\', '', [rfReplaceAll]);
+    Id := StringReplace(Id, '.', '', [rfReplaceAll]);
     PascalCode := Parts[2];
 
     WriteLn('[MECHANICA REQ] Cmd: ', Mandatum, ' | Id: ', Id);

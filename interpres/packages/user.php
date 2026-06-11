@@ -52,7 +52,7 @@ if ($action === 'save_options') {
 }
 
 if ($action === 'renominare_usorem') {
-    $novum_nomen = trim($_POST['novum_nomen'] ?? '');
+    $novum_nomen = sani(trim($_POST['novum_nomen'] ?? ''));
     if (empty($novum_nomen)) {
         echo json_encode(["status" => "error", "message" => "Nomen vacuum est"]);
         exit();
