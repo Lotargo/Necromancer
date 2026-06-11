@@ -72,7 +72,7 @@ These are the current repository defaults for inexpensive usage and relatively f
 * `openai/gpt-oss-20b` (Groq)
 * `llama3.1-8b` (Cerebras)
 
-At the time of this update, `sambanova` is intentionally excluded from active balancing in this repository because its credit model no longer fits the project's free-tier rotation strategy.
+At the time of this update, `sambanova` is excluded from the active Lua balancer rotation because its credit model no longer fits the project's free-tier rotation strategy. However, its keys are still synchronized to PostgreSQL by Daemonium for future availability if needed.
 
 ---
 

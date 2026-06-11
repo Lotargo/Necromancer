@@ -1,5 +1,12 @@
-daemonium/*.o
+# Compiled Pascal Artifacts
+*.o
+*.ppu
+*.exe
 daemonium/daemonium
+mechanica/mechanica
+mechanica/sandbox/
+
+# Ignored log files and data
 tabularium/fabulatio_*.txt
 tabularium/usores.txt
 tabularium/spiritus_mail.log

@@ -35,6 +35,11 @@ ffi.cdef[[
     int close(int fd);
     int setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
 
+    struct timeval {
+        long tv_sec;
+        long tv_usec;
+    };
+
     uint16_t htons(uint16_t hostshort);
     uint32_t htonl(uint32_t hostlong);
 ]]
@@ -63,6 +68,22 @@ end
 
 -- Sessiones (Sessions) pro ReAct / CoT statera
 local Sessiones = {}
+
+local UltimaEvictio = os.time()
+
+local function EvincereSessionesObsoletas()
+    local nunc = os.time()
+    if nunc - UltimaEvictio < 60 then
+        return
+    end
+    UltimaEvictio = nunc
+    for id, s in pairs(Sessiones) do
+        if s.ultima_activitas and nunc - s.ultima_activitas > 3600 then
+            Sessiones[id] = nil
+            print("[>] Evictio sessionis obsoletae: " .. tostring(id))
+        end
+    end
+end
 
 -- Functio: Legere lineas ex fasciculo (Read lines from file)
 local function LegereFasciculum(via)
@@ -162,6 +183,7 @@ local function EligereProvisorem(id_sessionis)
     if id_sessionis and id_sessionis ~= "" and id_sessionis ~= "default" then
         if Sessiones[id_sessionis] then
             local s = Sessiones[id_sessionis]
+            s.ultima_activitas = os.time()
             -- In sessione retinemus eundem provisorem, eandem clavem et idem modelum
             return s.nomen, s.clavis, s.url, s.modelum, nil
         end
@@ -190,7 +212,8 @@ local function EligereProvisorem(id_sessionis)
             nomen = provisor_electus.nomen,
             clavis = electa_clavis,
             url = provisor_electus.url,
-            modelum = electum_modelum
+            modelum = electum_modelum,
+            ultima_activitas = os.time()
         }
     end
 
@@ -208,6 +231,8 @@ end
 
 -- Functio: Tractare clientem (Handle client connection)
 local function TractareClientem(cliens_sock)
+    EvincereSessionesObsoletas()
+
     local status, err = pcall(function()
         local buffer = ffi.new("char[1024]")
         local bytes_read = ffi.C.recv(cliens_sock, buffer, 1023, 0)
@@ -292,6 +317,12 @@ print("Cache provisorum paratus est.")
 while true do
     local cliens_sock = ffi.C.accept(servus_sock, nil, nil)
     if cliens_sock >= 0 then
+        -- Set socket receive timeout (SO_RCVTIMEO) to 3 seconds
+        local timeout = ffi.new("struct timeval")
+        timeout.tv_sec = 3
+        timeout.tv_usec = 0
+        ffi.C.setsockopt(cliens_sock, 1, 20, timeout, ffi.sizeof("struct timeval")) -- SOL_SOCKET=1, SO_RCVTIMEO=20
+
         TractareClientem(cliens_sock)
     end
 end

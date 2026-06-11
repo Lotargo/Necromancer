@@ -41,8 +41,13 @@ DB_HOST=db
 DB_PORT=5432
 DB_NAME=necromancer
 DB_USER=necromancer
+# WARNING: Change DB_PASS to a strong unique secret in production!
 DB_PASS=necromancer_secret
 ```
+
+> [!WARNING]
+> **Production Credentials Security**: The default password `necromancer_secret` is configured for rapid local development only. For any production deployments, you MUST override `DB_PASS` in your environment or `.env` file with a strong unique password. The `Daemonium` container will fail to start if `DB_PASS` is not defined.
+
 
 ### Step 3: Evoke the Containers
 Run Docker Compose in detached mode to compile, construct, and boot all services:

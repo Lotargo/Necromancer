@@ -129,7 +129,7 @@ var
   Query: TSQLQuery;
   ExistensNomen, ExistensEmail: Boolean;
   ExistensRegType: String;
-  PassHash: String;
+  PassHash, Salt: String;
 begin
   ExistensNomen := False;
   ExistensEmail := False;
@@ -159,16 +159,18 @@ begin
     if ExistensEmail then
       Exit(FormareResponsum(400, 'Error', 'Email iam registratum'));
 
-    PassHash := HashPassword(Password, Nomen);
+    Salt := GenerareSalt;
+    PassHash := HashPassword(Password, Salt);
 
     if ExistensNomen then
     begin
       if ExistensRegType = 'SPIRITUS' then
       begin
         // Upgrade temporary guest user to full ANIMA user!
-        Query.SQL.Text := 'UPDATE usores SET email = :email, password_hash = :pass, reg_type = ''ANIMA'', fingerprint = :fp WHERE nomen = :nomen';
+        Query.SQL.Text := 'UPDATE usores SET email = :email, password_hash = :pass, password_salt = :salt, reg_type = ''ANIMA'', fingerprint = :fp WHERE nomen = :nomen';
         Query.ParamByName('email').AsString := Email;
         Query.ParamByName('pass').AsString := PassHash;
+        Query.ParamByName('salt').AsString := Salt;
         Query.ParamByName('fp').AsString := FP;
         Query.ParamByName('nomen').AsString := Nomen;
         Query.ExecSQL;
@@ -180,11 +182,12 @@ begin
     end;
 
     // Save record
-    Query.SQL.Text := 'INSERT INTO usores (nomen, email, password_hash, reg_type, fingerprint) ' +
-                     'VALUES (:nomen, :email, :pass, ''ANIMA'', :fp)';
+    Query.SQL.Text := 'INSERT INTO usores (nomen, email, password_hash, password_salt, reg_type, fingerprint) ' +
+                     'VALUES (:nomen, :email, :pass, :salt, ''ANIMA'', :fp)';
     Query.ParamByName('nomen').AsString := Nomen;
     Query.ParamByName('email').AsString := Email;
     Query.ParamByName('pass').AsString := PassHash;
+    Query.ParamByName('salt').AsString := Salt;
     Query.ParamByName('fp').AsString := FP;
     Query.ExecSQL;
     DBTran.CommitRetaining;
@@ -204,10 +207,10 @@ function IntrarePlenum(Email, Password, FP: String): String;
 var
   Query: TSQLQuery;
   PassHash: String;
-  RegNomen, RegFP, RegPass: String;
+  RegNomen, RegFP, RegPass, RegSalt: String;
   Invenitur: Boolean;
   Valido: Boolean;
-  NovusPassHash: String;
+  NovusPassHash, NovusSalt: String;
 begin
   Result := FormareResponsum(401, 'Error', 'Email vel Password non recte');
   Invenitur := False;
@@ -216,7 +219,7 @@ begin
   Query.Database := DBConn;
   Query.Transaction := DBTran;
   try
-    Query.SQL.Text := 'SELECT nomen, password_hash, fingerprint FROM usores WHERE email = :email OR nomen = :email';
+    Query.SQL.Text := 'SELECT nomen, password_hash, password_salt, fingerprint FROM usores WHERE email = :email OR nomen = :email';
     Query.ParamByName('email').AsString := Email;
     Query.Open;
 
@@ -225,6 +228,10 @@ begin
       Invenitur := True;
       RegNomen := Query.FieldByName('nomen').AsString;
       RegPass := Query.FieldByName('password_hash').AsString;
+      if Query.FieldByName('password_salt').IsNull then
+        RegSalt := ''
+      else
+        RegSalt := Query.FieldByName('password_salt').AsString;
       RegFP := Query.FieldByName('fingerprint').AsString;
     end;
     Query.Close;
@@ -240,20 +247,41 @@ begin
         if RegPass = LegacySHA1(Password) then
         begin
           Valido := True;
-          // Автоматическая миграция на Argon2id с солью в виде RegNomen
-          NovusPassHash := HashPassword(Password, RegNomen);
-          Query.SQL.Text := 'UPDATE usores SET password_hash = :pass WHERE nomen = :nomen';
+          // Автоматическая миграция на Argon2id с новой случайной солью
+          NovusSalt := GenerareSalt;
+          NovusPassHash := HashPassword(Password, NovusSalt);
+          Query.SQL.Text := 'UPDATE usores SET password_hash = :pass, password_salt = :salt WHERE nomen = :nomen';
           Query.ParamByName('pass').AsString := NovusPassHash;
+          Query.ParamByName('salt').AsString := NovusSalt;
           Query.ParamByName('nomen').AsString := RegNomen;
           Query.ExecSQL;
           DBTran.CommitRetaining;
-          WriteLn('[MIGRATION] Usor "', RegNomen, '" password hash migrated from SHA-1 to Argon2id.');
+          WriteLn('[MIGRATION] Usor "', RegNomen, '" password hash migrated from SHA-1 to Argon2id with random salt.');
+        end;
+      end
+      else if RegSalt = '' then
+      begin
+        // Argon2id с солью в виде nickname (старый формат)
+        PassHash := HashPassword(Password, RegNomen);
+        if RegPass = PassHash then
+        begin
+          Valido := True;
+          // Автоматическая миграция на новый Argon2id с новой случайной солью
+          NovusSalt := GenerareSalt;
+          NovusPassHash := HashPassword(Password, NovusSalt);
+          Query.SQL.Text := 'UPDATE usores SET password_hash = :pass, password_salt = :salt WHERE nomen = :nomen';
+          Query.ParamByName('pass').AsString := NovusPassHash;
+          Query.ParamByName('salt').AsString := NovusSalt;
+          Query.ParamByName('nomen').AsString := RegNomen;
+          Query.ExecSQL;
+          DBTran.CommitRetaining;
+          WriteLn('[MIGRATION] Usor "', RegNomen, '" password hash migrated from nickname salt to random salt.');
         end;
       end
       else
       begin
-        // Argon2id or variable length hash format
-        PassHash := HashPassword(Password, RegNomen);
+        // Argon2id со случайной солью (новый формат)
+        PassHash := HashPassword(Password, RegSalt);
         if RegPass = PassHash then
           Valido := True;
       end;
@@ -335,8 +363,8 @@ end;
 function MutareTessellam(Nomen, VetusPass, NovaPass: String): String;
 var
   Query: TSQLQuery;
-  NovaPassHash: String;
-  SavedHash: String;
+  NovaPassHash, NovaSalt: String;
+  SavedHash, SavedSalt: String;
   Invenitur: Boolean;
   Valido: Boolean;
 begin
@@ -347,13 +375,17 @@ begin
   Query.Database := DBConn;
   Query.Transaction := DBTran;
   try
-    Query.SQL.Text := 'SELECT password_hash FROM usores WHERE nomen = :nomen';
+    Query.SQL.Text := 'SELECT password_hash, password_salt FROM usores WHERE nomen = :nomen';
     Query.ParamByName('nomen').AsString := Nomen;
     Query.Open;
     if not Query.EOF then
     begin
       Invenitur := True;
       SavedHash := Query.FieldByName('password_hash').AsString;
+      if Query.FieldByName('password_salt').IsNull then
+        SavedSalt := ''
+      else
+        SavedSalt := Query.FieldByName('password_salt').AsString;
     end;
     Query.Close;
 
@@ -365,17 +397,24 @@ begin
         if SavedHash = LegacySHA1(VetusPass) then
           Valido := True;
       end
-      else
+      else if SavedSalt = '' then
       begin
         if SavedHash = HashPassword(VetusPass, Nomen) then
+          Valido := True;
+      end
+      else
+      begin
+        if SavedHash = HashPassword(VetusPass, SavedSalt) then
           Valido := True;
       end;
 
       if Valido then
       begin
-        NovaPassHash := HashPassword(NovaPass, Nomen);
-        Query.SQL.Text := 'UPDATE usores SET password_hash = :novum WHERE nomen = :nomen';
+        NovaSalt := GenerareSalt;
+        NovaPassHash := HashPassword(NovaPass, NovaSalt);
+        Query.SQL.Text := 'UPDATE usores SET password_hash = :novum, password_salt = :salt WHERE nomen = :nomen';
         Query.ParamByName('novum').AsString := NovaPassHash;
+        Query.ParamByName('salt').AsString := NovaSalt;
         Query.ParamByName('nomen').AsString := Nomen;
         Query.ExecSQL;
         DBTran.CommitRetaining;

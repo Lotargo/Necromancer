@@ -7,6 +7,10 @@ function llm_stream_handle_send($usor, $cubiculum, $user_fp)
     if (empty($nuntius)) {
         exit();
     }
+    if (strlen($nuntius) > 32768) {
+        http_response_code(400);
+        exit("Error: Message exceeds maximum length of 32KB.");
+    }
 
     $user_timezone = sani($_POST['timezone'] ?? 'UTC');
     $user_local_time = sani($_POST['local_time'] ?? '');

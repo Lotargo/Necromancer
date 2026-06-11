@@ -19,14 +19,16 @@ const
   PORTUS = 8082;
 
 type
-  TStringArray = array[0..24] of String;
+  TStringArray = array[0..38] of String;
 
 const
   Forbidden: TStringArray = (
     'assign', 'reset', 'rewrite', 'append', 'close', 'erase', 'rename',
     'assignfile', 'closefile', 'windows', 'dos', 'unix', 'libc', 'sockets',
     'fpconnect', 'fpsocket', 'winapi', 'shellexecute', 'createprocess',
-    'exec', 'system', 'registry', 'baseunix', 'shell', 'executeprocess'
+    'exec', 'system', 'registry', 'baseunix', 'shell', 'executeprocess',
+    'loadlibrary', 'getprocaddress', 'dlopen', 'dlsym', 'external', 'asm',
+    '{$i', '{$include', '{$link', '{$linklib', '(*$i', '(*$include', '(*$link', '(*$linklib'
   );
 
 procedure SocketClose(Sock: longint);
@@ -38,18 +40,122 @@ begin
   {$ENDIF}
 end;
 
+function StripComments(const Code: String): String;
+var
+  i: Integer;
+  InSingleLineComment: Boolean;
+  InBraceComment: Boolean;
+  InParenComment: Boolean;
+  InString: Boolean;
+begin
+  Result := '';
+  InSingleLineComment := False;
+  InBraceComment := False;
+  InParenComment := False;
+  InString := False;
+  i := 1;
+  while i <= Length(Code) do
+  begin
+    // Handle string literals to avoid stripping comments inside them
+    if (Code[i] = '''') and (not InSingleLineComment) and (not InBraceComment) and (not InParenComment) then
+    begin
+      InString := not InString;
+      Result := Result + Code[i];
+      Inc(i);
+      Continue;
+    end;
+
+    if InString then
+    begin
+      Result := Result + Code[i];
+      Inc(i);
+      Continue;
+    end;
+
+    if InSingleLineComment then
+    begin
+      if (Code[i] = #10) or (Code[i] = #13) then
+      begin
+        InSingleLineComment := False;
+        Result := Result + Code[i];
+      end;
+      Inc(i);
+    end
+    else if InBraceComment then
+    begin
+      if Code[i] = '}' then
+        InBraceComment := False;
+      Inc(i);
+    end
+    else if InParenComment then
+    begin
+      if (i < Length(Code)) and (Code[i] = '*') and (Code[i+1] = ')') then
+      begin
+        InParenComment := False;
+        Inc(i, 2);
+      end
+      else
+        Inc(i);
+    end
+    else
+    begin
+      // Check for start of comments (but do NOT strip compiler directives {$ or (*$ )
+      if (i < Length(Code)) and (Code[i] = '/') and (Code[i+1] = '/') then
+      begin
+        InSingleLineComment := True;
+        Inc(i, 2);
+      end
+      else if (Code[i] = '{') then
+      begin
+        if (i < Length(Code)) and (Code[i+1] = '$') then
+        begin
+          // Compiler directive: keep it
+          Result := Result + '{';
+          Inc(i);
+        end
+        else
+        begin
+          InBraceComment := True;
+          Inc(i);
+        end;
+      end
+      else if (i < Length(Code)) and (Code[i] = '(') and (Code[i+1] = '*') then
+      begin
+        if (i + 2 < Length(Code)) and (Code[i+2] = '$') then
+        begin
+          // Compiler directive: keep it
+          Result := Result + '(*';
+          Inc(i, 2);
+        end
+        else
+        begin
+          InParenComment := True;
+          Inc(i, 2);
+        end;
+      end
+      else
+      begin
+        Result := Result + Code[i];
+        Inc(i);
+      end;
+    end;
+  end;
+end;
+
 function VerifySafety(const Code: String; out ErrorMsg: String): Boolean;
 var
+  CleanCode: String;
   LowerCode: String;
   K: String;
 begin
-  LowerCode := LowerCase(Code);
+  CleanCode := StripComments(Code);
+  LowerCode := LowerCase(CleanCode);
   Result := True;
   for K in Forbidden do
   begin
     if Pos(K, LowerCode) > 0 then
     begin
-      ErrorMsg := 'Security Violation: Forbidden keyword "' + K + '" detected.';
+      ErrorMsg := 'Security Violation: Forbidden keyword/directive "' + K + '" detected.';
       Exit(False);
     end;
   end;

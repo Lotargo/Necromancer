@@ -5,7 +5,8 @@ services:
     environment:
       - POSTGRES_DB=necromancer
       - POSTGRES_USER=necromancer
-      - POSTGRES_PASSWORD=necromancer_secret
+      # POSTGRES_PASSWORD should be set in environment / .env. Default fallback for development only.
+      - POSTGRES_PASSWORD=${DB_PASS:-necromancer_secret}
     ports:
       - "5433:5432"
     volumes:
@@ -23,7 +24,8 @@ services:
       - DB_PORT=5432
       - DB_NAME=necromancer
       - DB_USER=necromancer
-      - DB_PASS=necromancer_secret
+      # DB_PASS should be set in environment / .env. Default fallback for development only.
+      - DB_PASS=${DB_PASS:-necromancer_secret}
     volumes:
       - ./tabularium:/app/tabularium
     depends_on:

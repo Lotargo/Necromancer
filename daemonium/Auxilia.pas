@@ -18,6 +18,7 @@ function HashClavisLLM(const Clavis: String): String;
 function LegacySHA1(const Pass: String): String;
 function BrevisClavisLLM(Clavis: String): String;
 function LegereLineasNonVacuas(Via: String): TStringList;
+function GenerareSalt: String;
 
 implementation
 
@@ -44,6 +45,16 @@ function HashPassword(const Pass, Salt: String): String;
 begin
   // Cryptographically secure hashing with Argon2id using dynamic salt (username or email)
   Result := HashPasswordArgon2(Pass, Salt);
+end;
+
+function GenerareSalt: String;
+var
+  i: Integer;
+begin
+  Result := '';
+  for i := 1 to 32 do
+    Result := Result + IntToHex(Random(16), 1);
+  Result := LowerCase(Result);
 end;
 
 function HashClavisLLM(const Clavis: String): String;

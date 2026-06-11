@@ -31,7 +31,11 @@ begin
   User := GetEnvironmentVariable('DB_USER');
   if User = '' then User := 'necromancer';
   Pass := GetEnvironmentVariable('DB_PASS');
-  if Pass = '' then Pass := 'necromancer_secret';
+  if Pass = '' then
+  begin
+    WriteLn('[FATAL] Environment variable DB_PASS is required but was not set.');
+    Halt(1);
+  end;
 
   WriteLn('Database Config: Host=', Host, ', Port=', PortStr, ', DB=', DbName, ', User=', User);
 
@@ -86,6 +90,9 @@ begin
       '  fingerprint VARCHAR(255) NOT NULL,' +
       '  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP' +
       ');';
+    Query.ExecSQL;
+
+    Query.SQL.Text := 'ALTER TABLE usores ADD COLUMN IF NOT EXISTS password_salt VARCHAR(255);';
     Query.ExecSQL;
 
     // 2. User Options Table (UI settings)

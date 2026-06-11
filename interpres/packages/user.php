@@ -37,6 +37,10 @@ if ($action === 'get_user_state') {
 
 if ($action === 'save_options') {
     $options_str = $_POST['options'] ?? '{}';
+    if (strlen($options_str) > 8192) {
+        echo json_encode(["status" => "error", "message" => "Options string too long (max 8KB)"]);
+        exit();
+    }
     $safe_options = json_encode(json_decode($options_str)); // Validate JSON
     if ($safe_options) {
         $safe_options = str_replace(['|', "\r", "\n"], ['\\u007c', '', ''], $safe_options);
@@ -57,6 +61,11 @@ if ($action === 'renominare_usorem') {
         echo json_encode(["status" => "error", "message" => "Nomen vacuum est"]);
         exit();
     }
+    if (strlen($novum_nomen) > 100) {
+        echo json_encode(["status" => "error", "message" => "Nomen too long (max 100 chars)"]);
+        exit();
+    }
+
 
     $safeName = preg_replace('/[^a-zA-Z0-9_-]/', '', $novum_nomen);
     if ($safeName) {
@@ -84,6 +93,11 @@ if ($action === 'mutare_tessaram') {
         echo json_encode(["status" => "error", "message" => "Tessera vacua est"]);
         exit();
     }
+    if (strlen($vetus_pass) > 256 || strlen($nova_pass) > 256) {
+        echo json_encode(["status" => "error", "message" => "Password too long (max 256 chars)"]);
+        exit();
+    }
+
 
     $resp = loqui_cum_daemonio("MUTARE_TESSARAM|" . $usor . "|" . $vetus_pass . "|" . $nova_pass . "|" . $user_fp);
     $partes = explode("|", $resp);

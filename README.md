@@ -27,7 +27,7 @@ Detailed internal structures and setup guidelines can be found in our **[Occult 
 
 ## 🏛️ Architectura Systematis (System Architecture)
 
-The system is divided into four sacred pillars:
+The system is divided into five sacred pillars:
 
 ```mermaid
 graph TD
@@ -35,6 +35,7 @@ graph TD
     B <-->|libpq / Port 5432| C[(Database: PostgreSQL)]
     A <-->|TCP / Port 8081| D[Balancer: Aequilibrium Lua]
     D -->|Rotation| E[AI Providers: Gemini / Groq / Cerebras]
+    A <-->|Sockets TCP / Port 8082| M[Sandbox: Mechanica Pascal]
 ```
 
 ### 1. 🦇 Daemonium (The Core Backend)
@@ -73,6 +74,10 @@ graph TD
   * `fabulatio`: Full conversational logs, automatically indexed for instantaneous search and fast retrieval.
   * **Relational Cascades**: Integrated `ON DELETE CASCADE ON UPDATE CASCADE` rules automatically clean user settings and chats when a soul is deleted.
 
+### 5. ⚙️ Mechanica (The Computational Sandbox)
+* **Language**: FreePascal (`mechanica/`)
+* **Role**: The compilation and execution core running on port `8082`. It receives Pascal code from `Interpres`, verifies safety, compiles it using `fpc` in a secure sandbox workspace, streams the real-time execution outputs back to the socket connection, and performs atomic cleanups.
+
 ---
 
 ## ✨ Mystica (Features)
@@ -82,7 +87,12 @@ graph TD
 * **ANIMA**: Advanced email and password registration. Credentials are cryptographically protected using state-of-the-art **Argon2id** (with seamless backwards-compatible **SHA-1 migration** upon login).
 
 ### 🔮 Oraculum Agenticum (Agentic Features)
-* **Instrumenta (Tools)**: The Oracle dynamically utilizes `search_web` (via DDG scraper) or `search_knowledge_base` (RAG from local occult texts).
+* **Instrumenta (Tools)**: The Oracle dynamically utilizes:
+  * `search_web`: Queries external search engines via a local DDG scraper.
+  * `search_knowledge_base`: Retrieves RAG context from local occult texts.
+  * `solve_discrete_math`: Compiles and executes custom Pascal code on the `Mechanica` microservice to solve logic/math problems.
+  * `run_streaming_simulation`: Generates physical simulations inside `Mechanica` that stream real-time coordinate data to the HTML5 Canvas client player.
+  * `save_to_knowledge_base`: Automatically stores successful bug fixes or compiler library patterns back into the RAG directory.
 * **Ratio Cogitandi (Reasoning)**: Streams the Oracle's thought process step-by-step prior to writing the final Latin response.
 * **Nomina Automatica**: The Oracle automatically names new chat sessions with elegant Latin phrases based on the first message context.
 * **Key Quarantine**: Repeated `429` responses place a key into a 30-minute rest period, while invalid or billing-blocked keys are disabled automatically.

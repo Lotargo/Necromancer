@@ -12,6 +12,10 @@ require_once __DIR__ . '/packages/tela.php';
 
 $action = sani($_GET['action'] ?? $_POST['action'] ?? '');
 $cubiculum = sani($_GET['room'] ?? $_POST['room'] ?? 'default');
+if (strlen($cubiculum) > 100) {
+    http_response_code(400);
+    exit("Bad Request: Room ID too long");
+}
 
 // 1. Public Actions (No Session Required)
 if ($action === 'login_anima' || $action === 'register_anima' || $action === 'forgot_anima') {
