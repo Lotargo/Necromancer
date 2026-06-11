@@ -6,16 +6,13 @@
   <img src="https://readme-typing-svg.demolab.com?font=Caveat&size=40&pause=1000&color=00FF00&center=true&vCenter=true&width=600&lines=Tractatus+De+Necromantia;The+Ancient+Oracle+Chat;Ex+Libris+Daemonium+Postgres" alt="Typing SVG" />
 </h1>
 
-<p align="center">
-  <em style="font-family: 'Caveat', 'Brush Script MT', 'Comic Sans MS', cursive; font-size: 1.4em; color: #aaaaaa;">
-  "Hoc est repositorium in quo vivit chat antiquus et arcanus, nunc potentia SQL confirmatus..."<br>
-  (This is the repository where an arcane chat dwells, now fortified by the power of SQL...)
-  </em>
-</p>
+<div align="center">
+  <img src="assets/subtitle.svg" width="100%" alt="Hoc est repositorium in quo vivit chat antiquus et arcanus, nunc potentia SQL confirmatus... (This is the repository where an arcane chat dwells, now fortified by the power of SQL...)" />
+</div>
 
 ---
 
-<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Prologus (Introduction)</h2>
+<img src="assets/headers/prologus.svg" width="100%" alt="Prologus (Introduction)" />
 
 **Necromancer** is an arcane chat interface and local backend system wrapped in the aesthetics of a retro CRT terminal and the lore of dark magic. It acts as a gateway to interact with an AI **Oraculum** (Oracle), using Latin incantations, occult themes, and ancient Roman personas.
 
@@ -25,7 +22,7 @@ Detailed internal structures and setup guidelines can be found in our **[Occult 
 
 ---
 
-<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Architectura Systematis (System Architecture)</h2>
+<img src="assets/headers/architectura.svg" width="100%" alt="Architectura Systematis (System Architecture)" />
 
 The system is divided into five sacred pillars:
 
@@ -80,7 +77,7 @@ graph TD
 
 ---
 
-<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Mystica (Features)</h2>
+<img src="assets/headers/mystica.svg" width="100%" alt="Mystica (Features)" />
 
 ### Genera Accessus (Login Modes)
 * **SPIRITUS**: Anonymous guest entry. Sign in with a nickname and explore the forum.
@@ -111,7 +108,7 @@ graph TD
 
 ---
 
-<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Media Expositio (Gallery)</h2>
+<img src="assets/headers/gallery.svg" width="100%" alt="Media Expositio (Gallery)" />
 
 <div align="center">
   <h3>Occult CRT Terminal V2</h3>
@@ -155,7 +152,7 @@ graph TD
 
 ---
 
-<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">API Configuration (Quomodo API configurare)</h2>
+<img src="assets/headers/api_config.svg" width="100%" alt="API Configuration (Quomodo API configurare)" />
 
 The Oraculum supports two explicit LLM connection modes:
 
@@ -194,7 +191,7 @@ docker-compose up --build -d
 
 ---
 
-<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Magia Nigra (Docker Compose Setup)</h2>
+<img src="assets/headers/magia_nigra.svg" width="100%" alt="Magia Nigra (Docker Compose Setup)" />
 
 The easiest way to summon the entire stack is through the containerization arts.
 
@@ -215,7 +212,7 @@ The easiest way to summon the entire stack is through the containerization arts.
 
 ---
 
-<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Quomodo incipere sine Magia (Manual Setup)</h2>
+<img src="assets/headers/manual_setup.svg" width="100%" alt="Quomodo incipere sine Magia (Manual Setup)" />
 
 For developers wishing to run the components natively on Windows/Linux:
 
@@ -244,9 +241,6 @@ For developers wishing to run the components natively on Windows/Linux:
 
 ---
 
-<p align="center">
-  <em style="font-family: 'Caveat', 'Comic Sans MS', cursive; font-size: 1.3em; color: #a30000; text-shadow: 0 0 5px #ff0000;">
-  * Memento: Omnes viae Romam ducunt! *<br>
-  (Remember: All roads lead to Rome!)
-  </em>
-</p>
+<div align="center">
+  <img src="assets/footer.svg" width="100%" alt="* Memento: Omnes viae Romam ducunt! * (Remember: All roads lead to Rome!)" />
+</div>
