@@ -1,123 +1,149 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 250" width="100%" height="100%">
   <defs>
-    <!-- Импортируем шрифты -->
+    <!-- Import Google Fonts -->
     <style type="text/css">
       @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&amp;family=VT323&amp;display=swap');
 
+      /* Radial screen background */
       .bg {
-        fill: #030804;
+        fill: url(#crt-bg);
       }
 
-      /* Мерцание задней сетки */
+      /* CRT Grid pulse */
       .grid {
-        stroke: #00ff66;
+        stroke: #33ff33;
         stroke-width: 0.5;
-        stroke-opacity: 0.15;
-        animation: gridPulse 6s infinite ease-in-out;
+        stroke-opacity: 0.12;
+        animation: gridPulse 8s infinite ease-in-out;
       }
 
-      /* Неоновый текст */
+      /* CRT sweep scanline */
+      .sweep-line {
+        animation: sweep 6s infinite linear;
+      }
+
+      /* HUD telemetry text styling */
+      .hud-text {
+        font-family: 'VT323', monospace;
+        font-size: 13px;
+        fill: #33ff33;
+        fill-opacity: 0.5;
+        letter-spacing: 1.5px;
+        animation: hudPulse 4s infinite ease-in-out;
+      }
+
+      /* Main title styling */
       .necromancer-title {
         font-family: 'Orbitron', sans-serif;
         font-weight: 900;
-        font-size: 54px;
-        fill: #00ff66;
+        font-size: 58px;
+        fill: #33ff33;
         text-anchor: middle;
-        letter-spacing: 12px;
+        letter-spacing: 15px;
         filter: url(#neon-glow);
-        animation: glitchText 4s infinite linear alternate, flicker 0.15s infinite;
+        animation: glitchText 5s infinite linear alternate, flicker 0.2s infinite;
       }
 
+      /* Subtitle styling */
       .sub-title {
         font-family: 'VT323', monospace;
-        font-size: 20px;
-        fill: #00ff66;
-        fill-opacity: 0.7;
+        font-size: 21px;
+        fill: #33ff33;
+        fill-opacity: 0.75;
         text-anchor: middle;
-        letter-spacing: 6px;
-        animation: pulseSub 3s infinite ease-in-out;
-      }
-
-      /* Анимированные оккультные круги по бокам */
-      .occult-seal {
-        fill: none;
-        stroke: #00ff66;
-        stroke-width: 1;
-        stroke-opacity: 0.4;
+        letter-spacing: 7px;
         filter: url(#neon-glow-weak);
+        animation: pulseSub 4s infinite ease-in-out;
       }
 
-      .seal-rotate-clockwise {
-        transform-origin: center;
-        animation: rotateCW 25s infinite linear;
-      }
-
-      .seal-rotate-counter {
-        transform-origin: center;
-        animation: rotateCCW 20s infinite linear;
-      }
-
+      /* CRT screen scanlines */
       .crt-lines {
         fill: url(#crt-pattern);
-        opacity: 0.18;
+        opacity: 0.15;
       }
 
-      /* Анимации */
-      @keyframes rotateCW {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
+      /* CRT noise shifts */
+      .crt-noise-bg {
+        animation: crtNoise 0.15s steps(4) infinite;
       }
 
-      @keyframes rotateCCW {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(-360deg); }
-      }
-
+      /* Animations */
       @keyframes gridPulse {
-        0%, 100% { stroke-opacity: 0.12; }
-        50% { stroke-opacity: 0.22; }
+        0%, 100% { stroke-opacity: 0.08; }
+        50% { stroke-opacity: 0.18; }
+      }
+
+      @keyframes hudPulse {
+        0%, 100% { fill-opacity: 0.4; }
+        50% { fill-opacity: 0.7; }
       }
 
       @keyframes pulseSub {
-        0%, 100% { fill-opacity: 0.6; text-shadow: 0 0 2px rgba(0,255,102,0.3); }
-        50% { fill-opacity: 0.95; text-shadow: 0 0 8px rgba(0,255,102,0.8); }
+        0%, 100% { fill-opacity: 0.65; filter: drop-shadow(0 0 2px rgba(51,255,51,0.3)); }
+        50% { fill-opacity: 0.95; filter: drop-shadow(0 0 8px rgba(51,255,51,0.8)); }
       }
 
       @keyframes flicker {
-        0% { opacity: 0.98; }
+        0% { opacity: 0.97; }
         50% { opacity: 1; }
-        100% { opacity: 0.99; }
+        100% { opacity: 0.98; }
+      }
+
+      @keyframes sweep {
+        0% { transform: translateY(-15px); }
+        100% { transform: translateY(265px); }
       }
 
       @keyframes glitchText {
-        0%, 95%, 100% {
+        0%, 93%, 98%, 100% {
           transform: translate(0, 0);
-          text-shadow: 0 0 10px rgba(0,255,102,0.6), 0 0 20px rgba(0,255,102,0.4);
+          text-shadow: 0 0 10px rgba(51,255,51,0.6), 0 0 20px rgba(51,255,51,0.3);
+        }
+        94% {
+          transform: translate(-3px, 1.5px);
+          text-shadow: -2px 0 #00ffff, 2px 0 #ff3333, 0 0 15px rgba(51,255,51,0.8);
+        }
+        95% {
+          transform: translate(3px, -1.5px);
+          text-shadow: 2px -2px #00ffff, -2px 2px #ff3333, 0 0 15px rgba(51,255,51,0.8);
         }
         96% {
-          transform: translate(-3px, 2px);
-          text-shadow: -2px 0 red, 2px 0 blue, 0 0 15px rgba(0,255,102,0.9);
+          transform: translate(-1.5px, -2px);
+          text-shadow: -1.5px 2px #00ffff, 1.5px -2px #ff3333, 0 0 10px rgba(51,255,51,0.6);
         }
         97% {
-          transform: translate(3px, -1px);
-          text-shadow: 2px -2px red, -2px 2px blue, 0 0 15px rgba(0,255,102,0.9);
-        }
-        98% {
-          transform: translate(-1px, -2px);
-          text-shadow: -1px 2px red, 1px -2px blue, 0 0 10px rgba(0,255,102,0.6);
-        }
-        99% {
           transform: translate(2px, 1px);
-          text-shadow: 1px -1px red, -1px 1px blue, 0 0 10px rgba(0,255,102,0.6);
+          text-shadow: 1px -1px #00ffff, -1px 1px #ff3333, 0 0 10px rgba(51,255,51,0.6);
         }
+      }
+
+      @keyframes crtNoise {
+        0% { transform: translate(0px, 0px); }
+        25% { transform: translate(-4px, 4px); }
+        50% { transform: translate(4px, -4px); }
+        75% { transform: translate(-2px, -2px); }
+        100% { transform: translate(2px, 2px); }
       }
     </style>
 
-    <!-- Фильтр для яркого неонового свечения -->
+    <!-- CRT Radial Background Gradient -->
+    <radialGradient id="crt-bg" cx="50%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#0a2912" />
+      <stop offset="60%" stop-color="#031207" />
+      <stop offset="100%" stop-color="#010502" />
+    </radialGradient>
+
+    <!-- CRT Sweep Line Gradient -->
+    <linearGradient id="sweep-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#33ff33" stop-opacity="0" />
+      <stop offset="100%" stop-color="#33ff33" stop-opacity="0.18" />
+    </linearGradient>
+
+    <!-- Neon Glow Filter -->
     <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
       <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-      <feGaussianBlur stdDeviation="8" result="coloredBlur2"/>
-      <feGaussianBlur stdDeviation="15" result="coloredBlur3"/>
+      <feGaussianBlur stdDeviation="7" result="coloredBlur2"/>
+      <feGaussianBlur stdDeviation="12" result="coloredBlur3"/>
       <feMerge>
         <feMergeNode in="coloredBlur3"/>
         <feMergeNode in="coloredBlur2"/>
@@ -126,27 +152,33 @@
       </feMerge>
     </filter>
 
-    <!-- Фильтр для слабого неонового свечения -->
+    <!-- Weak Glow Filter -->
     <filter id="neon-glow-weak" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feGaussianBlur stdDeviation="1.8" result="blur"/>
       <feMerge>
         <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
 
-    <!-- Паттерн CRT-сканлайнов -->
+    <!-- CRT Scanlines Pattern -->
     <pattern id="crt-pattern" width="4" height="4" patternUnits="userSpaceOnUse">
-      <line x1="0" y1="0" x2="4" y2="0" stroke="#000" stroke-width="1.5" />
+      <line x1="0" y1="0" x2="4" y2="0" stroke="#000" stroke-width="1.8" />
     </pattern>
+
+    <!-- CRT Noise Filter (Phosphor Green colorized Fractal Turbulence) -->
+    <filter id="crt-noise" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.95" numOctaves="3" stitchTiles="stitch" />
+      <feColorMatrix type="matrix" values="0 0 0 0 0  0.21 0.72 0.07 0 0  0 0 0 0 0  0 0 0 0.16 0" />
+    </filter>
   </defs>
 
-  <!-- Задний фон -->
+  <!-- Background Rect -->
   <rect class="bg" width="100%" height="100%" rx="10" />
 
-  <!-- Кибер-оккультная сетка на фоне -->
+  <!-- CRT Screen Grid -->
   <g>
-    <!-- Горизонтальные линии -->
+    <!-- Horizontal lines -->
     <line class="grid" x1="0" y1="25" x2="800" y2="25" />
     <line class="grid" x1="0" y1="50" x2="800" y2="50" />
     <line class="grid" x1="0" y1="75" x2="800" y2="75" />
@@ -157,7 +189,7 @@
     <line class="grid" x1="0" y1="200" x2="800" y2="200" />
     <line class="grid" x1="0" y1="225" x2="800" y2="225" />
 
-    <!-- Вертикальные линии -->
+    <!-- Vertical lines -->
     <line class="grid" x1="50" y1="0" x2="50" y2="250" />
     <line class="grid" x1="100" y1="0" x2="100" y2="250" />
     <line class="grid" x1="150" y1="0" x2="150" y2="250" />
@@ -175,43 +207,45 @@
     <line class="grid" x1="750" y1="0" x2="750" y2="250" />
   </g>
 
-  <!-- Левая оккультная печать (Cyber Pentagram Seal) -->
-  <g transform="translate(85, 125)">
-    <circle class="occult-seal seal-rotate-clockwise" r="55" />
-    <circle class="occult-seal seal-rotate-counter" r="45" stroke-dasharray="6,4" />
-    <!-- Кибер-звезда -->
-    <polygon class="occult-seal seal-rotate-clockwise" points="0,-45 26,38 -42,-12 42,-12 -26,38" />
-    <circle class="occult-seal" r="8" />
-  </g>
-
-  <!-- Правая оккультная печать (Cyber Pentagram Seal) -->
-  <g transform="translate(715, 125)">
-    <circle class="occult-seal seal-rotate-clockwise" r="55" />
-    <circle class="occult-seal seal-rotate-counter" r="45" stroke-dasharray="6,4" />
-    <!-- Кибер-звезда -->
-    <polygon class="occult-seal seal-rotate-clockwise" points="0,-45 26,38 -42,-12 42,-12 -26,38" />
-    <circle class="occult-seal" r="8" />
-  </g>
-
-  <!-- Центральные элементы текста -->
-  <g transform="translate(0, 10)">
-    <!-- Технологические рамки декора -->
-    <path d="M 180,50 L 160,50 L 160,150 L 180,150" fill="none" stroke="#00ff66" stroke-width="1.5" stroke-opacity="0.5" filter="url(#neon-glow-weak)" />
-    <path d="M 620,50 L 640,50 L 640,150 L 620,150" fill="none" stroke="#00ff66" stroke-width="1.5" stroke-opacity="0.5" filter="url(#neon-glow-weak)" />
+  <!-- HUD Telemetry & Status Elements -->
+  <g>
+    <!-- Top HUD -->
+    <text x="35" y="42" class="hud-text">SYS STATUS: ONLINE</text>
+    <text x="765" y="42" class="hud-text" text-anchor="end">ADDR: 0x00F3A2</text>
     
-    <!-- Название NECROMANCER -->
-    <text x="400" y="115" class="necromancer-title">NECROMANCER</text>
-    
-    <!-- Подзаголовок -->
-    <text x="400" y="155" class="sub-title">CYBER-OCCULT TERMINAL SYSTEM</text>
+    <!-- Bottom HUD -->
+    <text x="35" y="218" class="hud-text">CORE: FPC 3.2.2</text>
+    <text x="765" y="218" class="hud-text" text-anchor="end">PORT: 8080/TCP</text>
   </g>
 
-  <!-- Уголки рамки CRT экрана -->
-  <path d="M 15 35 L 15 15 L 35 15" fill="none" stroke="#00ff66" stroke-width="2" stroke-opacity="0.7" />
-  <path d="M 785 35 L 785 15 L 765 15" fill="none" stroke="#00ff66" stroke-width="2" stroke-opacity="0.7" />
-  <path d="M 15 215 L 15 235 L 35 235" fill="none" stroke="#00ff66" stroke-width="2" stroke-opacity="0.7" />
-  <path d="M 785 215 L 785 235 L 765 235" fill="none" stroke="#00ff66" stroke-width="2" stroke-opacity="0.7" />
+  <!-- Central Title & Subtitle Panel -->
+  <g transform="translate(0, 8)">
+    <!-- Tech boundary brackets (expanded slightly for better clean spacing) -->
+    <path d="M 175,55 L 150,55 L 150,145 L 175,145" fill="none" stroke="#33ff33" stroke-width="1.5" stroke-opacity="0.4" filter="url(#neon-glow-weak)" />
+    <path d="M 625,55 L 650,55 L 650,145 L 625,145" fill="none" stroke="#33ff33" stroke-width="1.5" stroke-opacity="0.4" filter="url(#neon-glow-weak)" />
+    
+    <!-- Title -->
+    <text x="400" y="112" class="necromancer-title">NECROMANCER</text>
+    
+    <!-- Subtitle -->
+    <text x="400" y="152" class="sub-title">CYBER-OCCULT TERMINAL SYSTEM</text>
+  </g>
 
-  <!-- CRT сканлайны наложенные поверх всего -->
+  <!-- Outer CRT frame corners -->
+  <path d="M 15 35 L 15 15 L 35 15" fill="none" stroke="#33ff33" stroke-width="2" stroke-opacity="0.6" />
+  <path d="M 785 35 L 785 15 L 765 15" fill="none" stroke="#33ff33" stroke-width="2" stroke-opacity="0.6" />
+  <path d="M 15 215 L 15 235 L 35 235" fill="none" stroke="#33ff33" stroke-width="2" stroke-opacity="0.6" />
+  <path d="M 785 215 L 785 235 L 765 235" fill="none" stroke="#33ff33" stroke-width="2" stroke-opacity="0.6" />
+
+  <!-- CRT scanline horizontal sweep -->
+  <g class="sweep-line">
+    <line x1="0" y1="0" x2="800" y2="0" stroke="#33ff33" stroke-width="2" opacity="0.45" filter="url(#neon-glow-weak)" />
+    <rect x="0" y="-12" width="800" height="12" fill="url(#sweep-grad)" />
+  </g>
+
+  <!-- CRT Live Noise Overlay (extended and animated with CSS transforms) -->
+  <rect class="crt-noise-bg" x="-20" y="-20" width="840" height="290" filter="url(#crt-noise)" pointer-events="none" />
+
+  <!-- CRT overlay scanline pattern -->
   <rect class="crt-lines" width="100%" height="100%" rx="10" pointer-events="none" />
 </svg>
