@@ -29,18 +29,26 @@
         }
 
         /* NEW BACKGROUND EFFECTS */
-        body.glitch-scanlines::before {
-            content: " "; display: block; position: fixed;
+        .crt-overlay-scanlines {
+            display: none;
+            position: fixed;
             top: 0; left: 0; bottom: 0; right: 0;
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 1000; background-size: 100% 2px, 3px 100%; pointer-events: none;
+            z-index: 1001; background-size: 100% 2px, 3px 100%; pointer-events: none;
+        }
+        body.glitch-scanlines .crt-overlay-scanlines {
+            display: block;
         }
 
-        body.glitch-vignette::after {
-            content: " "; display: block; position: fixed;
+        .crt-overlay-vignette {
+            display: none;
+            position: fixed;
             top: 0; left: 0; bottom: 0; right: 0;
             background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.8) 100%);
             z-index: 999; pointer-events: none;
+        }
+        body.glitch-vignette .crt-overlay-vignette {
+            display: block;
             animation: vignette-breathe 8s ease-in-out infinite alternate;
         }
         @keyframes vignette-breathe {
@@ -48,13 +56,18 @@
             100% { opacity: 1; }
         }
 
-        body.glitch-pulse::after {
-            content: " "; display: block; position: fixed;
+        .crt-overlay-pulse {
+            display: none;
+            position: fixed;
             top: 50%; left: 50%; width: 100vw; height: 100vw;
             margin-top: -50vw; margin-left: -50vw;
             background: radial-gradient(circle, var(--main-color) 0%, rgba(0,0,0,0) 60%);
             border-radius: 50%; opacity: 0; pointer-events: none; z-index: 3;
-            animation: pulse-infernal 6s ease-out infinite; mix-blend-mode: screen;
+            mix-blend-mode: screen;
+        }
+        body.glitch-pulse .crt-overlay-pulse {
+            display: block;
+            animation: pulse-infernal 6s ease-out infinite;
         }
         @keyframes pulse-infernal {
             0% { transform: scale(0.1); opacity: 0.2; }
@@ -80,15 +93,157 @@
             100% { border-style: solid; border-width: 2px; }
         }
 
-        body.glitch-noise::before {
-            content: " "; display: block; position: fixed; top: 0; left: 0; bottom: 0; right: 0;
-            background: url('data:image/svg+xml,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)" opacity="0.15"/%3E%3C/svg%3E');
-            z-index: 100; pointer-events: none; opacity: 0.15;
-            animation: noise 0.2s infinite alternate;
+        .crt-overlay-noise {
+            display: none;
+            position: fixed;
+            top: -10%;
+            left: -10%;
+            width: 120%;
+            height: 120%;
+            background: url('data:image/svg+xml,%3Csvg viewBox="0 0 250 250" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="4" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+            z-index: 1002; pointer-events: none; opacity: 0.08;
         }
-        @keyframes noise {
-            0% { transform: translate(0, 0); }
-            100% { transform: translate(-5px, 5px); }
+        body.glitch-noise .crt-overlay-noise {
+            display: block;
+            animation: crt-noise-anim 0.1s steps(1) infinite, crt-glitch-anim 7s infinite;
+        }
+        @keyframes crt-noise-anim {
+            0% { background-position: 0px 0px; }
+            10% { background-position: 15px 30px; }
+            20% { background-position: -25px 15px; }
+            30% { background-position: 35px -15px; }
+            40% { background-position: -15px -35px; }
+            50% { background-position: 25px 35px; }
+            60% { background-position: -35px 25px; }
+            70% { background-position: 45px -25px; }
+            80% { background-position: -45px 15px; }
+            90% { background-position: 15px -45px; }
+            100% { background-position: -25px -25px; }
+        }
+        @keyframes crt-glitch-anim {
+            0% {
+                opacity: 0.08;
+                transform: scale(1) translate(0, 0) skewX(0deg);
+                filter: none;
+                clip-path: none;
+            }
+            5% {
+                opacity: 0.09;
+                transform: scale(1.005) translate(0.5px, -0.5px) skewX(0.5deg);
+            }
+            10% {
+                opacity: 0.07;
+                transform: scale(0.995) translate(-0.5px, 0.5px) skewX(-0.5deg);
+            }
+            15% {
+                opacity: 0.08;
+                transform: scale(1.002) translate(1px, 0px) skewX(1deg);
+            }
+            20% {
+                opacity: 0.075;
+                transform: scale(0.998) translate(-1px, -1px) skewX(-1deg);
+            }
+            25% {
+                opacity: 0.085;
+                transform: scale(1.003) translate(0.5px, 1px) skewX(0.5deg);
+            }
+            30% {
+                opacity: 0.16;
+                transform: scale(1.02) translate(3px, -2px) skewX(3deg);
+                filter: hue-rotate(15deg);
+                clip-path: inset(10% 0 80% 0);
+            }
+            32% {
+                opacity: 0.08;
+                transform: scale(0.997) translate(-0.5px, -0.5px) skewX(-0.5deg);
+                filter: none;
+                clip-path: none;
+            }
+            35% {
+                opacity: 0.075;
+                transform: scale(1.001) translate(1px, 0.5px) skewX(0.8deg);
+            }
+            40% {
+                opacity: 0.09;
+                transform: scale(0.999) translate(-0.5px, -1px) skewX(-0.8deg);
+            }
+            45% {
+                opacity: 0.08;
+                transform: scale(1.004) translate(0px, 1px) skewX(0.4deg);
+            }
+            50% {
+                opacity: 0.085;
+                transform: scale(0.996) translate(-1px, 0px) skewX(-0.4deg);
+            }
+            55% {
+                opacity: 0.075;
+                transform: scale(1.002) translate(0.5px, -0.5px) skewX(0.6deg);
+            }
+            60% {
+                opacity: 0.18;
+                transform: scaleY(1.05) translate(-4px, 3px) skewX(-4deg);
+                filter: saturate(1.4);
+            }
+            62% {
+                opacity: 0.08;
+                transform: scale(0.998) translate(0.5px, 0.5px) skewX(0.5deg);
+                filter: none;
+            }
+            65% {
+                opacity: 0.085;
+                transform: scale(1.001) translate(-0.5px, -0.5px) skewX(-0.5deg);
+            }
+            70% {
+                opacity: 0.075;
+                transform: scale(0.997) translate(1px, -1px) skewX(0.7deg);
+            }
+            75% {
+                opacity: 0.08;
+                transform: scale(1.003) translate(-1px, 0.5px) skewX(-0.7deg);
+            }
+            80% {
+                opacity: 0.085;
+                transform: scale(0.999) translate(0.5px, 1px) skewX(0.5deg);
+            }
+            85% {
+                opacity: 0.24;
+                transform: scaleY(1.1) translate(5px, -3px) skewX(6deg);
+                filter: saturate(1.8) hue-rotate(30deg);
+            }
+            86% {
+                opacity: 0.04;
+                transform: scaleY(0.95) translate(-6px, 3px) skewX(-6deg);
+                filter: invert(0.1);
+            }
+            87% {
+                opacity: 0.28;
+                transform: scaleX(1.08) translate(12px, -1px);
+                clip-path: inset(25% 0 45% 0);
+            }
+            88% {
+                opacity: 0.15;
+                transform: scaleX(0.92) translate(-12px, 1px);
+                clip-path: inset(50% 0 10% 0);
+            }
+            89% {
+                opacity: 0.22;
+                transform: scale(1.04) translate(-4px, -4px) skewX(-4deg);
+                filter: invert(0.12) saturate(1.5);
+                clip-path: none;
+            }
+            90% {
+                opacity: 0.08;
+                transform: scale(1.001) translate(0.5px, -0.5px) skewX(0.5deg);
+                filter: none;
+            }
+            95% {
+                opacity: 0.075;
+                transform: scale(0.998) translate(-0.5px, 0.5px) skewX(-0.5deg);
+            }
+            100% {
+                opacity: 0.08;
+                transform: scale(1) translate(0, 0) skewX(0deg);
+            }
         }
 
 

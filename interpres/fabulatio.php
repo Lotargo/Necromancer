@@ -49,6 +49,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 </head>
 <body>
 
+    <!-- CRT and Screen Effect Overlays -->
+    <div class="crt-overlay-noise"></div>
+    <div class="crt-overlay-scanlines"></div>
+    <div class="crt-overlay-vignette"></div>
+    <div class="crt-overlay-pulse"></div>
+
     <div class="guest-pacman"></div>
     <div class="guest-mk2"></div>
 

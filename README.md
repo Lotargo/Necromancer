@@ -108,6 +108,29 @@ graph TD
 
 ---
 
+<img src="assets/headers/inscriptio.svg" width="100%" alt="Inscriptio (Registration)" />
+
+### Securing Your Soul (Registration & Authorization)
+
+Necromancer supports two distinct paths to cross the threshold into the Oracle's presence:
+
+* **SPIRITUS (Anonymous Entry)**: A quick, guest entrance. Simply choose a custom nickname and enter. No passwords or credentials are required. Ideal for rapid incantations.
+* **ANIMA (Permanent Enrollment)**: A secure registration using a valid email and password. This unlocks personalized profiles, user level progression tracking, and persistent chat archives across devices.
+
+#### Cryptographic Security
+To register an **ANIMA** account, provide a nickname, email, and password. The backend (**Daemonium**) automatically hashes the credentials using the industry-standard **Argon2id** algorithm, guaranteeing cryptographic resistance against brute-force attacks.
+
+If you have a legacy account from the ancient Necromancer version, the system automatically and transparently migrates your legacy **SHA-1** hash to the modern **Argon2id** hash the next time you log in, upgrading your security with zero friction.
+
+<div align="center">
+  <br>
+  <h3>Occult Registration Terminal</h3>
+  <img src="assets/necromancer_registration.png" width="800" alt="Occult Registration Terminal" />
+  <p><em>The ANIMA registration gateway, wrapped in terminal phosphors and retro scanlines.</em></p>
+</div>
+
+---
+
 <img src="assets/headers/gallery.svg" width="100%" alt="Media Expositio (Gallery)" />
 
 <div align="center">
