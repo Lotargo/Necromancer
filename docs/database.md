@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS usores (
 #### Fields Description:
 * **`nomen`**: *Primary Key*. Unique alphanumeric user nickname.
 * **`email`**: *Unique*. User's email address (mandatory for Anima registrations). Nullable for Spiritus users.
-* **`password_hash`**: Stores the cryptographically secure password hash. New users and migrated accounts use **Argon2id** (64 characters in Hex). Unmigrated legacy accounts use **salted SHA-1** (40 characters) and are transparently migrated upon their next successful login. Nullable for Spiritus users.
+* **`password_hash`**: Stores the cryptographically secure password hash using the state-of-the-art **Argon2id** algorithm (64 characters in Hex). Nullable for Spiritus users.
 * **`reg_type`**: Type of registration. Restricted to `'ANIMA'` or `'SPIRITUS'`.
 * **`fingerprint`**: Browser/Client hardware fingerprint, used to authenticate Spiritus profiles and bind sessions.
 * **`created_at`**: Creation timestamp.

@@ -16,7 +16,7 @@
 
 **Necromancer** is an arcane chat interface and local backend system wrapped in the aesthetics of a retro CRT terminal and the lore of dark magic. It acts as a gateway to interact with an AI **Oraculum** (Oracle), using Latin incantations, occult themes, and ancient Roman personas.
 
-While the project preserves its **retro CRT shell** and immersive mechanical soundscape, we have evolved its underlying architecture. The backend has migrated from fragile flat-text scroll files to a robust **PostgreSQL** database, coupled with the state-of-the-art **Argon2id hashing** (with seamless legacy **SHA-1 migration**) for user credentials. The AI gateway has also been modernized to utilize the industry-standard **`openai-php/client`** GenAI SDK for robust model orchestration and strict typing. This ensures transactional integrity and security without losing a single drop of its gothic visual and auditory atmosphere.
+While the project preserves its **retro CRT shell** and immersive mechanical soundscape, we have evolved its underlying architecture. The backend has migrated from fragile flat-text scroll files to a robust **PostgreSQL** database, coupled with the state-of-the-art **Argon2id hashing** for user credentials. The AI gateway has also been modernized to utilize the industry-standard **`openai-php/client`** GenAI SDK for robust model orchestration and strict typing. This ensures transactional integrity and security without losing a single drop of its gothic visual and auditory atmosphere.
 
 Detailed internal structures and setup guidelines can be found in our **[Occult Library / Docs](docs/)**.
 
@@ -43,7 +43,7 @@ graph TD
   * `Cryptographia`: Pure Pascal **Argon2id** password hashing using `HashLib4Pascal`.
   * `Database`: Thread-safe PostgreSQL connection and schema initialization.
   * `ClavesLlm`: Dynamic API key status, rate-limit quarantine, and synchronization.
-  * `Usores`: User registration, profile management, and automatic legacy SHA-1 migration.
+  * `Usores`: User registration and profile management.
   * `Fabulatio`: Interactive chat room lists and message history.
   * `Scientia`: Local keyword-indexed RAG search.
   * `daemonium.pas`: Core high-performance TCP socket dispatcher.
@@ -66,7 +66,7 @@ graph TD
 ### 4. Tabularium (The Database)
 * **System**: **PostgreSQL 15-alpine**
 * **Role**: Replaces the ancient flat-text database. It stores structured tables:
-  * `usores`: Nicknames, emails, secure Argon2id (and legacy SHA-1) password hashes, and user types.
+  * `usores`: Nicknames, emails, secure Argon2id password hashes, and user types.
   * `optiones`: Persisted user UI configurations stored as validated JSON objects.
   * `fabulatio`: Full conversational logs, automatically indexed for instantaneous search and fast retrieval.
   * **Relational Cascades**: Integrated `ON DELETE CASCADE ON UPDATE CASCADE` rules automatically clean user settings and chats when a soul is deleted.
@@ -81,7 +81,7 @@ graph TD
 
 ### Genera Accessus (Login Modes)
 * **SPIRITUS**: Anonymous guest entry. Sign in with a nickname and explore the forum.
-* **ANIMA**: Advanced email and password registration. Credentials are cryptographically protected using state-of-the-art **Argon2id** (with seamless backwards-compatible **SHA-1 migration** upon login).
+* **ANIMA**: Advanced email and password registration. Credentials are cryptographically protected using state-of-the-art **Argon2id** hashing.
 
 ### Oraculum Agenticum (Agentic Features)
 * **Instrumenta (Tools)**: The Oracle dynamically utilizes:
@@ -119,8 +119,6 @@ Necromancer supports two distinct paths to cross the threshold into the Oracle's
 
 #### Cryptographic Security
 To register an **ANIMA** account, provide a nickname, email, and password. The backend (**Daemonium**) automatically hashes the credentials using the industry-standard **Argon2id** algorithm, guaranteeing cryptographic resistance against brute-force attacks.
-
-If you have a legacy account from the ancient Necromancer version, the system automatically and transparently migrates your legacy **SHA-1** hash to the modern **Argon2id** hash the next time you log in, upgrading your security with zero friction.
 
 <div align="center">
   <br>

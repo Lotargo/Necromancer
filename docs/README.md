@@ -2,7 +2,7 @@
 
 Welcome, seeker of occult knowledge. This directory houses the comprehensive architectural scrollwork and operational guidelines for the **Necromancer** system.
 
-Herein lies the complete documentation of our transition from a paper-thin retro-flat system to a highly performant, secure, **PostgreSQL-fortified and SHA-1 cryptographically hashed** cyber-necromancy environment.
+Herein lies the complete documentation of our transition from a paper-thin retro-flat system to a highly performant, secure, **PostgreSQL-fortified and Argon2id cryptographically hashed** cyber-necromancy environment.
 
 ---
 
@@ -15,7 +15,7 @@ Detailed analysis of the four pillars: the FreePascal **Daemonium**, the PHP/JS 
 Full descriptions of the relational tables (`usores`, `optiones`, `fabulatio`), plus the PostgreSQL-backed LLM key-state tables used for quarantine, logging, and synchronization.
 
 ### 3. 🛡️ [Security & Cryptography](security.md)
-Deep dive into our implementation of salted **SHA-1 hashing**, parameterized SQL injection guards, socket protocol sanitization, and path traversal mitigations.
+Deep dive into our implementation of **Argon2id hashing**, parameterized SQL injection guards, socket protocol sanitization, and path traversal mitigations.
 
 ### 4. 🔮 [Deployment & Summoning Guide](deployment.md)
 Comprehensive instructions to deploy the stack utilizing Docker Compose, environment variables configuration, and native compiling manuals for FreePascal and PHP development environments.

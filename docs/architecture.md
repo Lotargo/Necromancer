@@ -45,11 +45,11 @@ Compiled inside the Docker container using FreePascal (`fpc`), the `daemonium` e
 ### 🏛️ Modular Unit Architecture
 
 To ensure high maintainability, the codebase is cleanly modularized into several dedicated Object Pascal units:
-* **[Auxilia.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Auxilia.pas)**: Shared helpers, response string formation (`FormareResponsum`), file reader utilities, and fast SHA-1 legacy/lightweight Argon2id API key hashes.
+* **[Auxilia.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Auxilia.pas)**: Shared helpers, response string formation (`FormareResponsum`), file reader utilities, and lightweight Argon2id API key hashes.
 * **[Cryptographia.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Cryptographia.pas)**: High-security cryptography module driving **Argon2id** password hashing using the native `HashLib4Pascal` engine.
 * **[Database.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Database.pas)**: Handles database connections (`InitDatabase`), query states, and automatic schema initialization for PostgreSQL.
 * **[ClavesLlm.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/ClavesLlm.pas)**: API key synchronizer, status checker, and rate-limit quarantine logger.
-* **[Usores.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Usores.pas)**: Manages full authentication lifecycles (guest Spiritus and credential-backed Anima profiles), session fingerprint checks, profile deletion, and seamless password migration.
+* **[Usores.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Usores.pas)**: Manages full authentication lifecycles (guest Spiritus and credential-backed Anima profiles), session fingerprint checks, and profile deletion.
 * **[Fabulatio.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Fabulatio.pas)**: Drives chat room lists, message history loading, and JSON settings serialization.
 * **[Scientia.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Scientia.pas)**: High-speed keyword index scanner providing local RAG knowledge context.
 * **[daemonium.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/daemonium.pas)**: The central main loop and listener. Coordinates socket bindings, listens on port `8080`, reads string buffers, and routes incoming commands to corresponding modular controllers.
@@ -146,7 +146,7 @@ All communication between `Interpres` and `Daemonium` occurs over raw TCP socket
 | `CREARE_USOREM` | `nomen, fingerprint` | `200 / 400` | Creates a Spiritus (guest) user. |
 | `INTRARE` | `nomen, fingerprint` | `200 / 403` | Guest login with fingerprint verification. |
 | `CREARE_USOREM_PLENUM` | `nomen, email, pass, fp` | `200 / 400` | Registers Anima user with Argon2id hashed password (dynamic salt). |
-| `INTRARE_PLENUM` | `email, pass, fp` | `200 / 403` | Full secure authentication with Argon2id matching and legacy SHA-1 migration. |
+| `INTRARE_PLENUM` | `email, pass, fp` | `200 / 403` | Full secure authentication with Argon2id matching. |
 | `INDEX_FABULATIONUM` | `nomen, fp` | `200` | Lists user's rooms (comma separated). |
 | `ADDERE_NUNTIUM` | `nomen, room, message` | `200` | Appends a chat message to the DB. |
 | `LEGENDE_NUNTIOS` | `nomen, room, fp` | `200` | Fetches full message history in flat text format. |
