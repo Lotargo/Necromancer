@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Glow Filters -->
+    <filter id="neon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur1" />
+      <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur2" />
+      <feMerge>
+        <feMergeNode in="blur2" />
+        <feMergeNode in="blur1" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <!-- CRT scanlines pattern -->
+    <pattern id="scanlines" width="4" height="4" patternUnits="userSpaceOnUse">
+      <line x1="0" y1="0" x2="4" y2="0" stroke="#000000" stroke-width="1.5" />
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="#020602" rx="48" />
+
+  <!-- Outer Glowing Circle -->
+  <circle cx="256" cy="256" r="230" fill="none" stroke="#00ff66" stroke-width="4" stroke-opacity="0.3" filter="url(#neon-glow)" />
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#00ff66" stroke-width="8" filter="url(#neon-glow)" />
+
+  <!-- Inscribed Occult Seal -->
+  <g filter="url(#neon-glow)">
+    <!-- Interlaced Circle with dashed lines -->
+    <circle cx="256" cy="256" r="170" fill="none" stroke="#00ff66" stroke-width="3" stroke-dasharray="12,8" />
+    
+    <!-- Heptagram (7-point occult star) -->
+    <polygon points="256,86 331,396 124,150 388,150 181,396 256,86" fill="none" stroke="#00ff66" stroke-width="5" stroke-linejoin="round" />
+    <polygon points="256,86 421,290 181,396 331,396 91,290 256,86" fill="none" stroke="#00ff66" stroke-width="2" stroke-linejoin="round" stroke-opacity="0.6" />
+
+    <!-- Inner Core Circle -->
+    <circle cx="256" cy="256" r="40" fill="none" stroke="#00ff66" stroke-width="4" />
+    <circle cx="256" cy="256" r="15" fill="#00ff66" />
+  </g>
+
+  <!-- Tech Corners -->
+  <path d="M 40 100 L 40 40 L 100 40" fill="none" stroke="#00ff66" stroke-width="6" stroke-linecap="round" filter="url(#neon-glow)" />
+  <path d="M 472 100 L 472 40 L 412 40" fill="none" stroke="#00ff66" stroke-width="6" stroke-linecap="round" filter="url(#neon-glow)" />
+  <path d="M 40 412 L 40 472 L 100 472" fill="none" stroke="#00ff66" stroke-width="6" stroke-linecap="round" filter="url(#neon-glow)" />
+  <path d="M 472 412 L 472 472 L 412 472" fill="none" stroke="#00ff66" stroke-width="6" stroke-linecap="round" filter="url(#neon-glow)" />
+
+  <!-- CRT scanlines overlay -->
+  <rect width="100%" height="100%" fill="url(#scanlines)" opacity="0.25" rx="48" pointer-events="none" />
+</svg>

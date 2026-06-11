@@ -45,7 +45,7 @@ while (!feof($fp)) {
     // And for 500 error, it sends e.g. '500|Security|...'+sLineBreak.
     // Let's read until the second bar '|' or third bar '|' is read.
     // Let's write a simple parser: read until we have three '|' characters.
-    if (substr_count($header, '|') === 3) {
+    if (substr_count($header, '|') === 2) {
         break;
     }
 }

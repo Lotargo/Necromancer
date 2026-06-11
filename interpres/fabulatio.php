@@ -18,6 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["exire"])) {
 <html>
 <head>
     <title>Fabulatio - Necronomicon</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
 
     <!-- Markdown Parser: Marked.js -->
     <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"

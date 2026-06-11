@@ -15,7 +15,7 @@
 
 ---
 
-## 📜 Prologus (Introduction)
+<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Prologus (Introduction)</h2>
 
 **Necromancer** is an arcane chat interface and local backend system wrapped in the aesthetics of a retro CRT terminal and the lore of dark magic. It acts as a gateway to interact with an AI **Oraculum** (Oracle), using Latin incantations, occult themes, and ancient Roman personas.
 
@@ -25,7 +25,7 @@ Detailed internal structures and setup guidelines can be found in our **[Occult 
 
 ---
 
-## 🏛️ Architectura Systematis (System Architecture)
+<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Architectura Systematis (System Architecture)</h2>
 
 The system is divided into five sacred pillars:
 
@@ -38,7 +38,7 @@ graph TD
     A <-->|Sockets TCP / Port 8082| M[Sandbox: Mechanica Pascal]
 ```
 
-### 1. 🦇 Daemonium (The Core Backend)
+### 1. Daemonium (The Core Backend)
 * **Language**: FreePascal (`daemonium/`)
 * **Role**: The heart and soul of the system. Operating on port `8080`, it manages socket connections, authorization, and message histories.
 * **Modularized Architecture**: The daemon is split into 7 specialized units:
@@ -52,7 +52,7 @@ graph TD
   * `daemonium.pas`: Core high-performance TCP socket dispatcher.
 * **LLM Key Registry**: Protected by a fast Argon2id variant, it stores provider key health and failure events in PostgreSQL to filter disabled or resting keys automatically.
 
-### 2. 👁️ Interpres (The Web Frontend & BFF)
+### 2. Interpres (The Web Frontend & BFF)
 * **Language**: PHP 8.3 + Vanilla JS
 * **Role**: The visual gateway. It renders a classical CRT console interface with:
     * **SSE (Server-Sent Events)**: For real-time streamed responses from the Oracle.
@@ -61,12 +61,12 @@ graph TD
     * **Sanitization**: Deep input parsing to prevent pipe injection attacks over TCP sockets.
     * **Provider Failover**: Retries early provider failures by unpinning the current balancer session and requesting the next available provider/model candidate.
 
-### 3. ⚖️ Aequilibrium (The Load Balancer)
+### 3. Aequilibrium (The Load Balancer)
 * **Language**: Lua / LuaJIT (`aequilibrium/aequilibrium.lua`)
 * **Role**: Runs on port `8081`. Provides provider rotation, key rotation, and session pinning for LLM connections when `AEQUILIBRIUM_ENABLED=true`.
 * **Resiliency**: Built-in crash protection (`pcall`) and socket descriptor auto-closure to handle high concurrent traffic.
 
-### 4. 🗃️ Tabularium (The Database)
+### 4. Tabularium (The Database)
 * **System**: **PostgreSQL 15-alpine**
 * **Role**: Replaces the ancient flat-text database. It stores structured tables:
   * `usores`: Nicknames, emails, secure Argon2id (and legacy SHA-1) password hashes, and user types.
@@ -74,19 +74,19 @@ graph TD
   * `fabulatio`: Full conversational logs, automatically indexed for instantaneous search and fast retrieval.
   * **Relational Cascades**: Integrated `ON DELETE CASCADE ON UPDATE CASCADE` rules automatically clean user settings and chats when a soul is deleted.
 
-### 5. ⚙️ Mechanica (The Computational Sandbox)
+### 5. Mechanica (The Computational Sandbox)
 * **Language**: FreePascal (`mechanica/`)
 * **Role**: The compilation and execution core running on port `8082`. It receives Pascal code from `Interpres`, verifies safety, compiles it using `fpc` in a secure sandbox workspace, streams the real-time execution outputs back to the socket connection, and performs atomic cleanups.
 
 ---
 
-## ✨ Mystica (Features)
+<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Mystica (Features)</h2>
 
-### 🎭 Genera Accessus (Login Modes)
+### Genera Accessus (Login Modes)
 * **SPIRITUS**: Anonymous guest entry. Sign in with a nickname and explore the forum.
 * **ANIMA**: Advanced email and password registration. Credentials are cryptographically protected using state-of-the-art **Argon2id** (with seamless backwards-compatible **SHA-1 migration** upon login).
 
-### 🔮 Oraculum Agenticum (Agentic Features)
+### Oraculum Agenticum (Agentic Features)
 * **Instrumenta (Tools)**: The Oracle dynamically utilizes:
   * `search_web`: Queries external search engines via a local DDG scraper.
   * `search_knowledge_base`: Retrieves RAG context from local occult texts.
@@ -97,7 +97,7 @@ graph TD
 * **Nomina Automatica**: The Oracle automatically names new chat sessions with elegant Latin phrases based on the first message context.
 * **Key Quarantine**: Repeated `429` responses place a key into a 30-minute rest period, while invalid or billing-blocked keys are disabled automatically.
 
-### 🌌 Visus & Auditio (CRT Aesthetics)
+### Visus & Auditio (CRT Aesthetics)
 * **Screen Shaking & CRT Glitches**: Fluid scanlines, chromatic aberration, and simulated mechanical hardware noise recreate a classic terminal feel.
 * **Occult Skins**: Seven interactive full-screen HTML5 Canvas backgrounds including *Imber Codicis* (Matrix rain), *Sanguis Stillans* (dripping blood), *Nexus Fati* (web of fate), and *Ignis Fatuus* (Necromantic Embers - reactive floating particles that gather around your cursor).
 * **Eldritch Acoustics**: Highly immersive, layered acoustics utilizing the Web Audio API:
@@ -105,13 +105,13 @@ graph TD
   * **Haptic Keyboard**: Physical mechanical clicks for every key pressed.
   * **Laboratory Ambience**: Eerie, loopable white noise (wind, CRT hums, static electricity) to set a dark gothic atmosphere.
 
-### 📈 Progressio & Moderatio (Initiation & Account Control)
+### Progressio & Moderatio (Initiation & Account Control)
 * **User Levels**: Ascend through 13 secret levels of occult initiation based on the volume and depth of your interactions with the Oracle.
 * **Profile Management**: Safely rename your soul (cascading across the database), change password keys, or completely erase your registration and histories (with complete atomic database cleanup).
 
 ---
 
-## 🖼️ Media Expositio (Gallery)
+<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Media Expositio (Gallery)</h2>
 
 <div align="center">
   <h3>Occult CRT Terminal V2</h3>
@@ -121,13 +121,41 @@ graph TD
   <br>
 
   <h3>Eldritch Visual Overlays</h3>
-  <img src="assets/effects.png" width="800" alt="Eldritch Effects Screenshot" />
+  <img src="assets/effects_cruor_theme.png" width="800" alt="Eldritch Effects Screenshot" />
   <p><em>Advanced HTML5 canvas rendering - Dripping Blood (Sanguis Stillans) and Necromantic Embers (Ignis Fatuus) in Cruor theme.</em></p>
+
+  <br>
+
+  <details>
+    <summary><b>More Visual Proofs (Additional Interface Screenshots)</b></summary>
+    <br>
+    <h4>Matrix Rain Theme (Imber Codicis)</h4>
+    <img src="assets/effects_matrix_rain.png" width="800" alt="Matrix Rain Overlay" />
+    <br><br>
+    <h4>Ignis Fatuus Embers Theme</h4>
+    <img src="assets/effects_ignis_fatuus.png" width="800" alt="Ignis Fatuus Overlay" />
+    <br><br>
+    <h4>Cruor Blood Drips (Sanguis Stillans)</h4>
+    <img src="assets/effects_blood_drips.png" width="800" alt="Blood Drips Overlay" />
+    <br>
+  </details>
+
+  <br>
+
+  <h3>Oraculum Chat Interaction Flow</h3>
+  <img src="assets/necromancer_chat_demo.gif" width="800" alt="Oraculum Chat Demo" />
+  <p><em>Real-time streaming responses and detailed step-by-step thinking process of the Oraculum.</em></p>
+
+  <br>
+
+  <h3>Real-Time Computational Sandbox (Mechanica)</h3>
+  <img src="assets/mechanica_simulation_demo.gif" width="800" alt="Mechanica Simulation Demo" />
+  <p><em>Interactive physical simulation coordinates compiled in Pascal and streamed live to the Canvas player.</em></p>
 </div>
 
 ---
 
-## ⚙️ API Configuration (Quomodo API configurare)
+<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">API Configuration (Quomodo API configurare)</h2>
 
 The Oraculum supports two explicit LLM connection modes:
 
@@ -166,7 +194,7 @@ docker-compose up --build -d
 
 ---
 
-## 🔮 Magia Nigra (Docker Compose Setup)
+<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Magia Nigra (Docker Compose Setup)</h2>
 
 The easiest way to summon the entire stack is through the containerization arts.
 
@@ -187,7 +215,7 @@ The easiest way to summon the entire stack is through the containerization arts.
 
 ---
 
-## 🛠️ Quomodo incipere sine Magia (Manual Setup)
+<h2 style="border-bottom: 2px solid #005511; padding-bottom: 5px; color: #00ff66; font-family: 'Courier New', Courier, monospace;">Quomodo incipere sine Magia (Manual Setup)</h2>
 
 For developers wishing to run the components natively on Windows/Linux:
 
