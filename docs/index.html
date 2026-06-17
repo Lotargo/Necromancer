@@ -2,100 +2,807 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Necromancer</title>
-  <meta name="description" content="Necromancer is a retro-futuristic chat interface and backend system wrapped in arcane aesthetics.">
+  <title>Necromancer — Cyber-Occult Terminal & Automation System</title>
+  <meta name="description" content="Necromancer is an arcane chat interface and local backend system wrapped in the aesthetics of a retro CRT terminal and the lore of dark magic. Now fortified by PostgreSQL and Argon2id.">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="styles.css">
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="../assets/logo.svg">
 </head>
-<body>
-<header class="hero">
-  <div class="hero-content">
-    <p class="eyebrow">Welcome to the terminal circle</p>
-    <h1>Necromancer</h1>
-    <p class="lead">A retro-futuristic chat interface and backend system wrapped in arcane aesthetics.</p>
-    <div class="actions">
-      <a class="btn" href="https://github.com/Lotargo/Necromancer">View Repository</a>
-      <a class="btn secondary" href="#features">Explore Features</a>
-    </div>
-  </div>
-</header>
+<body class="crt-active">
 
-<div class="stats" aria-label="Project highlights">
-  <div class="stat">
-    <strong>CRT</strong>
-    <span>terminal-first interface</span>
-  </div>
-  <div class="stat">
-    <strong>FPC</strong>
-    <span>native backend daemon</span>
-  </div>
-  <div class="stat">
-    <strong>AI</strong>
-    <span>provider failover and tools</span>
-  </div>
-</div>
+  <!-- Ignis Fatuus Background Particle Canvas -->
+  <canvas id="bg-canvas"></canvas>
 
-<main>
-  <section id="features" class="features">
-    <div class="section-heading">
-      <h2>Features</h2>
-      <p>Necromancer combines a theatrical terminal UI with a pragmatic, containerized backend.</p>
-    </div>
-    <div class="feature-grid">
-      <article class="feature">
-        <h3>Retro CRT Experience</h3>
-        <p>Immersive terminal with scanlines, chromatic aberration, matrix rain, occult symbols and adaptive audio for a true retro feel.</p>
-      </article>
-      <article class="feature">
-        <h3>Robust Backend</h3>
-        <p>FreePascal core daemon with modular architecture managing sockets, a PostgreSQL database, Argon2id security and key management.</p>
-      </article>
-      <article class="feature">
-        <h3>Dynamic AI Oraculum</h3>
-        <p>Interact with the AI Oraculum via Latin incantations using tools for web search, knowledge retrieval, code execution and simulations.</p>
-      </article>
-      <article class="feature">
-        <h3>Provider Failover</h3>
-        <p>A Lua-based balancer distributes requests across multiple LLM providers and automatically rotates or quarantines API keys.</p>
-      </article>
-      <article class="feature">
-        <h3>User Journeys & Security</h3>
-        <p>Guest and registered login modes, cryptographically hashed credentials, user level progression and complete profile control.</p>
-      </article>
-      <article class="feature">
-        <h3>Containerized Deployment</h3>
-        <p>Simple docker-compose setup to summon the entire stack with customizable <code>.env</code> and provider configuration.</p>
-      </article>
-    </div>
-  </section>
+  <!-- Header / Navigation Bar -->
+  <header class="navbar-container">
+    <div class="navbar">
+      <a href="#" class="logo" id="nav-logo">
+        <svg class="logo-icon" viewBox="0 0 24 24">
+          <!-- Skull SVG Icon -->
+          <path d="M12 2C7.03 2 3 6.03 3 11c0 3.48 1.98 6.5 4.89 8.04l-.89 1.78a1 1 0 0 0 .89 1.48h8.22a1 1 0 0 0 .89-1.48l-.89-1.78C19.02 17.5 21 14.48 21 11c0-4.97-4.03-9-9-9zm-3 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm6 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm-5.5 5h5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
+        </svg>
+        <span class="logo-text gothic-title">Necromancer</span>
+      </a>
 
-  <section class="showcase">
-    <img src="../assets/necromancer_interface_v2.png" alt="Necromancer CRT chat interface">
-    <div class="showcase-copy">
-      <div class="section-heading">
-        <h2>Interface</h2>
-        <p>The live application presents chats, settings, prompts and execution state as a luminous terminal console.</p>
+      <nav>
+        <ul class="nav-links">
+          <li><a href="#hero" class="active">Home</a></li>
+          <li><a href="#prologus">Prologus</a></li>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#architecture">Architecture</a></li>
+          <li><a href="#oraculum">Oraculum</a></li>
+          <li><a href="#gallery">Gallery</a></li>
+          <li><a href="#magia-nigra">Summon</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-controls">
+        <a href="https://github.com/Lotargo/Necromancer" target="_blank" class="icon-btn" aria-label="GitHub Repository" id="github-link">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.167 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.564 9.564 0 0 1 12 6.844c.85.004 1.705.115 2.504.337 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.579.688.481C19.137 20.164 22 16.418 22 12c0-5.523-4.477-10-10-10z"/>
+          </svg>
+        </a>
+        <button class="menu-toggle icon-btn" aria-label="Toggle Menu" id="menu-btn">
+          <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
       </div>
     </div>
-  </section>
+  </header>
 
-  <section class="architecture">
-    <div class="section-heading">
-      <h2>System Architecture</h2>
-      <p>Five services form the project: interface, backend daemon, load balancer, database and execution sandbox.</p>
+  <!-- Main Content Scroll -->
+  <main>
+
+    <!-- Hero Section -->
+    <section id="hero" class="section hero-section">
+      <div class="hero-grid">
+        <div class="hero-text-block">
+          <span class="hero-eyebrow">RAISE. COMMAND. AUTOMATE.</span>
+          <h1 class="hero-title gothic-title">Necromancer</h1>
+          <p class="hero-description">
+            A powerful automation framework for controlling your systems with dark elegance. Wrapped in the aesthetics of a retro CRT terminal and the lore of dark magic.
+          </p>
+          <div class="hero-actions">
+            <a href="#magia-nigra" class="btn btn-gothic" id="btn-start">
+              Get Started 
+              <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+            </a>
+            <a href="https://github.com/Lotargo/Necromancer" target="_blank" class="btn btn-outline" id="btn-github">
+              View on GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widescreen Horizontal Banner -->
+      <div class="hero-banner-container">
+        <img src="../assets/pages/banner_horizontal.png" alt="Necromancer Cyber-Occult Banner" class="hero-banner">
+      </div>
+    </section>
+
+    <!-- Gothic Divider -->
+    <div class="gothic-divider">
+      <div class="gothic-divider-line left"></div>
+      <svg class="gothic-divider-icon" viewBox="0 0 24 24">
+        <path d="M12 2C7.03 2 3 6.03 3 11c0 3.48 1.98 6.5 4.89 8.04l-.89 1.78a1 1 0 0 0 .89 1.48h8.22a1 1 0 0 0 .89-1.48l-.89-1.78C19.02 17.5 21 14.48 21 11c0-4.97-4.03-9-9-9zm-3 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm6 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm-5.5 5h5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
+      </svg>
+      <div class="gothic-divider-line right"></div>
     </div>
-    <ol>
-      <li><strong>Daemonium</strong> FreePascal backend core managing socket connections, authorization and chat history.</li>
-      <li><strong>Interpres</strong> PHP and JavaScript front-end providing the CRT UI, SSE streaming, canvas overlays and failover logic.</li>
-      <li><strong>Aequilibrium</strong> Lua load balancer handling provider rotation, key rotation and session pinning.</li>
-      <li><strong>Tabularium</strong> PostgreSQL database storing users, options, chat logs and key registry.</li>
-      <li><strong>Mechanica</strong> Secure sandbox for compiling and executing Pascal code and running simulations.</li>
-    </ol>
-  </section>
-</main>
 
-<footer>
-  <p>© 2026 Necromancer. All rights reserved.</p>
-</footer>
+    <!-- Features Section -->
+    <section id="features" class="section">
+      <div class="section-header">
+        <h2 class="section-title gothic-title">Features</h2>
+        <p class="section-subtitle">Everything you need to automate with power and precision.</p>
+      </div>
+
+      <div class="features-grid">
+        <article class="feature-card">
+          <div class="feature-icon-wrapper">
+            <svg viewBox="0 0 24 24">
+              <!-- Skull -->
+              <path d="M12 2C7.03 2 3 6.03 3 11c0 3.48 1.98 6.5 4.89 8.04l-.89 1.78a1 1 0 0 0 .89 1.48h8.22a1 1 0 0 0 .89-1.48l-.89-1.78C19.02 17.5 21 14.48 21 11c0-4.97-4.03-9-9-9zm0 14.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+            </svg>
+          </div>
+          <h3>Powerful</h3>
+          <p>Built for complex automation scenarios with a robust and extensible architecture powered by a native FreePascal core daemon.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon-wrapper">
+            <svg viewBox="0 0 24 24">
+              <!-- Book/Scroll -->
+              <path d="M12 3a9 9 0 0 0-9 9v7a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-7a9 9 0 0 0-9-9zm-1 15H5v-2h6v2zm0-4H5v-2h6v2zm0-4H5V8h6v2zm7 8h-5v-2h5v2zm0-4h-5v-2h5v2zm0-4h-5V8h5v2z"/>
+            </svg>
+          </div>
+          <h3>Flexible</h3>
+          <p>Highly configurable to adapt to your unique workflows and environments, allowing Spiritus guest access or complete Anima secure registration.</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon-wrapper">
+            <svg viewBox="0 0 24 24">
+              <!-- Wand/Magic -->
+              <path d="M10.29 8.71L1.29 17.7a1 1 0 0 0 0 1.41l2.59 2.59a1 1 0 0 0 1.41 0l9-9-4-4zm11.42-3.83L19.12 2.29a1 1 0 0 0-1.41 0l-4.59 4.59 4 4 4.59-4.59a1 1 0 0 0 0-1.41zM12 4.41L13.59 6 12 7.59 10.41 6 12 4.41z"/>
+            </svg>
+          </div>
+          <h3>Extensible</h3>
+          <p>Easily extend functionality with custom LLM provider Balancers (Aequilibrium) and runtime compilation Sandboxes (Mechanica).</p>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-icon-wrapper">
+            <svg viewBox="0 0 24 24">
+              <!-- Shield -->
+              <path d="M12 2S3 5 3 12s9 10 9 10 9-3 9-10-9-10-9-10zm0 17.92c-3.87-1.12-7-5.07-7-8.92V6.3l7-2.33 7 2.33v5c0 3.85-3.13 7.8-7 8.92z"/>
+            </svg>
+          </div>
+          <h3>Reliable</h3>
+          <p>Tested, stable, and built with reliability in mind for production use, utilizing transactional PostgreSQL storage and Argon2id security.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Gothic Divider -->
+    <div class="gothic-divider">
+      <div class="gothic-divider-line left"></div>
+      <svg class="gothic-divider-icon" viewBox="0 0 24 24">
+        <path d="M12 2C7.03 2 3 6.03 3 11c0 3.48 1.98 6.5 4.89 8.04l-.89 1.78a1 1 0 0 0 .89 1.48h8.22a1 1 0 0 0 .89-1.48l-.89-1.78C19.02 17.5 21 14.48 21 11c0-4.97-4.03-9-9-9zm-3 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm6 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm-5.5 5h5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
+      </svg>
+      <div class="gothic-divider-line right"></div>
+    </div>
+
+    <!-- Prologus Section -->
+    <section id="prologus" class="section">
+      <div class="prologus-grid">
+        <div class="prologus-text">
+          <span class="hero-eyebrow">TRACTATUS DE NECROMANTIA</span>
+          <h3 class="gothic-title">Prologus & Occult Lore</h3>
+          <p>
+            Necromancer is an arcane chat interface and local computational backend wrapped in the lore of digital necromancy. Operating on native TCP socket streams, it establishes a gateway to an AI Oraculum (Oracle) using ancient Roman personas, Latin incantations, and occult overlays.
+          </p>
+          <p>
+            While preserving its retro cathode-ray tube console atmosphere and mechanical audio soundscape, the project has evolved. The backend database has migrated from volatile text scrolls to PostgreSQL, fortified with industry-standard Argon2id cryptographic password hashing. This transition ensures total transactional integrity and strict safety without losing a single drop of its gothic visual and auditory aesthetics.
+          </p>
+          <blockquote>
+            "Hoc est repositorium in quo vivit chat antiquus et arcanus, nunc potentia SQL confirmatus..."<br>
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-style: normal; font-family: var(--font-sans);">— Ex Libris Daemonium, Ovid</span>
+          </blockquote>
+        </div>
+        
+        <!-- Tall Vertical Banner -->
+        <div class="prologus-banner-container">
+          <img src="../assets/pages/banner_vertical.png" alt="Necromancer Occult Summoning Altar" class="prologus-banner">
+        </div>
+      </div>
+    </section>
+
+    <!-- Gothic Divider -->
+    <div class="gothic-divider">
+      <div class="gothic-divider-line left"></div>
+      <svg class="gothic-divider-icon" viewBox="0 0 24 24">
+        <path d="M12 2C7.03 2 3 6.03 3 11c0 3.48 1.98 6.5 4.89 8.04l-.89 1.78a1 1 0 0 0 .89 1.48h8.22a1 1 0 0 0 .89-1.48l-.89-1.78C19.02 17.5 21 14.48 21 11c0-4.97-4.03-9-9-9zm-3 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm6 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm-5.5 5h5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
+      </svg>
+      <div class="gothic-divider-line right"></div>
+    </div>
+
+    <!-- System Architecture -->
+    <section id="architecture" class="section">
+      <div class="section-header">
+        <h2 class="section-title gothic-title">Architectura Systematis</h2>
+        <p class="section-subtitle">The five sacred pillars that hold the portal together.</p>
+      </div>
+
+      <div class="architecture-container">
+        <!-- Visual Map -->
+        <div class="arch-flowchart">
+          <div class="arch-node primary">
+            <h4>Interpres Web Frontend</h4>
+            <p>PHP 8.3 / Vanilla JS (Port 8080/TCP)</p>
+          </div>
+          
+          <div class="arch-node-connector vertical">
+            <svg viewBox="0 0 24 24"><path d="M16 17.01V10h-2v7.01h-3L15 21l4-3.99h-3zM9 3L5 6.99h3V14h2V6.99h3L9 3z"/></svg>
+          </div>
+
+          <div class="arch-nodes-row">
+            <div class="arch-node">
+              <h4>Aequilibrium Balancer</h4>
+              <p>LuaJIT (Port 8081/TCP)</p>
+            </div>
+            
+            <div class="arch-node primary">
+              <h4>Daemonium Core Backend</h4>
+              <p>FreePascal (Port 8080/TCP)</p>
+            </div>
+
+            <div class="arch-node">
+              <h4>Mechanica Sandbox</h4>
+              <p>FreePascal Compiler (Port 8082/TCP)</p>
+            </div>
+          </div>
+
+          <div class="arch-node-connector vertical">
+            <svg viewBox="0 0 24 24"><path d="M16 17.01V10h-2v7.01h-3L15 21l4-3.99h-3zM9 3L5 6.99h3V14h2V6.99h3L9 3z"/></svg>
+          </div>
+
+          <div class="arch-node">
+            <h4>Tabularium Database</h4>
+            <p>PostgreSQL 15-alpine (Port 5432/TCP)</p>
+          </div>
+        </div>
+
+        <div class="architecture-list">
+          <div class="arch-desc-item">
+            <h5>1. Daemonium (Core Backend)</h5>
+            <p>The heart of Necromancer. Written in FreePascal, it handles socket streams, manages concurrency, and enforces key quarantine protocols.</p>
+          </div>
+          <div class="arch-desc-item">
+            <h5>2. Interpres (Frontend BFF)</h5>
+            <p>Renders the CRT canvas console, orchestrates Server-Sent Events (SSE) for real-time streaming, and houses the Web Audio mixer.</p>
+          </div>
+          <div class="arch-desc-item">
+            <h5>3. Aequilibrium (Load Balancer)</h5>
+            <p>Written in Lua, it dynamically rotates LLM endpoints (Gemini, Groq, Cerebras), ensuring zero billing blocks or rate limit crashes.</p>
+          </div>
+          <div class="arch-desc-item">
+            <h5>4. Tabularium (Data Vault)</h5>
+            <p>A PostgreSQL repository storing secure Argon2id hashes, conversational history cascades, and keys metadata in transactional tables.</p>
+          </div>
+          <div class="arch-desc-item">
+            <h5>5. Mechanica (Computation)</h5>
+            <p>A secure execution sandbox which compiles raw Pascal commands on the fly, feeding calculations and canvas graphics back to the client.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gothic Divider -->
+    <div class="gothic-divider">
+      <div class="gothic-divider-line left"></div>
+      <svg class="gothic-divider-icon" viewBox="0 0 24 24">
+        <path d="M12 2C7.03 2 3 6.03 3 11c0 3.48 1.98 6.5 4.89 8.04l-.89 1.78a1 1 0 0 0 .89 1.48h8.22a1 1 0 0 0 .89-1.48l-.89-1.78C19.02 17.5 21 14.48 21 11c0-4.97-4.03-9-9-9zm-3 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm6 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm-5.5 5h5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
+      </svg>
+      <div class="gothic-divider-line right"></div>
+    </div>
+
+    <!-- Oraculum Agenticum -->
+    <section id="oraculum" class="section">
+      <div class="section-header">
+        <h2 class="section-title gothic-title">Oraculum Agenticum</h2>
+        <p class="section-subtitle">Arcane functions and algorithmic tools triggered by the Oracle.</p>
+      </div>
+
+      <div class="abilities-container">
+        <div class="ability-box">
+          <h4><code>search_web</code></h4>
+          <p>Queries external indexes using a sandboxed DuckDuckGo scraper, allowing the Oracle to retrieve temporal and historical references.</p>
+        </div>
+        <div class="ability-box">
+          <h4><code>search_knowledge_base</code></h4>
+          <p>Performs a local keyword-indexed RAG (Retrieval-Augmented Generation) search on localized occult materials and compiler structures.</p>
+        </div>
+        <div class="ability-box">
+          <h4><code>solve_discrete_math</code></h4>
+          <p>Generates native FreePascal mathematical code and compiles it inside the Mechanica sandbox to perform precise computations.</p>
+        </div>
+        <div class="ability-box">
+          <h4><code>run_streaming_simulation</code></h4>
+          <p>Creates physics-based graphical simulations in the compiler sandbox, sending stream arrays of coordinates directly to the client canvas.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gothic Divider -->
+    <div class="gothic-divider">
+      <div class="gothic-divider-line left"></div>
+      <svg class="gothic-divider-icon" viewBox="0 0 24 24">
+        <path d="M12 2C7.03 2 3 6.03 3 11c0 3.48 1.98 6.5 4.89 8.04l-.89 1.78a1 1 0 0 0 .89 1.48h8.22a1 1 0 0 0 .89-1.48l-.89-1.78C19.02 17.5 21 14.48 21 11c0-4.97-4.03-9-9-9zm-3 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm6 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm-5.5 5h5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
+      </svg>
+      <div class="gothic-divider-line right"></div>
+    </div>
+
+    <!-- Securing Your Soul (Registration) -->
+    <section id="registration" class="section">
+      <div class="registration-grid">
+        <div class="reg-desc">
+          <span class="hero-eyebrow">SPIRITUS VS ANIMA</span>
+          <h3 class="gothic-title">Securing Your Soul</h3>
+          <p>To cross the threshold and communicate with the Oracle, you may choose one of two distinct entry patterns:</p>
+          
+          <div class="reg-modes">
+            <div class="reg-mode-card">
+              <h4>SPIRITUS <span class="reg-mode-badge">Guest</span></h4>
+              <p>Anonymous entry. Provide a custom nickname to enter the terminal gateway and participate in public rooms. Ideal for rapid experiments.</p>
+            </div>
+            <div class="reg-mode-card">
+              <h4>ANIMA <span class="reg-mode-badge">Permanent</span></h4>
+              <p>Advanced enrollment. Registers your email and details. Password credentials are hashed securely using Argon2id, unlocking progression ranks and histories.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="reg-image-container">
+          <img src="../assets/necromancer_registration.png" alt="Necromancer Registration Terminal Screenshot" class="reg-image">
+        </div>
+      </div>
+    </section>
+
+    <!-- Gothic Divider -->
+    <div class="gothic-divider">
+      <div class="gothic-divider-line left"></div>
+      <svg class="gothic-divider-icon" viewBox="0 0 24 24">
+        <path d="M12 2C7.03 2 3 6.03 3 11c0 3.48 1.98 6.5 4.89 8.04l-.89 1.78a1 1 0 0 0 .89 1.48h8.22a1 1 0 0 0 .89-1.48l-.89-1.78C19.02 17.5 21 14.48 21 11c0-4.97-4.03-9-9-9zm-3 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm6 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm-5.5 5h5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
+      </svg>
+      <div class="gothic-divider-line right"></div>
+    </div>
+
+    <!-- Media Expositio (Gallery) -->
+    <section id="gallery" class="section">
+      <div class="section-header">
+        <h2 class="section-title gothic-title">Media Expositio</h2>
+        <p class="section-subtitle">Visual chronicles of our retro terminal UI and custom shader filters.</p>
+      </div>
+
+      <div class="gallery-grid">
+        <div class="gallery-item" data-src="../assets/necromancer_interface_v2.png" data-caption="Occult CRT Terminal V2 showing glowing green phosphors and AI Oracle reasoning.">
+          <div class="gallery-image-wrapper">
+            <img src="../assets/necromancer_interface_v2.png" alt="Occult CRT Terminal V2">
+          </div>
+          <div class="gallery-info">
+            <h4>CRT Console V2</h4>
+            <p>Neon Green Phosphor Interface</p>
+          </div>
+        </div>
+
+        <div class="gallery-item" data-src="../assets/effects_cruor_theme.png" data-caption="Advanced HTML5 canvas background layers showing dripping blood and embers in Cruor theme.">
+          <div class="gallery-image-wrapper">
+            <img src="../assets/effects_cruor_theme.png" alt="Eldritch Effects Screenshot">
+          </div>
+          <div class="gallery-info">
+            <h4>Cruor Theme</h4>
+            <p>Blood Drips & Glowing Embers</p>
+          </div>
+        </div>
+
+        <div class="gallery-item" data-src="../assets/effects_matrix_rain.png" data-caption="Matrix Rain (Imber Codicis) canvas overlay simulation running on CRT client.">
+          <div class="gallery-image-wrapper">
+            <img src="../assets/effects_matrix_rain.png" alt="Matrix Rain Overlay">
+          </div>
+          <div class="gallery-info">
+            <h4>Matrix Rain Overlay</h4>
+            <p>Imber Codicis Canvas Shader</p>
+          </div>
+        </div>
+
+        <div class="gallery-item" data-src="../assets/effects_ignis_fatuus.png" data-caption="Ignis Fatuus reactive glowing embers gathering around the mouse cursor inside the chat space.">
+          <div class="gallery-image-wrapper">
+            <img src="../assets/effects_ignis_fatuus.png" alt="Ignis Fatuus Overlay">
+          </div>
+          <div class="gallery-info">
+            <h4>Ignis Fatuus Embers</h4>
+            <p>Cursor Reactive Physics Particles</p>
+          </div>
+        </div>
+
+        <div class="gallery-item" data-src="../assets/necromancer_chat_demo.gif" data-caption="Live chat stream animation demonstrating the step-by-step reasoning phase of the Oracle.">
+          <div class="gallery-image-wrapper">
+            <img src="../assets/necromancer_chat_demo.gif" alt="Oraculum Chat Demo">
+          </div>
+          <div class="gallery-info">
+            <h4>Chat Interaction</h4>
+            <p>Real-Time Streaming Stream Flow</p>
+          </div>
+        </div>
+
+        <div class="gallery-item" data-src="../assets/mechanica_simulation_demo.gif" data-caption="Physical mechanics engine coordinate arrays compiled in Pascal and streamed live to client canvas player.">
+          <div class="gallery-image-wrapper">
+            <img src="../assets/mechanica_simulation_demo.gif" alt="Mechanica Simulation Demo">
+          </div>
+          <div class="gallery-info">
+            <h4>Sandbox Simulation</h4>
+            <p>Live Compilation Coordinates Streaming</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gothic Divider -->
+    <div class="gothic-divider">
+      <div class="gothic-divider-line left"></div>
+      <svg class="gothic-divider-icon" viewBox="0 0 24 24">
+        <path d="M12 2C7.03 2 3 6.03 3 11c0 3.48 1.98 6.5 4.89 8.04l-.89 1.78a1 1 0 0 0 .89 1.48h8.22a1 1 0 0 0 .89-1.48l-.89-1.78C19.02 17.5 21 14.48 21 11c0-4.97-4.03-9-9-9zm-3 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm6 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm-5.5 5h5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
+      </svg>
+      <div class="gothic-divider-line right"></div>
+    </div>
+
+    <!-- Magia Nigra (Docker Setup Console) -->
+    <section id="magia-nigra" class="section">
+      <div class="section-header">
+        <h2 class="section-title gothic-title">Magia Nigra (Summoning)</h2>
+        <p class="section-subtitle">Inscribe the commands to summon the services into existence.</p>
+      </div>
+
+      <div class="setup-container">
+        <div class="terminal-window">
+          <div class="terminal-header">
+            <div class="terminal-buttons">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <div class="terminal-title">Occult Command Console</div>
+            <div style="width: 52px;"></div>
+          </div>
+          
+          <div class="terminal-tabs">
+            <button class="terminal-tab active" id="tab-docker">Docker Compose (Magia Nigra)</button>
+            <button class="terminal-tab" id="tab-manual">Manual Setup (Sine Magia)</button>
+          </div>
+
+          <div class="terminal-body">
+            <!-- Docker Compose Pane -->
+            <div class="terminal-pane active" id="pane-docker">
+              <div class="terminal-line command">cp .env.example .env</div>
+              <div class="terminal-line command">cp config.env.example config.env</div>
+              <div class="terminal-line command">docker-compose up --build -d</div>
+              <div class="terminal-line output">
+                Creating network "necromancer_net" with driver "bridge"<br>
+                Creating db_tabularium  ... <span style="color: #10b981;">done</span><br>
+                Creating balancer_aequilibrium ... <span style="color: #10b981;">done</span><br>
+                Creating sandbox_mechanica ... <span style="color: #10b981;">done</span><br>
+                Creating backend_daemonium ... <span style="color: #10b981;">done</span><br>
+                Creating frontend_interpres ... <span style="color: #10b981;">done</span><br>
+                <br>
+                <span style="color: #a855f7; font-weight: bold;">🔮 SUCCESS! Portal open at http://localhost:666</span>
+              </div>
+            </div>
+
+            <!-- Manual Setup Pane -->
+            <div class="terminal-pane" id="pane-manual">
+              <div class="terminal-line command">cd daemonium</div>
+              <div class="terminal-line command">fpc @hashlib.cfg daemonium.pas</div>
+              <div class="terminal-line command">./daemonium &</div>
+              <div class="terminal-line output">
+                Free Pascal Compiler version 3.2.2<br>
+                [Daemonium] Initialized PostgreSQL connection pool.<br>
+                [Daemonium] Listening for TCP streams on port 8080...
+              </div>
+              <div class="terminal-line command">cd ../interpres</div>
+              <div class="terminal-line command">composer install && php -S 127.0.0.1:666</div>
+              <div class="terminal-line output">
+                [Interpres] BFF server running on http://127.0.0.1:666
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Global Control Overlay (CRT & Sound toggles) -->
+  <div class="global-controls">
+    <button class="control-toggle active" id="crt-toggle" title="Toggle CRT Scanlines">
+      <!-- CRT Monitor SVG -->
+      <svg viewBox="0 0 24 24">
+        <path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7l-2 3v1h8v-1l-2-3h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/>
+      </svg>
+    </button>
+    <button class="control-toggle" id="audio-toggle" title="Toggle Mechanical Audio Mixer">
+      <!-- Mute/Unmute SVG -->
+      <svg viewBox="0 0 24 24" id="audio-icon">
+        <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zm-11 5.77v6h4l5 5V4L7 9H3z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Lightbox Gallery Modal -->
+  <div class="lightbox-modal" id="lightbox">
+    <div class="lightbox-content">
+      <button class="lightbox-close" id="lightbox-close">&times;</button>
+      <img src="" alt="" class="lightbox-img" id="lightbox-img">
+      <div class="lightbox-caption" id="lightbox-caption">Caption Text</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-left">
+        <a href="#" class="footer-logo">
+          <svg class="footer-logo-icon" viewBox="0 0 24 24">
+            <path d="M12 2C7.03 2 3 6.03 3 11c0 3.48 1.98 6.5 4.89 8.04l-.89 1.78a1 1 0 0 0 .89 1.48h8.22a1 1 0 0 0 .89-1.48l-.89-1.78C19.02 17.5 21 14.48 21 11c0-4.97-4.03-9-9-9zm-3 8a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm6 0a1.5 1.5 0 1 1 3 0 1.5 1.5 0 0 1-3 0zm-5.5 5h5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-5a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5z"/>
+          </svg>
+          <span class="footer-logo-text gothic-title">Necromancer</span>
+        </a>
+        <p>&copy; 2026 Necromancer. Summons under the GPLv3 license.</p>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/Lotargo/Necromancer/blob/main/LICENSE" target="_blank">License</a>
+        <a href="#prologus">Security</a>
+        <a href="https://github.com/Lotargo/Necromancer/issues" target="_blank">Issues</a>
+        <a href="https://github.com/Lotargo/Necromancer" target="_blank">GitHub</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Page Interactivity JavaScript -->
+  <script>
+    /* --- Ignis Fatuus Floating Embers Canvas Background --- */
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    let particles = [];
+    const maxParticles = 65;
+    let mouse = { x: null, y: null };
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    window.addEventListener('mousemove', (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    });
+
+    window.addEventListener('mouseout', () => {
+      mouse.x = null;
+      mouse.y = null;
+    });
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = canvas.height + Math.random() * 100;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = Math.random() * 1 - 0.5;
+        this.speedY = -(Math.random() * 1.2 + 0.3);
+        this.alpha = Math.random() * 0.5 + 0.1;
+        this.color = Math.random() > 0.4 ? '#a855f7' : '#d946ef'; // Purple vs Fuchsia
+        this.hueShift = Math.random() * 0.02 - 0.01;
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+
+        // Attract toward mouse if cursor is close
+        if (mouse.x !== null && mouse.y !== null) {
+          const dx = mouse.x - this.x;
+          const dy = mouse.y - this.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 150) {
+            this.x += (dx / dist) * 0.4;
+            this.y += (dy / dist) * 0.4;
+          }
+        }
+
+        // Fade out as it climbs
+        if (this.y < -10 || this.x < -10 || this.x > canvas.width + 10) {
+          this.reset();
+        }
+      }
+
+      draw() {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.shadowBlur = this.size * 3;
+        ctx.shadowColor = this.color;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    for (let i = 0; i < maxParticles; i++) {
+      particles.push(new Particle());
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+
+    /* --- Web Audio API Synth Mixer --- */
+    let audioCtx = null;
+    let humOscillator = null;
+    let humGain = null;
+    let isMuted = true;
+
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Create master hum (low frequency CRT tube electrical buzz)
+      humOscillator = audioCtx.createOscillator();
+      humOscillator.type = 'triangle';
+      humOscillator.frequency.value = 55; // A1 note - deep resonance
+      
+      // Harmonic overlay oscillator for CRT tube sweep
+      const sweepOsc = audioCtx.createOscillator();
+      sweepOsc.type = 'sine';
+      sweepOsc.frequency.value = 15625; // 15.6 kHz (typical flyback transformer frequency!)
+      
+      const sweepGain = audioCtx.createGain();
+      sweepGain.gain.value = 0.002; // Very faint to prevent annoying high pitch but capture authenticity
+      
+      humGain = audioCtx.createGain();
+      // Initially muted or low volume
+      humGain.gain.value = isMuted ? 0 : 0.04;
+      
+      // Node connections
+      humOscillator.connect(humGain);
+      sweepOsc.connect(sweepGain);
+      
+      humGain.connect(audioCtx.destination);
+      sweepGain.connect(audioCtx.destination);
+      
+      humOscillator.start();
+      sweepOsc.start();
+    }
+
+    // Play click synthesizer sound (key mechanical click)
+    function playClickSound(freq = 600, duration = 0.04) {
+      if (isMuted) return;
+      if (!audioCtx) initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      
+      gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // Play hover sound tick
+    function playHoverTick() {
+      playClickSound(1800, 0.008);
+    }
+
+    // Play big action click
+    function playActionClick() {
+      playClickSound(220, 0.12);
+    }
+
+    // Link sound hooks
+    const clickableElements = document.querySelectorAll('a, button, .gallery-item, .terminal-tab');
+    clickableElements.forEach(el => {
+      el.addEventListener('mouseenter', playHoverTick);
+      el.addEventListener('click', playActionClick);
+    });
+
+
+    /* --- Interactive Terminal Tabs (Magia Nigra) --- */
+    const tabDocker = document.getElementById('tab-docker');
+    const tabManual = document.getElementById('tab-manual');
+    const paneDocker = document.getElementById('pane-docker');
+    const paneManual = document.getElementById('pane-manual');
+
+    tabDocker.addEventListener('click', () => {
+      tabDocker.classList.add('active');
+      tabManual.classList.remove('active');
+      paneDocker.classList.add('active');
+      paneManual.classList.remove('active');
+    });
+
+    tabManual.addEventListener('click', () => {
+      tabManual.classList.add('active');
+      tabDocker.classList.remove('active');
+      paneManual.classList.add('active');
+      paneDocker.classList.remove('active');
+    });
+
+
+    /* --- Lightbox Gallery Controller --- */
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxClose = document.getElementById('lightbox-close');
+    const lightboxCaption = document.getElementById('lightbox-caption');
+    const galleryItems = document.querySelectorAll('.gallery-item');
+
+    galleryItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const src = item.getAttribute('data-src');
+        const caption = item.getAttribute('data-caption');
+        lightboxImg.src = src;
+        lightboxCaption.textContent = caption;
+        lightbox.style.display = 'flex';
+      });
+    });
+
+    lightboxClose.addEventListener('click', () => {
+      lightbox.style.display = 'none';
+    });
+
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) {
+        lightbox.style.display = 'none';
+      }
+    });
+
+
+    /* --- Theme & CRT scanlines Control Toggles --- */
+    const crtToggle = document.getElementById('crt-toggle');
+    const audioToggle = document.getElementById('audio-toggle');
+    const audioIcon = document.getElementById('audio-icon');
+
+    crtToggle.addEventListener('click', () => {
+      document.body.classList.toggle('crt-active');
+      crtToggle.classList.toggle('active');
+    });
+
+    audioToggle.addEventListener('click', () => {
+      isMuted = !isMuted;
+      audioToggle.classList.toggle('active');
+      
+      if (!audioCtx) {
+        initAudio();
+      }
+      
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      
+      if (isMuted) {
+        humGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        audioIcon.innerHTML = `<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zm-11 5.77v6h4l5 5V4L7 9H3z"/>`;
+      } else {
+        humGain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        // Play initialization chime
+        playClickSound(440, 0.1);
+        setTimeout(() => playClickSound(554.37, 0.1), 100);
+        setTimeout(() => playClickSound(659.25, 0.2), 200);
+        audioIcon.innerHTML = `<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>`;
+      }
+    });
+
+    // Make navigation links active on scroll
+    const sections = document.querySelectorAll('section');
+    const navAnchorLinks = document.querySelectorAll('.nav-links a');
+
+    window.addEventListener('scroll', () => {
+      let current = '';
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.clientHeight;
+        if (pageYOffset >= (sectionTop - 200)) {
+          current = section.getAttribute('id');
+        }
+      });
+
+      navAnchorLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href').substring(1) === current) {
+          link.classList.add('active');
+        }
+      });
+    });
+
+  </script>
 </body>
 </html>
