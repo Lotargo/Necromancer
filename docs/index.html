@@ -3,61 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <title>Necromancer</title>
+  <meta name="description" content="Necromancer is a retro-futuristic chat interface and backend system wrapped in arcane aesthetics.">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <header class="hero">
   <div class="hero-content">
+    <p class="eyebrow">Welcome to the terminal circle</p>
     <h1>Necromancer</h1>
-    <p>A retro‑futuristic chat interface and backend system wrapped in arcane aesthetics.</p>
-    <a class="btn" href="https://github.com/Lotargo/Necromancer">View Repository</a>
+    <p class="lead">A retro-futuristic chat interface and backend system wrapped in arcane aesthetics.</p>
+    <div class="actions">
+      <a class="btn" href="https://github.com/Lotargo/Necromancer">View Repository</a>
+      <a class="btn secondary" href="#features">Explore Features</a>
+    </div>
   </div>
 </header>
 
-<section class="features">
-  <h2>Features</h2>
-  <div class="feature-grid">
-    <div class="feature">
-      <h3>Retro CRT Experience</h3>
-      <p>Immersive terminal with scanlines, chromatic aberration, matrix rain, dripping blood, occult symbols and adaptive audio for a true retro feel.</p>
-    </div>
-    <div class="feature">
-      <h3>Robust Backend</h3>
-      <p>FreePascal core daemon with modular architecture managing sockets, a PostgreSQL database, Argon2id security and key management.</p>
-    </div>
-    <div class="feature">
-      <h3>Dynamic AI Oraculum</h3>
-      <p>Interact with the AI Oraculum via Latin incantations using tools for web search, knowledge retrieval, code execution, simulations and more.</p>
-    </div>
-    <div class="feature">
-      <h3>Load Balancing & Provider Failover</h3>
-      <p>A Lua‑based balancer distributes requests across multiple LLM providers and automatically rotates or quarantines API keys.</p>
-    </div>
-    <div class="feature">
-      <h3>User Journeys & Security</h3>
-      <p>Guest and registered login modes, cryptographically hashed credentials, user level progression and complete profile control.</p>
-    </div>
-    <div class="feature">
-      <h3>Containerized Deployment</h3>
-      <p>Simple docker‑compose setup to summon the entire stack with customizable <code>.env</code> and provider configuration.</p>
-    </div>
+<div class="stats" aria-label="Project highlights">
+  <div class="stat">
+    <strong>CRT</strong>
+    <span>terminal-first interface</span>
   </div>
-</section>
+  <div class="stat">
+    <strong>FPC</strong>
+    <span>native backend daemon</span>
+  </div>
+  <div class="stat">
+    <strong>AI</strong>
+    <span>provider failover and tools</span>
+  </div>
+</div>
 
-<section class="architecture">
-  <h2>System Architecture</h2>
-  <ol>
-    <li><strong>Daemonium</strong>: FreePascal backend core managing socket connections, authorization and chat history.</li>
-    <li><strong>Interpres</strong>: PHP and JavaScript front‑end providing the CRT UI, SSE streaming, canvas overlays and failover logic.</li>
-    <li><strong>Aequilibrium</strong>: Lua load balancer handling provider rotation, key rotation and session pinning.</li>
-    <li><strong>Tabularium</strong>: PostgreSQL database storing users, options, chat logs and key registry.</li>
-    <li><strong>Mechanica</strong>: Secure sandbox for compiling and executing Pascal code and running simulations.</li>
-  </ol>
-</section>
+<main>
+  <section id="features" class="features">
+    <div class="section-heading">
+      <h2>Features</h2>
+      <p>Necromancer combines a theatrical terminal UI with a pragmatic, containerized backend.</p>
+    </div>
+    <div class="feature-grid">
+      <article class="feature">
+        <h3>Retro CRT Experience</h3>
+        <p>Immersive terminal with scanlines, chromatic aberration, matrix rain, occult symbols and adaptive audio for a true retro feel.</p>
+      </article>
+      <article class="feature">
+        <h3>Robust Backend</h3>
+        <p>FreePascal core daemon with modular architecture managing sockets, a PostgreSQL database, Argon2id security and key management.</p>
+      </article>
+      <article class="feature">
+        <h3>Dynamic AI Oraculum</h3>
+        <p>Interact with the AI Oraculum via Latin incantations using tools for web search, knowledge retrieval, code execution and simulations.</p>
+      </article>
+      <article class="feature">
+        <h3>Provider Failover</h3>
+        <p>A Lua-based balancer distributes requests across multiple LLM providers and automatically rotates or quarantines API keys.</p>
+      </article>
+      <article class="feature">
+        <h3>User Journeys & Security</h3>
+        <p>Guest and registered login modes, cryptographically hashed credentials, user level progression and complete profile control.</p>
+      </article>
+      <article class="feature">
+        <h3>Containerized Deployment</h3>
+        <p>Simple docker-compose setup to summon the entire stack with customizable <code>.env</code> and provider configuration.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="showcase">
+    <img src="../assets/necromancer_interface_v2.png" alt="Necromancer CRT chat interface">
+    <div class="showcase-copy">
+      <div class="section-heading">
+        <h2>Interface</h2>
+        <p>The live application presents chats, settings, prompts and execution state as a luminous terminal console.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="architecture">
+    <div class="section-heading">
+      <h2>System Architecture</h2>
+      <p>Five services form the project: interface, backend daemon, load balancer, database and execution sandbox.</p>
+    </div>
+    <ol>
+      <li><strong>Daemonium</strong> FreePascal backend core managing socket connections, authorization and chat history.</li>
+      <li><strong>Interpres</strong> PHP and JavaScript front-end providing the CRT UI, SSE streaming, canvas overlays and failover logic.</li>
+      <li><strong>Aequilibrium</strong> Lua load balancer handling provider rotation, key rotation and session pinning.</li>
+      <li><strong>Tabularium</strong> PostgreSQL database storing users, options, chat logs and key registry.</li>
+      <li><strong>Mechanica</strong> Secure sandbox for compiling and executing Pascal code and running simulations.</li>
+    </ol>
+  </section>
+</main>
 
 <footer>
-  <p>© 2026 Necromancer. All rights reserved.</p>
+  <p>© 2026 Necromancer. All rights reserved.</p>
 </footer>
 </body>
 </html>
