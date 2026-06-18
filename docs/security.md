@@ -1,16 +1,16 @@
-# 🛡️ Security & Cryptography - Necromancer
+# Security & Cryptography - Necromancer
 
 This document details the security posture, cryptographic designs, and sanitization mechanisms implemented in the **Necromancer** chat environment to safeguard user profiles and prevent system vulnerabilities.
 
 ---
 
-## 🔐 1. Password Cryptography & Hashing (Argon2id)
+## 1. Password Cryptography & Hashing (Argon2id)
 
 Legacy versions of the core backend saved user credentials in plaintext within flat scroll files, creating a significant security risk.
 
 To meet modern security standards (ASVS 4.0), we implemented the **Argon2id** hashing algorithm (via the native `HashLib4Pascal` library). This represents the highest industry standard for password protection against both GPU/ASIC-accelerated brute-force attacks and side-channel analysis.
 
-### 🚀 The Cryptographic Standard: Argon2id Hashing
+### The Cryptographic Standard: Argon2id Hashing
 
 #### Hashing Properties & Parameters:
 * **Algorithm**: Argon2id (combines memory-hard Argon2d and time-hard Argon2i properties).
@@ -24,7 +24,7 @@ To meet modern security standards (ASVS 4.0), we implemented the **Argon2id** ha
 
 ---
 
-## 🛡️ 2. Parameterized SQL Injection Guard
+## 2. Parameterized SQL Injection Guard
 
 FreePascal's `TSQLQuery` unit has been carefully configured to handle all dynamic database operations using **Parametric Placeholder Bindings** instead of dynamic string concatenation.
 
@@ -48,7 +48,7 @@ The database engine compiles the query structure first. When the parameters are 
 
 ---
 
-## 🧼 3. Socket Protocol Pipe Injection Sanitization
+## 3. Socket Protocol Pipe Injection Sanitization
 
 Since `Interpres` (PHP) communicates with `Daemonium` (Pascal) over a raw TCP socket using a pipe-separated (`|`) wire protocol, any user-submitted pipe character in a nickname, email, or message could hijack the command parser.
 
@@ -82,7 +82,7 @@ function sani_nuntius($val) {
 
 ---
 
-## 🗄️ 4. Path Traversal & File System Safeguards
+## 4. Path Traversal & File System Safeguards
 
 By completely migrating the user state, settings, and conversation logs to PostgreSQL, we have eliminated local file-system writes driven by user input.
 

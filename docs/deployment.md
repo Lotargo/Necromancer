@@ -1,10 +1,10 @@
-# 🔮 Deployment & Summoning Guide - Necromancer
+# Deployment & Summoning Guide - Necromancer
 
 This guide details the procedures to summon (deploy) the **Necromancer** stack, configure environment variables, and manage operations.
 
 ---
 
-## 🐋 1. Rapid Summoning (Docker Compose Deployment)
+## 1. Rapid Summoning (Docker Compose Deployment)
 
 Docker Compose is the recommended way to stand up the entire architecture in seconds. This automatically compiles the Pascal source, installs the required PostgreSQL client libraries inside the daemon, provisions the DB, and sets up networking.
 
@@ -70,7 +70,7 @@ docker-compose logs chat_daemonium
 
 ---
 
-## 🛠️ 2. Manual Summoning (Native Compilation)
+## 2. Manual Summoning (Native Compilation)
 
 For developers wishing to run the services bare-metal without containerization:
 
@@ -120,7 +120,7 @@ Open your web browser and navigate to: **[http://localhost:666](http://localhost
 
 ---
 
-## 🛑 3. Controlling the Ritual (Shutdown & Cleanup)
+## 3. Controlling the Ritual (Shutdown & Cleanup)
 
 To gracefully stop and shut down the containers while retaining the persisted PostgreSQL database data:
 ```bash

@@ -1,10 +1,10 @@
-# 🗃️ PostgreSQL Database Schema - Necromancer
+# PostgreSQL Database Schema - Necromancer
 
 This document details the database schema, relational dependencies, indices, and performance strategies used in the modernized **Necromancer** storage layer.
 
 ---
 
-## 🗄️ Relational Entity Diagram
+## Relational Entity Diagram
 
 ```
  +------------------+
@@ -59,7 +59,7 @@ This document details the database schema, relational dependencies, indices, and
 
 ---
 
-## 🏛️ Table Specifications
+## Table Specifications
 
 ### 1. `usores` (The Table of Souls)
 Stores user credentials and profile configurations. It supports both legacy anonymous `SPIRITUS` profiles and fully authenticated `ANIMA` profiles.
@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS llm_key_events (
 
 ---
 
-## ⚡ Performance Optimization: Indexes
+## Performance Optimization: Indexes
 
 To achieve instantaneous page load speeds during room rendering and message history checks, the following multi-column index has been deployed:
 
@@ -214,7 +214,7 @@ Without this composite index, PostgreSQL would be forced to perform a **Sequenti
 
 ---
 
-## 🔄 Cascading Relational Integrity
+## Cascading Relational Integrity
 
 The legacy flat-file flat database had huge concurrency bottlenecks. When renaming a user or deleting an account, the backend had to block the thread, scan the directory, create temporary `.tmp` files, copy unchanged records line-by-line, delete the old file, and rename.
 

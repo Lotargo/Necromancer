@@ -1,10 +1,10 @@
-# 🏛️ System Architecture - Necromancer
+# System Architecture - Necromancer
 
 This document provides a highly detailed breakdown of the technical components and network communications powering the **Necromancer** chat environment.
 
 ---
 
-## 🏗️ High-Level Component Topology
+## High-Level Component Topology
 
 The system operates as a distributed microservice stack composed of five primary containers, fully managed via `docker-compose.yml`:
 
@@ -38,11 +38,11 @@ The system operates as a distributed microservice stack composed of five primary
 
 ---
 
-## 🦇 1. Core Daemon: `Daemonium`
+## 1. Core Daemon: `Daemonium`
 
 Compiled inside the Docker container using FreePascal (`fpc`), the `daemonium` executable is a high-performance, single-threaded socket server that handles all stateful transactions of the chat.
 
-### 🏛️ Modular Unit Architecture
+### Modular Unit Architecture
 
 To ensure high maintainability, the codebase is cleanly modularized into several dedicated Object Pascal units:
 * **[Auxilia.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Auxilia.pas)**: Shared helpers, response string formation (`FormareResponsum`), file reader utilities, and lightweight Argon2id API key hashes.
@@ -54,7 +54,7 @@ To ensure high maintainability, the codebase is cleanly modularized into several
 * **[Scientia.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/Scientia.pas)**: High-speed keyword index scanner providing local RAG knowledge context.
 * **[daemonium.pas](file:///f:/lock-rep-stable-projects/Necromancer/daemonium/daemonium.pas)**: The central main loop and listener. Coordinates socket bindings, listens on port `8080`, reads string buffers, and routes incoming commands to corresponding modular controllers.
 
-### 🔌 Connection Lifecycle:
+### Connection Lifecycle:
 1. Opens a listening socket using the FPC `sockets` unit.
 2. Blocks waiting for incoming connection requests via `accept()`.
 3. Spawns an execution frame that reads the buffer until `\n`.
@@ -66,7 +66,7 @@ To ensure high maintainability, the codebase is cleanly modularized into several
 
 ---
 
-## 👁️ 2. Web Frontend & BFF: `Interpres`
+## 2. Web Frontend & BFF: `Interpres`
 
 Built on top of PHP 8.3 and Vanilla HTML5/CSS3/Javascript, `Interpres` acts as both the Backend-for-Frontend (BFF) and the user-facing web portal.
 
@@ -94,7 +94,7 @@ Built on top of PHP 8.3 and Vanilla HTML5/CSS3/Javascript, `Interpres` acts as b
 
 ---
 
-## ⚖️ 3. Load Balancer: `Aequilibrium`
+## 3. Load Balancer: `Aequilibrium`
 
 Written in pure **Lua** and executed via **LuaJIT**, `Aequilibrium` is an extremely lightweight proxy service that rotates API credentials and LLM endpoints.
 
@@ -107,7 +107,7 @@ Written in pure **Lua** and executed via **LuaJIT**, `Aequilibrium` is an extrem
 
 ---
 
-## ⚙️ 4. Computational Sandbox: `Mechanica`
+## 4. Computational Sandbox: `Mechanica`
 
 `Mechanica` is a high-security computation sandbox running as a FreePascal socket microservice on port `8082`.
 
@@ -119,7 +119,7 @@ Written in pure **Lua** and executed via **LuaJIT**, `Aequilibrium` is an extrem
 
 ---
 
-## 🗃️ 5. Relational Storage: `PostgreSQL`
+## 5. Relational Storage: `PostgreSQL`
 
 In modernizing the system, we migrated the storage layer from linear flat files to **PostgreSQL 15-alpine**.
 
@@ -131,7 +131,7 @@ In modernizing the system, we migrated the storage layer from linear flat files 
 
 ---
 
-## 🔌 6. Socket Wire Protocol
+## 6. Socket Wire Protocol
 
 All communication between `Interpres` and `Daemonium` occurs over raw TCP sockets using a string-based protocol:
 
