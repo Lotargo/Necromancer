@@ -1325,6 +1325,36 @@ html[data-theme="light"] .feature-card:hover .feature-icon-wrapper {
 
 html[data-theme="light"] .terminal-body {
   background: #1a1a2e;
+  color: #f8fafc;
+}
+
+html[data-theme="light"] .terminal-line {
+  color: #94a3b8;
+}
+
+html[data-theme="light"] .terminal-line.command::before {
+  color: #d946ef;
+}
+
+html[data-theme="light"] .terminal-line.output {
+  color: #f8fafc;
+}
+
+html[data-theme="light"] .terminal-title {
+  color: #94a3b8;
+}
+
+html[data-theme="light"] .terminal-tab {
+  color: #94a3b8;
+}
+
+html[data-theme="light"] .terminal-tab.active {
+  color: #f8fafc;
+  background: rgba(168, 85, 247, 0.3);
+}
+
+html[data-theme="light"] .terminal-tab:hover {
+  background: rgba(168, 85, 247, 0.15);
 }
 
 html[data-theme="light"] .gothic-title {
